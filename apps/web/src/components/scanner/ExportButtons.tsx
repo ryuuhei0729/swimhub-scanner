@@ -2,7 +2,7 @@
 
 import { useCallback, useRef } from "react";
 import type { ScanTimesheetResponse } from "@swimhub-scanner/shared";
-import { averageTime, fastestTime, slowestTime, formatTime } from "@swimhub-scanner/shared";
+import { averageTime, fastestTime, slowestTime, formatTime, formatCircleTime } from "@swimhub-scanner/shared";
 import { Button } from "@/components/ui/Button";
 
 interface ExportButtonsProps {
@@ -23,7 +23,7 @@ function buildRows(data: ScanTimesheetResponse) {
     "No",
     "名前",
     "種目",
-    ...Array.from({ length: totalReps }, (_, i) => `${i + 1}本目`),
+    ...Array.from({ length: totalReps }, (_, i) => `${(i % data.menu.repCount) + 1}本目`),
     "平均",
     "最速",
     "最遅",
@@ -97,7 +97,7 @@ export function ExportButtons({ data }: ExportButtonsProps) {
         "セット数",
         `${data.menu.setCount}`,
       ],
-      ...(data.menu.circle ? [["サークル", `${data.menu.circle}秒`]] : []),
+      ...(data.menu.circle ? [["サークル", formatCircleTime(data.menu.circle)]] : []),
       [],
       ...wsData,
     ]);
@@ -157,7 +157,7 @@ export function ExportButtons({ data }: ExportButtonsProps) {
     ctx.fillStyle = "#6b7280";
     const menuText =
       `${data.menu.description || `${data.menu.setCount}s x ${data.menu.repCount} x ${data.menu.distance}m`}` +
-      (data.menu.circle ? ` / サークル ${data.menu.circle}秒` : "");
+      (data.menu.circle ? ` / サークル ${formatCircleTime(data.menu.circle)}` : "");
     ctx.fillText(menuText, startX, y + 36);
     y += menuHeight;
 
@@ -182,7 +182,7 @@ export function ExportButtons({ data }: ExportButtonsProps) {
     x += colWidths.style;
 
     for (let i = 0; i < totalReps; i++) {
-      ctx.fillText(`${i + 1}`, x + colWidths.time / 2, y + headerHeight / 2 + 18);
+      ctx.fillText(`${(i % data.menu.repCount) + 1}`, x + colWidths.time / 2, y + headerHeight / 2 + 18);
       x += colWidths.time;
     }
     ctx.fillText("平均", x + colWidths.stat / 2, y + headerHeight / 2 + 18);
@@ -231,10 +231,10 @@ export function ExportButtons({ data }: ExportButtonsProps) {
       swimmer.times.forEach((time) => {
         if (time !== null) {
           if (time === fast) {
-            ctx.fillStyle = "#dc2626";
+            ctx.fillStyle = "#2563eb";
             ctx.font = "bold 12px sans-serif";
           } else if (time === slow) {
-            ctx.fillStyle = "#2563eb";
+            ctx.fillStyle = "#dc2626";
             ctx.font = "12px sans-serif";
           } else {
             ctx.fillStyle = "#1f2937";

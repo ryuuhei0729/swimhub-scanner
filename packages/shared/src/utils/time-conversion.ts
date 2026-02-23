@@ -49,3 +49,14 @@ export function slowestTime(times: (number | null)[]): number | null {
   if (valid.length === 0) return null;
   return Math.max(...valid);
 }
+
+/**
+ * Format circle time in minutes/seconds notation.
+ * e.g., 60 -> 1'00", 130 -> 2'10", 45 -> 45"
+ */
+export function formatCircleTime(seconds: number): string {
+  if (seconds < 60) return `${seconds}"`;
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}'${secs.toString().padStart(2, "0")}"`;
+}

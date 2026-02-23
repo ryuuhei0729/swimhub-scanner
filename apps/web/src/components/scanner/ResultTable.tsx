@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { ScanTimesheetResponse, SwimmerResult, SwimStroke } from "@swimhub-scanner/shared";
-import { averageTime, fastestTime, slowestTime } from "@swimhub-scanner/shared";
+import { averageTime, fastestTime, slowestTime, formatCircleTime } from "@swimhub-scanner/shared";
 import { Button } from "@/components/ui/Button";
 
 interface ResultTableProps {
@@ -12,12 +12,92 @@ interface ResultTableProps {
 
 const STROKE_OPTIONS: SwimStroke[] = ["Fr", "Br", "Ba", "Fly", "IM"];
 
+/** Inline time input with local state so decimal points can be typed */
+function TimeInput({
+  initialValue,
+  onCommit,
+  onClose,
+}: {
+  initialValue: number | null;
+  onCommit: (value: string) => void;
+  onClose: () => void;
+}) {
+  const [localValue, setLocalValue] = useState(initialValue?.toString() ?? "");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  const commit = () => {
+    onCommit(localValue);
+    onClose();
+  };
+
+  return (
+    <input
+      ref={inputRef}
+      type="text"
+      inputMode="decimal"
+      value={localValue}
+      onChange={(e) => setLocalValue(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === "Tab") {
+          e.preventDefault();
+          commit();
+        }
+      }}
+      className="w-14 rounded border px-1 py-0.5 text-center text-sm"
+    />
+  );
+}
+
+/** Delete confirmation dialog */
+function DeleteConfirmDialog({
+  swimmerName,
+  onConfirm,
+  onCancel,
+}: {
+  swimmerName: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="w-72 rounded-lg bg-white p-5 shadow-xl">
+        <p className="text-sm text-gray-700">
+          <span className="font-medium">{swimmerName || "この選手"}</span>
+          を削除しますか？
+        </p>
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            onClick={onCancel}
+            className="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
+          >
+            キャンセル
+          </button>
+          <button
+            onClick={onConfirm}
+            className="rounded-md bg-red-500 px-3 py-1.5 text-sm text-white hover:bg-red-600"
+          >
+            削除
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ResultTable({ data, onDataChange }: ResultTableProps) {
   const [editingCell, setEditingCell] = useState<{
     swimmerIdx: number;
     field: string;
     timeIdx?: number;
   } | null>(null);
+
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
 
   const totalReps = data.menu.repCount * data.menu.setCount;
 
@@ -68,8 +148,8 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
     if (time === null) return "bg-yellow-50 text-gray-400";
     const fastest = fastestTime(swimmer.times);
     const slowest = slowestTime(swimmer.times);
-    if (time === fastest) return "text-red-600 font-bold";
-    if (time === slowest) return "text-blue-600";
+    if (time === fastest) return "text-blue-600 font-bold";
+    if (time === slowest) return "text-red-600";
     return "";
   };
 
@@ -79,15 +159,36 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
     setHeaders.push({ label: `Set ${s + 1}`, colSpan: data.menu.repCount });
   }
 
+  const { menu } = data;
+
   return (
     <div className="w-full space-y-4">
       {/* Menu info */}
-      <div className="rounded-lg bg-gray-50 px-4 py-3">
-        <p className="text-sm font-medium text-gray-700">
-          {data.menu.description || `${data.menu.setCount}s x ${data.menu.repCount} x ${data.menu.distance}m`}
-          {data.menu.circle && ` / サークル ${data.menu.circle}秒`}
-        </p>
+      <div className="rounded-lg bg-gray-50 px-4 py-3 space-y-1">
+        {menu.description && (
+          <p className="text-sm text-gray-500">{menu.description}</p>
+        )}
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-gray-700">
+          <span>距離: {menu.distance}m</span>
+          <span>本数: {menu.repCount}</span>
+          <span>セット数: {menu.setCount}</span>
+          {menu.circle != null && (
+            <span>サークル: {formatCircleTime(menu.circle)}</span>
+          )}
+        </div>
       </div>
+
+      {/* Delete confirmation dialog */}
+      {deleteTarget !== null && (
+        <DeleteConfirmDialog
+          swimmerName={data.swimmers[deleteTarget]?.name ?? ""}
+          onConfirm={() => {
+            removeSwimmer(deleteTarget);
+            setDeleteTarget(null);
+          }}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
 
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border">
@@ -121,7 +222,7 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
               <th className="px-2 py-2 text-center font-medium">種目</th>
               {Array.from({ length: totalReps }, (_, i) => (
                 <th key={i} className="border-l px-2 py-2 text-center font-medium">
-                  {i + 1}
+                  {(i % data.menu.repCount) + 1}
                 </th>
               ))}
               <th className="border-l px-2 py-2 text-center font-medium">平均</th>
@@ -191,18 +292,10 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
                       {editingCell?.swimmerIdx === sIdx &&
                       editingCell?.field === "time" &&
                       editingCell?.timeIdx === tIdx ? (
-                        <input
-                          type="text"
-                          value={time?.toString() ?? ""}
-                          onChange={(e) => updateTime(sIdx, tIdx, e.target.value)}
-                          onBlur={() => setEditingCell(null)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === "Tab") {
-                              setEditingCell(null);
-                            }
-                          }}
-                          className="w-14 rounded border px-1 py-0.5 text-center text-sm"
-                          autoFocus
+                        <TimeInput
+                          initialValue={time}
+                          onCommit={(val) => updateTime(sIdx, tIdx, val)}
+                          onClose={() => setEditingCell(null)}
                         />
                       ) : (
                         <span
@@ -221,7 +314,10 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
                   </td>
                   <td className="px-1 py-2 text-center">
                     <button
-                      onClick={() => removeSwimmer(sIdx)}
+                      onClick={() => {
+                        if (data.swimmers.length <= 1) return;
+                        setDeleteTarget(sIdx);
+                      }}
                       className="text-gray-400 hover:text-red-500"
                       title="削除"
                     >
