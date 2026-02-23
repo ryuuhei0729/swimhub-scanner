@@ -1,0 +1,10 @@
+{
+  "name": "@swimhub-scanner/config",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./tsconfig/*": "./tsconfig/*.json",
+    "./eslint/base": "./eslint/base.mjs",
+    "./prettier": "./prettier/index.mjs"
+  }
+}

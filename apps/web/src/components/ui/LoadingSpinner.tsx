@@ -1,0 +1,9 @@
+export function LoadingSpinner({ className = "" }: { className?: string }) {
+  return (
+    <div
+      className={`h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600 ${className}`}
+      role="status"
+      aria-label="読み込み中"
+    />
+  );
+}
