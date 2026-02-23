@@ -25,6 +25,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "^9.0.0",
     "@opennextjs/cloudflare": "^1.16.6",
     "@swimhub-scanner/config": "workspace:*",
