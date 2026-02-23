@@ -6,7 +6,6 @@ import type {
   UserStatusResponse,
   ApiErrorResponse,
 } from "@swimhub-scanner/shared";
-import { useAuth } from "@/hooks/useAuth";
 import { ImageUploader } from "./ImageUploader";
 import { ResultTable } from "./ResultTable";
 import { ExportButtons } from "./ExportButtons";
@@ -16,7 +15,6 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 type Step = "upload" | "scanning" | "result";
 
 export function ScannerFlow() {
-  const { getIdToken } = useAuth();
   const [step, setStep] = useState<Step>("upload");
   const [image, setImage] = useState<{ base64: string; mimeType: "image/jpeg" | "image/png" } | null>(null);
   const [result, setResult] = useState<ScanTimesheetResponse | null>(null);
@@ -24,15 +22,11 @@ export function ScannerFlow() {
   const [userStatus, setUserStatus] = useState<UserStatusResponse | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
 
-  // Fetch user status on mount
+  // Fetch user status on mount (cookie-based auth — no token needed)
   useEffect(() => {
     async function fetchStatus() {
       try {
-        const token = await getIdToken();
-        if (!token) return;
-        const res = await fetch("/api/user/status", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetch("/api/user/status");
         if (res.ok) {
           setUserStatus(await res.json());
         }
@@ -43,7 +37,7 @@ export function ScannerFlow() {
       }
     }
     fetchStatus();
-  }, [getIdToken]);
+  }, []);
 
   const handleImageSelect = useCallback(
     (base64: string, mimeType: "image/jpeg" | "image/png") => {
@@ -60,18 +54,10 @@ export function ScannerFlow() {
     setError(null);
 
     try {
-      const token = await getIdToken();
-      if (!token) {
-        setError("認証エラーが発生しました。再ログインしてください。");
-        setStep("upload");
-        return;
-      }
-
       const res = await fetch("/api/scan-timesheet", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ image: image.base64, mimeType: image.mimeType }),
       });
@@ -88,9 +74,7 @@ export function ScannerFlow() {
       setStep("result");
 
       // Refresh user status after scan
-      const statusRes = await fetch("/api/user/status", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const statusRes = await fetch("/api/user/status");
       if (statusRes.ok) {
         setUserStatus(await statusRes.json());
       }
@@ -98,7 +82,7 @@ export function ScannerFlow() {
       setError("ネットワークエラーです。接続を確認してください。");
       setStep("upload");
     }
-  }, [image, getIdToken]);
+  }, [image]);
 
   const handleReset = useCallback(() => {
     setStep("upload");
@@ -108,7 +92,7 @@ export function ScannerFlow() {
   }, []);
 
   const isLimitReached =
-    userStatus && userStatus.dailyLimit !== null && userStatus.todayScanCount >= userStatus.dailyLimit;
+    !!userStatus && userStatus.dailyLimit !== null && userStatus.todayScanCount >= userStatus.dailyLimit;
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">

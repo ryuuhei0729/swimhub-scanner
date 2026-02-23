@@ -8,9 +8,11 @@ export function UserMenu() {
 
   if (!user) return null;
 
+  const displayName = user.user_metadata?.full_name ?? user.email;
+
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm text-gray-600">{user.displayName ?? user.email}</span>
+      <span className="text-sm text-gray-600">{displayName}</span>
       <Button variant="ghost" size="sm" onClick={signOut}>
         ログアウト
       </Button>

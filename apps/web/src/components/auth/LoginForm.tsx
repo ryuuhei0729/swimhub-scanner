@@ -1,14 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 
 export function LoginForm() {
   const { signInWithGoogle, signInWithApple } = useAuth();
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const [error, setError] = useState<string | null>(
+    searchParams.get("error") ? "ログインに失敗しました。もう一度お試しください。" : null,
+  );
   const [loading, setLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
@@ -16,11 +18,10 @@ export function LoginForm() {
       setLoading(true);
       setError(null);
       await signInWithGoogle();
-      router.replace("/");
+      // リダイレクト方式のため、ここには戻らない
     } catch (err) {
       setError("Googleログインに失敗しました。もう一度お試しください。");
       console.error("Google sign-in error:", err);
-    } finally {
       setLoading(false);
     }
   };
@@ -30,11 +31,10 @@ export function LoginForm() {
       setLoading(true);
       setError(null);
       await signInWithApple();
-      router.replace("/");
+      // リダイレクト方式のため、ここには戻らない
     } catch (err) {
       setError("Appleログインに失敗しました。もう一度お試しください。");
       console.error("Apple sign-in error:", err);
-    } finally {
       setLoading(false);
     }
   };

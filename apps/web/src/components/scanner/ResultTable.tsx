@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import type { ScanTimesheetResponse, SwimmerResult, SwimStroke } from "@swimhub-scanner/shared";
 import { averageTime, fastestTime, slowestTime } from "@swimhub-scanner/shared";
+import { Button } from "@/components/ui/Button";
 
 interface ResultTableProps {
   data: ScanTimesheetResponse;

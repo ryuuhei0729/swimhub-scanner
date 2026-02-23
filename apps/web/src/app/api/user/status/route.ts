@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyAuth, ensureUserDocument } from "@/lib/api-helpers";
-import { getTodayScanCount } from "@/lib/firebase/usage";
+import { getTodayScanCount } from "@/lib/supabase/usage";
 import { PLAN_LIMITS } from "@swimhub-scanner/shared";
 import type { UserStatusResponse } from "@swimhub-scanner/shared";
 
@@ -10,13 +10,13 @@ export async function GET(request: NextRequest) {
   if ("error" in authResult) {
     return authResult.error;
   }
-  const { uid } = authResult.auth;
+  const { auth: { uid }, supabase } = authResult.result;
 
   // 2. Get user data
-  const userDoc = await ensureUserDocument(uid);
+  const userDoc = await ensureUserDocument(supabase, uid);
 
   // 3. Get today's scan count
-  const todayScanCount = await getTodayScanCount(uid);
+  const todayScanCount = await getTodayScanCount(supabase, uid);
 
   // 4. Get plan limits
   const limits = PLAN_LIMITS[userDoc.plan];

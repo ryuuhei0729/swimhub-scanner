@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyAuth, ensureUserDocument } from "@/lib/api-helpers";
-import { canUserScan, incrementScanCount } from "@/lib/firebase/usage";
+import { canUserScan, incrementScanCount } from "@/lib/supabase/usage";
 import { scanTimesheetWithGemini } from "@/lib/gemini/client";
 import {
   validateImageMimeType,
@@ -21,10 +21,10 @@ export async function POST(request: NextRequest) {
   if ("error" in authResult) {
     return authResult.error;
   }
-  const { uid } = authResult.auth;
+  const { auth: { uid }, supabase } = authResult.result;
 
   // 2. Get user document (auto-create on first login)
-  const userDoc = await ensureUserDocument(uid);
+  const userDoc = await ensureUserDocument(supabase, uid);
 
   // 3. Parse request body
   let body: ScanTimesheetRequest;
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
   }
 
   // 5. Usage count check
-  const allowed = await canUserScan(uid, userDoc.plan);
+  const allowed = await canUserScan(supabase, uid, userDoc.plan);
   if (!allowed) {
     return NextResponse.json<ApiErrorResponse>(
       { error: "本日の利用回数上限に達しました", code: "DAILY_LIMIT_EXCEEDED" },
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
   }
 
   // 9. Increment usage count
-  await incrementScanCount(uid);
+  await incrementScanCount(supabase, uid);
 
   // 10. Return result
   return NextResponse.json<ScanTimesheetResponse>(parsed);
