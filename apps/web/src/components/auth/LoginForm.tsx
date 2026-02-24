@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/Button";
 
 export function LoginForm() {
   const { signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail } = useAuth();
@@ -24,7 +23,6 @@ export function LoginForm() {
       setLoading(true);
       setError(null);
       await signInWithGoogle();
-      // リダイレクト方式のため、ここには戻らない
     } catch (err) {
       setError("Googleログインに失敗しました。もう一度お試しください。");
       console.error("Google sign-in error:", err);
@@ -37,7 +35,6 @@ export function LoginForm() {
       setLoading(true);
       setError(null);
       await signInWithApple();
-      // リダイレクト方式のため、ここには戻らない
     } catch (err) {
       setError("Appleログインに失敗しました。もう一度お試しください。");
       console.error("Apple sign-in error:", err);
@@ -77,20 +74,40 @@ export function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-sm space-y-6">
+    <div className="max-w-md w-full space-y-6 bg-white p-6 sm:p-8 md:p-10 rounded-2xl shadow-xl animate-fade-in">
       <div className="text-center">
-        <h1 className="text-2xl font-bold">タイム記録表スキャナー</h1>
-        <p className="mt-2 text-gray-600">手書きタイム記録表をAIで自動デジタル化</p>
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">
+          {isSignUp ? "アカウント作成" : "ログイン"}
+        </h2>
+        <p className="text-xs sm:text-sm text-gray-600">
+          {isSignUp ? "新しいアカウントを作成" : "手書きタイム記録表をAIで自動デジタル化"}
+        </p>
       </div>
 
-      {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+          <div className="flex items-start">
+            <svg className="w-5 h-5 text-red-400 mt-0.5 mr-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <div className="text-sm leading-relaxed">{error}</div>
+          </div>
+        </div>
+      )}
 
       {emailSent ? (
-        <div className="rounded-lg bg-green-50 p-4 text-center">
-          <p className="font-medium text-green-800">確認メールを送信しました</p>
-          <p className="mt-1 text-sm text-green-700">
-            メール内のリンクをクリックして、アカウントを有効化してください。
-          </p>
+        <div className="p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">
+          <div className="flex items-start">
+            <svg className="w-5 h-5 text-green-400 mt-0.5 mr-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <div>
+              <p className="font-medium">確認メールを送信しました</p>
+              <p className="mt-1 text-sm">
+                メール内のリンクをクリックして、アカウントを有効化してください。
+              </p>
+            </div>
+          </div>
           <button
             type="button"
             className="mt-3 text-sm text-blue-600 underline hover:text-blue-800"
@@ -104,13 +121,79 @@ export function LoginForm() {
         </div>
       ) : (
         <>
+          <form onSubmit={handleEmailSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                メールアドレス
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                  </svg>
+                </div>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-10 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-3 px-3 transition duration-150 ease-in-out"
+                  placeholder="example@email.com"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                パスワード
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <input
+                  id="password"
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-3 px-3 transition duration-150 ease-in-out"
+                  placeholder="6文字以上"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform transition duration-150 ease-in-out hover:scale-[1.02] shadow-md"
+            >
+              {loading ? "処理中..." : isSignUp ? "アカウント作成" : "メールでログイン"}
+            </button>
+          </form>
+
+          {/* 区切り線 */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">または</span>
+            </div>
+          </div>
+
+          {/* OAuth ボタン */}
           <div className="space-y-3">
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full gap-3"
+            <button
+              type="button"
               onClick={handleGoogleSignIn}
               disabled={loading}
+              className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150 ease-in-out"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24">
                 <path
@@ -130,100 +213,36 @@ export function LoginForm() {
                   fill="#EA4335"
                 />
               </svg>
-              Google でログイン
-            </Button>
+              Google で{isSignUp ? "サインアップ" : "ログイン"}
+            </button>
 
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full gap-3"
+            <button
+              type="button"
               onClick={handleAppleSignIn}
               disabled={loading}
+              className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-lg text-sm font-medium text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150 ease-in-out"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
               </svg>
-              Apple でログイン
-            </Button>
+              Apple で{isSignUp ? "サインアップ" : "ログイン"}
+            </button>
           </div>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-white px-2 text-gray-500">または</span>
-            </div>
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setError(null);
+              }}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium transition duration-150 ease-in-out"
+            >
+              {isSignUp
+                ? "すでにアカウントをお持ちの方はこちら"
+                : "アカウントをお持ちでない方はこちら"}
+            </button>
           </div>
-
-          <form onSubmit={handleEmailSubmit} className="space-y-3">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                メールアドレス
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="example@email.com"
-                disabled={loading}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                パスワード
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="6文字以上"
-                disabled={loading}
-              />
-            </div>
-            <Button variant="primary" size="lg" className="w-full" disabled={loading}>
-              {isSignUp ? "アカウント作成" : "メールでログイン"}
-            </Button>
-          </form>
-
-          <p className="text-center text-sm text-gray-600">
-            {isSignUp ? (
-              <>
-                既にアカウントをお持ちですか？{" "}
-                <button
-                  type="button"
-                  className="text-blue-600 underline hover:text-blue-800"
-                  onClick={() => {
-                    setIsSignUp(false);
-                    setError(null);
-                  }}
-                >
-                  ログイン
-                </button>
-              </>
-            ) : (
-              <>
-                アカウントをお持ちでないですか？{" "}
-                <button
-                  type="button"
-                  className="text-blue-600 underline hover:text-blue-800"
-                  onClick={() => {
-                    setIsSignUp(true);
-                    setError(null);
-                  }}
-                >
-                  新規登録
-                </button>
-              </>
-            )}
-          </p>
         </>
       )}
 

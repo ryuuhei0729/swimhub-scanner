@@ -99,7 +99,7 @@ export function ScannerFlow() {
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
       {/* Usage status bar */}
       {!statusLoading && userStatus && (
-        <div className="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
+        <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
           <div className="text-sm text-gray-600">
             {userStatus.plan === "premium" ? (
               <span className="font-medium text-purple-600">Premium プラン</span>
@@ -127,14 +127,14 @@ export function ScannerFlow() {
           <h2 className="text-lg font-semibold">Step 1: 画像アップロード</h2>
 
           {isLimitReached && (
-            <div className="rounded-lg bg-amber-50 p-4 text-sm text-amber-800">
+            <div className="rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
               本日の利用回数に達しました。Premium プランにアップグレードすると無制限に利用できます。
             </div>
           )}
 
           <ImageUploader onImageSelect={handleImageSelect} disabled={isLimitReached} />
 
-          {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+          {error && <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
 
           <div className="flex items-center justify-center gap-3">
             <Button

@@ -88,10 +88,10 @@ export function ImageUploader({ onImageSelect, disabled }: ImageUploaderProps) {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onClick={() => !disabled && fileInputRef.current?.click()}
-          className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-12 transition-colors ${
+          className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 transition-all duration-200 ${
             isDragging
-              ? "border-blue-500 bg-blue-50"
-              : "border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100"
+              ? "border-primary-500 bg-primary-50"
+              : "border-gray-300 bg-white hover:border-primary-400 hover:bg-gray-50"
           } ${disabled ? "pointer-events-none opacity-50" : ""}`}
         >
           <svg
@@ -120,7 +120,7 @@ export function ImageUploader({ onImageSelect, disabled }: ImageUploaderProps) {
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="relative overflow-hidden rounded-xl border bg-gray-50">
+          <div className="relative overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
             <img src={preview} alt="プレビュー" className="mx-auto max-h-80 object-contain" />
           </div>
           <div className="flex justify-center">
@@ -140,7 +140,7 @@ export function ImageUploader({ onImageSelect, disabled }: ImageUploaderProps) {
         className="hidden"
       />
 
-      {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+      {error && <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
     </div>
   );
 }

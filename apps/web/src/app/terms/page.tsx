@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "利用規約 | タイム記録表スキャナー",
+  title: "利用規約 | SwimHub Scanner",
 };
 
 export default function TermsPage() {
@@ -19,7 +19,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold text-gray-900">第1条（適用）</h2>
           <p className="mt-2">
-            本利用規約（以下「本規約」）は、タイム記録表スキャナー（以下「本サービス」）の利用に関する条件を定めるものです。ユーザーは本規約に同意の上、本サービスを利用するものとします。
+            本利用規約（以下「本規約」）は、SwimHub Scanner（以下「本サービス」）の利用に関する条件を定めるものです。ユーザーは本規約に同意の上、本サービスを利用するものとします。
           </p>
         </section>
 
