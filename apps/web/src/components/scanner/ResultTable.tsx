@@ -156,7 +156,7 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
   // Generate set header labels
   const setHeaders: { label: string; colSpan: number }[] = [];
   for (let s = 0; s < data.menu.setCount; s++) {
-    setHeaders.push({ label: `Set ${s + 1}`, colSpan: data.menu.repCount });
+    setHeaders.push({ label: `${s + 1}セット目`, colSpan: data.menu.repCount });
   }
 
   const { menu } = data;
@@ -192,41 +192,51 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
 
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border">
-        <table className="min-w-full text-sm">
+        <table className="text-sm" style={{ tableLayout: "fixed" }}>
+          <colgroup>
+            <col style={{ width: 28 }} />
+            <col style={{ width: 52 }} />
+            <col style={{ width: 44 }} />
+            {Array.from({ length: totalReps }, (_, i) => (
+              <col key={i} style={{ width: 56 }} />
+            ))}
+            <col style={{ width: 56 }} />
+            <col style={{ width: 32 }} />
+          </colgroup>
           <thead>
-            {/* Set row */}
+            {/* Set row + Column headers */}
             <tr className="border-b bg-gray-100">
-              <th className="sticky left-0 z-10 bg-gray-100 px-2 py-1" colSpan={3} />
+              <th rowSpan={2} className="sticky left-0 z-10 bg-gray-50 px-1 py-1 text-center align-middle font-medium">
+                No
+              </th>
+              <th rowSpan={2} className="sticky left-7 z-10 bg-gray-50 px-1 py-1 text-left align-middle font-medium">
+                名前
+              </th>
+              <th rowSpan={2} className="bg-gray-50 px-1 py-1 text-center align-middle font-medium">種目</th>
               {setHeaders.map((h, i) => (
                 <th
                   key={i}
                   colSpan={h.colSpan}
-                  className="border-l px-2 py-1 text-center text-xs font-medium text-gray-500"
+                  className={`px-2 py-1 text-center text-xs font-medium text-gray-500 ${i === 0 ? "border-l" : "border-l-2 border-l-gray-400"}`}
                 >
                   {h.label}
                 </th>
               ))}
-              <th className="border-l px-2 py-1 text-center text-xs font-medium text-gray-500">
-                統計
-              </th>
-              <th className="w-8" />
+              <th rowSpan={2} className="border-l px-2 py-1 text-center align-middle font-medium">平均</th>
+              <th rowSpan={2} className="w-8" />
             </tr>
-            {/* Column headers */}
             <tr className="border-b bg-gray-50">
-              <th className="sticky left-0 z-10 bg-gray-50 px-2 py-2 text-left font-medium">
-                No
-              </th>
-              <th className="sticky left-8 z-10 bg-gray-50 px-2 py-2 text-left font-medium">
-                名前
-              </th>
-              <th className="px-2 py-2 text-center font-medium">種目</th>
-              {Array.from({ length: totalReps }, (_, i) => (
-                <th key={i} className="border-l px-2 py-2 text-center font-medium">
-                  {(i % data.menu.repCount) + 1}
-                </th>
-              ))}
-              <th className="border-l px-2 py-2 text-center font-medium">平均</th>
-              <th className="w-8" />
+              {Array.from({ length: totalReps }, (_, i) => {
+                const isSetStart = i > 0 && i % data.menu.repCount === 0;
+                return (
+                  <th
+                    key={i}
+                    className={`px-2 py-1 text-center font-medium ${isSetStart ? "border-l-2 border-l-gray-400" : "border-l"}`}
+                  >
+                    {(i % data.menu.repCount) + 1}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -237,7 +247,7 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
                   <td className="sticky left-0 z-10 bg-white px-2 py-2 text-center font-medium">
                     {swimmer.no}
                   </td>
-                  <td className="sticky left-8 z-10 bg-white px-2 py-2">
+                  <td className="sticky left-7 z-10 bg-white px-1 py-2 overflow-hidden text-ellipsis whitespace-nowrap">
                     {editingCell?.swimmerIdx === sIdx && editingCell?.field === "name" ? (
                       <input
                         type="text"
@@ -245,7 +255,7 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
                         onChange={(e) => updateSwimmer(sIdx, { name: e.target.value })}
                         onBlur={() => setEditingCell(null)}
                         onKeyDown={(e) => e.key === "Enter" && setEditingCell(null)}
-                        className="w-20 rounded border px-1 py-0.5 text-sm"
+                        className="w-14 rounded border px-1 py-0.5 text-sm"
                         autoFocus
                       />
                     ) : (
@@ -284,10 +294,12 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
                       </span>
                     )}
                   </td>
-                  {swimmer.times.map((time, tIdx) => (
+                  {swimmer.times.map((time, tIdx) => {
+                    const isSetStart = tIdx > 0 && tIdx % data.menu.repCount === 0;
+                    return (
                     <td
                       key={tIdx}
-                      className={`border-l px-1 py-2 text-center tabular-nums ${getCellStyle(time, swimmer)}`}
+                      className={`px-1 py-2 text-center tabular-nums ${isSetStart ? "border-l-2 border-l-gray-400" : "border-l"} ${getCellStyle(time, swimmer)}`}
                     >
                       {editingCell?.swimmerIdx === sIdx &&
                       editingCell?.field === "time" &&
@@ -308,7 +320,8 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
                         </span>
                       )}
                     </td>
-                  ))}
+                    );
+                  })}
                   <td className="border-l px-2 py-2 text-center tabular-nums font-medium">
                     {avg !== null ? avg.toFixed(1) : "-"}
                   </td>

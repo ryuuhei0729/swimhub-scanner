@@ -167,6 +167,18 @@ export function ExportButtons({ data }: ExportButtonsProps) {
     ctx.fillStyle = "#e5e7eb";
     ctx.fillRect(startX, y + headerHeight / 2, tableWidth, headerHeight / 2);
 
+    const timeStartX = startX + colWidths.no + colWidths.name + colWidths.style;
+
+    // Set header labels (top half)
+    ctx.fillStyle = "#6b7280";
+    ctx.font = "bold 10px sans-serif";
+    ctx.textAlign = "center";
+    for (let s = 0; s < data.menu.setCount; s++) {
+      const setX = timeStartX + s * data.menu.repCount * colWidths.time;
+      const setWidth = data.menu.repCount * colWidths.time;
+      ctx.fillText(`${s + 1}セット目`, setX + setWidth / 2, y + 14);
+    }
+
     ctx.fillStyle = "#374151";
     ctx.font = "bold 11px sans-serif";
     ctx.textAlign = "center";
@@ -190,6 +202,17 @@ export function ExportButtons({ data }: ExportButtonsProps) {
     ctx.fillText("最速", x + colWidths.stat / 2, y + headerHeight / 2 + 18);
     x += colWidths.stat;
     ctx.fillText("最遅", x + colWidths.stat / 2, y + headerHeight / 2 + 18);
+
+    // Draw thick set separator lines in header
+    ctx.strokeStyle = "#9ca3af";
+    ctx.lineWidth = 2;
+    for (let s = 1; s < data.menu.setCount; s++) {
+      const sepX = timeStartX + s * data.menu.repCount * colWidths.time;
+      ctx.beginPath();
+      ctx.moveTo(sepX, y);
+      ctx.lineTo(sepX, y + headerHeight);
+      ctx.stroke();
+    }
 
     y += headerHeight;
 
@@ -253,11 +276,22 @@ export function ExportButtons({ data }: ExportButtonsProps) {
       ctx.font = "bold 12px sans-serif";
       ctx.fillText(avg !== null ? formatTime(avg) : "-", x + colWidths.stat / 2, y + 20);
       x += colWidths.stat;
-      ctx.fillStyle = "#dc2626";
+      ctx.fillStyle = "#2563eb";
       ctx.fillText(fast !== null ? formatTime(fast) : "-", x + colWidths.stat / 2, y + 20);
       x += colWidths.stat;
-      ctx.fillStyle = "#2563eb";
+      ctx.fillStyle = "#dc2626";
       ctx.fillText(slow !== null ? formatTime(slow) : "-", x + colWidths.stat / 2, y + 20);
+
+      // Draw thick set separator lines in data rows
+      ctx.strokeStyle = "#9ca3af";
+      ctx.lineWidth = 2;
+      for (let s = 1; s < data.menu.setCount; s++) {
+        const sepX = timeStartX + s * data.menu.repCount * colWidths.time;
+        ctx.beginPath();
+        ctx.moveTo(sepX, y);
+        ctx.lineTo(sepX, y + rowHeight);
+        ctx.stroke();
+      }
 
       y += rowHeight;
     });

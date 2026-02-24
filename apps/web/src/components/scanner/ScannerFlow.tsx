@@ -11,6 +11,7 @@ import { ResultTable } from "./ResultTable";
 import { ExportButtons } from "./ExportButtons";
 import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { PullToRefresh } from "@/components/ui/PullToRefresh";
 import { openTimesheetPrintWindow } from "@/lib/timesheet-print";
 
 type Step = "upload" | "scanning" | "result";
@@ -23,22 +24,27 @@ export function ScannerFlow() {
   const [userStatus, setUserStatus] = useState<UserStatusResponse | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
 
+  const fetchStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/user/status");
+      if (res.ok) {
+        setUserStatus(await res.json());
+      }
+    } catch {
+      // Silently fail - status is non-critical
+    } finally {
+      setStatusLoading(false);
+    }
+  }, []);
+
   // Fetch user status on mount (cookie-based auth — no token needed)
   useEffect(() => {
-    async function fetchStatus() {
-      try {
-        const res = await fetch("/api/user/status");
-        if (res.ok) {
-          setUserStatus(await res.json());
-        }
-      } catch {
-        // Silently fail - status is non-critical
-      } finally {
-        setStatusLoading(false);
-      }
-    }
     fetchStatus();
-  }, []);
+  }, [fetchStatus]);
+
+  const handleRefresh = useCallback(async () => {
+    await fetchStatus();
+  }, [fetchStatus]);
 
   const handleImageSelect = useCallback(
     (base64: string, mimeType: "image/jpeg" | "image/png") => {
@@ -75,15 +81,12 @@ export function ScannerFlow() {
       setStep("result");
 
       // Refresh user status after scan
-      const statusRes = await fetch("/api/user/status");
-      if (statusRes.ok) {
-        setUserStatus(await statusRes.json());
-      }
+      await fetchStatus();
     } catch {
       setError("ネットワークエラーです。接続を確認してください。");
       setStep("upload");
     }
-  }, [image]);
+  }, [image, fetchStatus]);
 
   const handleReset = useCallback(() => {
     setStep("upload");
@@ -96,6 +99,7 @@ export function ScannerFlow() {
     !!userStatus && userStatus.dailyLimit !== null && userStatus.todayScanCount >= userStatus.dailyLimit;
 
   return (
+    <PullToRefresh onRefresh={handleRefresh} disabled={step === "scanning"}>
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
       {/* Usage status bar */}
       {!statusLoading && userStatus && (
@@ -196,5 +200,6 @@ export function ScannerFlow() {
         </div>
       )}
     </div>
+    </PullToRefresh>
   );
 }
