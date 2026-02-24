@@ -1,0 +1,53 @@
+{
+  "name": "@swimhub-scanner/mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "タイム記録表スキャナー - モバイルアプリケーション",
+  "main": "index.ts",
+  "scripts": {
+    "start": "npx dotenvx run -f .env.local -- expo start",
+    "start:clear": "npx dotenvx run -f .env.local -- expo start --clear",
+    "android": "npx dotenvx run -f .env.local -- expo start --android",
+    "android:clear": "npx dotenvx run -f .env.local -- expo start --android --clear",
+    "ios": "npx dotenvx run -f .env.local -- expo start --ios --dev-client",
+    "ios:run": "npx dotenvx run -f .env.local -- expo run:ios",
+    "ios:clear": "npx dotenvx run -f .env.local -- expo start --ios --dev-client --clear",
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "clean": "npx expo clean"
+  },
+  "dependencies": {
+    "@dotenvx/dotenvx": "^1.51.1",
+    "@expo/vector-icons": "^15.1.1",
+    "@react-native-async-storage/async-storage": "^2.1.0",
+    "@react-navigation/bottom-tabs": "7.10.1",
+    "@react-navigation/native": "7.1.28",
+    "@react-navigation/native-stack": "7.11.0",
+    "@supabase/supabase-js": "^2.80.0",
+    "@swimhub-scanner/shared": "workspace:*",
+    "expo": "~54.0.33",
+    "expo-apple-authentication": "~8.0.8",
+    "expo-auth-session": "~7.0.10",
+    "expo-constants": "~18.0.13",
+    "expo-crypto": "~15.0.8",
+    "expo-dev-client": "^6.0.20",
+    "expo-file-system": "~19.0.21",
+    "expo-image-picker": "~17.0.10",
+    "expo-linking": "~8.0.11",
+    "expo-sharing": "~14.0.8",
+    "expo-status-bar": "~3.0.9",
+    "expo-web-browser": "~15.0.10",
+    "react": "19.1.0",
+    "react-native": "^0.81.5",
+    "react-native-safe-area-context": "5.6.2",
+    "react-native-screens": "~4.16.0",
+    "react-native-svg": "^15.15.3",
+    "react-native-view-shot": "^4.0.3",
+    "xlsx": "^0.18.5",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.17",
+    "typescript": "~5.9.2"
+  }
+}

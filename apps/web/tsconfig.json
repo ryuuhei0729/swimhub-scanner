@@ -1,6 +1,8 @@
 {
   "extends": "@swimhub-scanner/config/tsconfig/nextjs",
   "compilerOptions": {
+    "declaration": false,
+    "declarationMap": false,
     "paths": {
       "@/*": [
         "./src/*"

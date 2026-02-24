@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "SwimHub Scanner",
+    "slug": "swimhub-scanner-mobile",
+    "version": "1.0.0",
+    "description": "手書きタイム記録表をAIで読み取りデジタル化するアプリ",
+    "scheme": "swimhub-scanner",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "タイム記録表の画像を選択するためにフォトライブラリを使用します",
+          "cameraPermission": "タイム記録表を撮影するためにカメラを使用します"
+        }
+      ]
+    ],
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.swim-hub.scanner",
+      "infoPlist": {
+        "NSCameraUsageDescription": "タイム記録表を撮影するためにカメラを使用します",
+        "NSPhotoLibraryUsageDescription": "タイム記録表の画像を選択するためにフォトライブラリを使用します",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "app.swimhub.scanner",
+      "permissions": ["android.permission.CAMERA"]
+    },
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    }
+  }
+}

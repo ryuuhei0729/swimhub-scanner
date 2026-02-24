@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "プライバシーポリシー | タイム記録表スキャナー",
+  title: "プライバシーポリシー | SwimHub Scanner",
 };
 
 export default function PrivacyPage() {
@@ -19,7 +19,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-semibold text-gray-900">1. はじめに</h2>
           <p className="mt-2">
-            タイム記録表スキャナー（以下「本サービス」）は、ユーザーのプライバシーを尊重し、個人情報の保護に努めます。本ポリシーは、本サービスにおける個人情報の取り扱いについて説明します。
+            SwimHub Scanner（以下「本サービス」）は、ユーザーのプライバシーを尊重し、個人情報の保護に努めます。本ポリシーは、本サービスにおける個人情報の取り扱いについて説明します。
           </p>
         </section>
 

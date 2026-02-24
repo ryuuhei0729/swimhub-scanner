@@ -11,6 +11,7 @@ import { ResultTable } from "./ResultTable";
 import { ExportButtons } from "./ExportButtons";
 import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { PullToRefresh } from "@/components/ui/PullToRefresh";
 import { openTimesheetPrintWindow } from "@/lib/timesheet-print";
 
 type Step = "upload" | "scanning" | "result";
@@ -23,22 +24,27 @@ export function ScannerFlow() {
   const [userStatus, setUserStatus] = useState<UserStatusResponse | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
 
+  const fetchStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/user/status");
+      if (res.ok) {
+        setUserStatus(await res.json());
+      }
+    } catch {
+      // Silently fail - status is non-critical
+    } finally {
+      setStatusLoading(false);
+    }
+  }, []);
+
   // Fetch user status on mount (cookie-based auth — no token needed)
   useEffect(() => {
-    async function fetchStatus() {
-      try {
-        const res = await fetch("/api/user/status");
-        if (res.ok) {
-          setUserStatus(await res.json());
-        }
-      } catch {
-        // Silently fail - status is non-critical
-      } finally {
-        setStatusLoading(false);
-      }
-    }
     fetchStatus();
-  }, []);
+  }, [fetchStatus]);
+
+  const handleRefresh = useCallback(async () => {
+    await fetchStatus();
+  }, [fetchStatus]);
 
   const handleImageSelect = useCallback(
     (base64: string, mimeType: "image/jpeg" | "image/png") => {
@@ -75,15 +81,12 @@ export function ScannerFlow() {
       setStep("result");
 
       // Refresh user status after scan
-      const statusRes = await fetch("/api/user/status");
-      if (statusRes.ok) {
-        setUserStatus(await statusRes.json());
-      }
+      await fetchStatus();
     } catch {
       setError("ネットワークエラーです。接続を確認してください。");
       setStep("upload");
     }
-  }, [image]);
+  }, [image, fetchStatus]);
 
   const handleReset = useCallback(() => {
     setStep("upload");
@@ -96,10 +99,11 @@ export function ScannerFlow() {
     !!userStatus && userStatus.dailyLimit !== null && userStatus.todayScanCount >= userStatus.dailyLimit;
 
   return (
+    <PullToRefresh onRefresh={handleRefresh} disabled={step === "scanning"}>
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
       {/* Usage status bar */}
       {!statusLoading && userStatus && (
-        <div className="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
+        <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
           <div className="text-sm text-gray-600">
             {userStatus.plan === "premium" ? (
               <span className="font-medium text-purple-600">Premium プラン</span>
@@ -127,14 +131,14 @@ export function ScannerFlow() {
           <h2 className="text-lg font-semibold">Step 1: 画像アップロード</h2>
 
           {isLimitReached && (
-            <div className="rounded-lg bg-amber-50 p-4 text-sm text-amber-800">
+            <div role="alert" className="rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
               本日の利用回数に達しました。Premium プランにアップグレードすると無制限に利用できます。
             </div>
           )}
 
           <ImageUploader onImageSelect={handleImageSelect} disabled={isLimitReached} />
 
-          {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+          {error && <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
 
           <div className="flex items-center justify-center gap-3">
             <Button
@@ -196,5 +200,6 @@ export function ScannerFlow() {
         </div>
       )}
     </div>
+    </PullToRefresh>
   );
 }

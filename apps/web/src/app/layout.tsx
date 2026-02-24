@@ -1,16 +1,28 @@
 import type { Metadata } from "next";
+import { Inter, Noto_Sans_JP } from "next/font/google";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import "./globals.css";
 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
+
+const notoSansJP = Noto_Sans_JP({
+  subsets: ["latin"],
+  variable: "--font-noto-sans-jp",
+  weight: ["400", "500", "700"],
+});
+
 export const metadata: Metadata = {
-  title: "タイム記録表スキャナー",
+  title: "SwimHub Scanner",
   description: "手書きタイム記録表をAIで自動デジタル化",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ja">
-      <body className="min-h-screen bg-white text-gray-900 antialiased">
+    <html lang="ja" className="h-full">
+      <body className={`${inter.variable} ${notoSansJP.variable} font-sans`}>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
