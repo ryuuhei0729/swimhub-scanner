@@ -131,14 +131,14 @@ export function ScannerFlow() {
           <h2 className="text-lg font-semibold">Step 1: 画像アップロード</h2>
 
           {isLimitReached && (
-            <div className="rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+            <div role="alert" className="rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
               本日の利用回数に達しました。Premium プランにアップグレードすると無制限に利用できます。
             </div>
           )}
 
           <ImageUploader onImageSelect={handleImageSelect} disabled={isLimitReached} />
 
-          {error && <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
+          {error && <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
 
           <div className="flex items-center justify-center gap-3">
             <Button

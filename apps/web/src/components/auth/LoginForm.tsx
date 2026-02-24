@@ -139,7 +139,7 @@ export function LoginForm() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-3 px-3 transition duration-150 ease-in-out"
+                  className="pl-10 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-3 pr-3 transition duration-150 ease-in-out"
                   placeholder="example@email.com"
                   disabled={loading}
                 />
@@ -162,7 +162,7 @@ export function LoginForm() {
                   minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-3 px-3 transition duration-150 ease-in-out"
+                  className="pl-10 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-3 pr-3 transition duration-150 ease-in-out"
                   placeholder="6文字以上"
                   disabled={loading}
                 />
