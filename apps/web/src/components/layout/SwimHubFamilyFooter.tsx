@@ -1,7 +1,15 @@
 import Image from "next/image";
-import { ExternalLink } from "lucide-react";
+import Link from "next/link";
+import {
+  Heart,
+  ShieldCheck,
+  FileText,
+  HelpCircle,
+  Mail,
+  ExternalLink,
+} from "lucide-react";
 
-const services = [
+const familyServices = [
   {
     name: "SwimHub",
     description: "水泳チームの総合管理",
@@ -11,84 +19,177 @@ const services = [
   },
   {
     name: "SwimHub Timer",
-    description: "動画からタイムを自動計測",
+    description: "動画にタイムをオーバーレイ",
     href: "https://timer.swim-hub.app",
     iconSrc: "/timer-icon.png",
     current: false,
   },
   {
     name: "SwimHub Scanner",
-    description: "手書き記録表をAIでデジタル化",
+    description: "手書きの記録表をAIで解析",
     href: "https://scanner.swim-hub.app",
     iconSrc: "/icon.png",
     current: true,
   },
 ];
 
+const footerLinks = [
+  {
+    name: "プライバシーポリシー",
+    href: "/privacy",
+    icon: ShieldCheck,
+  },
+  {
+    name: "利用規約",
+    href: "/terms",
+    icon: FileText,
+  },
+  {
+    name: "サポート",
+    href: "/support",
+    icon: HelpCircle,
+  },
+  {
+    name: "お問い合わせ",
+    href: "/contact",
+    icon: Mail,
+  },
+];
+
 export function SwimHubFamilyFooter() {
+  const currentYear = new Date().getFullYear();
+
   return (
-    <footer className="border-t border-border bg-surface/50 px-4 py-6">
-      <div className="max-w-3xl mx-auto">
-        <p className="text-[11px] font-semibold text-muted-foreground tracking-wider mb-3">
-          SwimHub サービス一覧
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          {services.map((service) =>
-            service.current ? (
-              <div
-                key={service.name}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-primary/5 border border-primary/15"
-              >
+    <footer className="bg-white border-t border-gray-200 mt-auto">
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* 左側：システム情報 */}
+          <div className="space-y-4">
+            <div className="flex items-center">
+              <div className="w-6 h-6 flex items-center justify-center mr-2">
                 <Image
-                  src={service.iconSrc}
-                  alt={service.name}
-                  width={64}
-                  height={64}
-                  className="w-8 h-8 shrink-0"
+                  src="/icon.png"
+                  alt="SwimHub Scanner"
+                  width={24}
+                  height={24}
+                  className="w-full h-full object-contain"
                 />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-medium text-primary">
-                      {service.name}
-                    </span>
-                    <span className="text-[9px] font-medium text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded">
-                      利用中
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-primary/50 truncate">
-                    {service.description}
-                  </p>
-                </div>
               </div>
-            ) : (
-              <a
-                key={service.name}
-                href={service.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-surface-raised border border-border hover:bg-accent/50 hover:border-border/80 transition-colors duration-200 group"
-              >
-                <Image
-                  src={service.iconSrc}
-                  alt={service.name}
-                  width={64}
-                  height={64}
-                  className="w-8 h-8 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs font-medium text-foreground/80 group-hover:text-foreground">
-                      {service.name}
-                    </span>
-                    <ExternalLink className="w-2.5 h-2.5 text-muted-foreground/40 group-hover:text-muted-foreground/60" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                SwimHub Scanner
+              </h3>
+            </div>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              手書きの記録表をAIで解析してデジタル化できるWebアプリケーション
+            </p>
+            <div className="flex items-center text-sm text-gray-500">
+              <span>Made with</span>
+              <Heart className="h-4 w-4 text-red-500 mx-1" />
+              <span>for swimmers</span>
+            </div>
+          </div>
+
+          {/* 右側：法的情報とサポート */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+              サポート・情報
+            </h4>
+            <div className="space-y-2">
+              {footerLinks.map((link) => (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className="flex items-center text-sm text-gray-600 hover:text-blue-600 transition-colors duration-200"
+                >
+                  <link.icon className="h-4 w-4 mr-2" />
+                  {link.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* SwimHub サービス一覧 */}
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <h4 className="text-sm font-semibold text-gray-900 tracking-wide mb-4">
+            SwimHub サービス一覧
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {familyServices.map((service) =>
+              service.current ? (
+                <div
+                  key={service.name}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-50 border border-blue-200"
+                >
+                  <Image
+                    src={service.iconSrc}
+                    alt={service.name}
+                    width={128}
+                    height={128}
+                    className="w-32 h-32 shrink-0 object-contain"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-blue-700">
+                        {service.name}
+                      </span>
+                      <span className="text-[10px] font-medium text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">
+                        利用中
+                      </span>
+                    </div>
+                    <p className="text-xs text-blue-600/70 truncate">
+                      {service.description}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-muted-foreground/60 truncate">
-                    {service.description}
-                  </p>
                 </div>
-              </a>
-            )
-          )}
+              ) : (
+                <a
+                  key={service.name}
+                  href={service.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-colors duration-200 group"
+                >
+                  <Image
+                    src={service.iconSrc}
+                    alt={service.name}
+                    width={128}
+                    height={128}
+                    className="w-32 h-32 shrink-0 object-contain opacity-60 group-hover:opacity-100 transition-opacity"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+                        {service.name}
+                      </span>
+                      <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-gray-500" />
+                    </div>
+                    <p className="text-xs text-gray-500 truncate">
+                      {service.description}
+                    </p>
+                  </div>
+                </a>
+              )
+            )}
+          </div>
+        </div>
+
+        {/* 下部：コピーライトとバージョン情報 */}
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="flex flex-col items-center justify-between space-y-4 sm:flex-row sm:space-y-0">
+            <div className="flex flex-col items-center sm:items-start space-y-1">
+              <div className="text-sm text-gray-500">
+                © {currentYear} SwimHub Scanner. All rights reserved.
+              </div>
+              <div className="text-xs text-gray-400">
+                Built with Next.js, Tailwind CSS, and Supabase
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-4 text-xs text-gray-400">
+              <span>Version 1.0.0</span>
+            </div>
+          </div>
         </div>
       </div>
     </footer>
