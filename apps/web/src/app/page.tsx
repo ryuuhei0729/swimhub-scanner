@@ -12,8 +12,8 @@ export default function HomePage() {
       <div className="min-h-dvh flex flex-col">
         <header className="h-14 shrink-0 border-b border-border bg-surface/80 backdrop-blur-xl px-2 sm:px-4 lg:px-8 flex items-center justify-between relative z-50">
           <div className="flex items-center gap-2">
-            <Image src="/icon.png" alt="SwimHub Scanner" width={16} height={16} className="h-4 w-4" />
-            <span className="font-semibold text-sm tracking-tight">SwimHub Scanner</span>
+            <Image src="/icon.png" alt="SwimHub Scanner" width={40} height={40} className="w-10 h-10 object-contain" />
+            <span className="text-lg font-bold tracking-tight">SwimHub Scanner</span>
           </div>
           <UserMenu />
         </header>

@@ -21,7 +21,9 @@ import {
 
 type Step = "upload" | "scanning" | "result";
 
-export function ScannerFlow() {
+export type { Step };
+
+export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => void }) {
   const [step, setStep] = useState<Step>("upload");
   const [image, setImage] = useState<{ base64: string; mimeType: "image/jpeg" | "image/png" } | null>(null);
   const [result, setResult] = useState<ScanTimesheetResponse | null>(null);
@@ -52,6 +54,11 @@ export function ScannerFlow() {
       setStatusLoading(false);
     }
   }, []);
+
+  // Notify parent of step changes
+  useEffect(() => {
+    onStepChange?.(step);
+  }, [step, onStepChange]);
 
   // Fetch user status on mount (cookie-based auth — no token needed)
   useEffect(() => {
