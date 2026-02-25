@@ -17,6 +17,10 @@ const notoSansJP = Noto_Sans_JP({
 export const metadata: Metadata = {
   title: "SwimHub Scanner",
   description: "手書きタイム記録表をAIで自動デジタル化",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
