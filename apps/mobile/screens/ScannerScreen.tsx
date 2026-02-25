@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import {
   View,
   Text,
@@ -21,6 +21,11 @@ import { validateImageMimeType, validateImageSize, estimateBase64Size } from '@s
 import type { UserStatusResponse } from '@swimhub-scanner/shared'
 import { ResultTable } from '@/components/scanner/ResultTable'
 import { ExportSheet } from '@/components/scanner/ExportSheet'
+import {
+  createRewardedAdController,
+  type AdState,
+  type RewardedAdController,
+} from '@/lib/ads/rewarded-ad'
 
 type Step = 'idle' | 'scanning' | 'result'
 
@@ -33,6 +38,17 @@ export const ScannerScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [statusLoading, setStatusLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+
+  // --- Ad state ---
+  const adControllerRef = useRef<RewardedAdController | null>(null)
+  const [adState, setAdState] = useState<AdState>('idle')
+  const [adRewardEarned, setAdRewardEarned] = useState(false)
+  const [adUnavailable, setAdUnavailable] = useState(false)
+  const [scanComplete, setScanComplete] = useState(false)
+  const scanTriggeredRef = useRef(false)
+
+  // --- Derived ---
+  const canShowResult = scanComplete && (adRewardEarned || adUnavailable)
 
   const { menu, swimmers, setResult, reset: resetResult } = useScanResultStore()
 
@@ -57,6 +73,59 @@ export const ScannerScreen: React.FC = () => {
   useEffect(() => {
     fetchUserStatus()
   }, [fetchUserStatus])
+
+  // Preload ad when user selects an image
+  useEffect(() => {
+    if (!imageBase64) return
+
+    const controller = createRewardedAdController()
+    if (!controller) {
+      setAdUnavailable(true)
+      return
+    }
+    adControllerRef.current = controller
+
+    const unsubscribe = controller.onStateChange((state) => {
+      setAdState(state)
+      if (state === 'rewarded') {
+        setAdRewardEarned(true)
+      }
+    })
+
+    controller.load()
+
+    return () => {
+      unsubscribe()
+      controller.dispose()
+    }
+  }, [imageBase64])
+
+  // If ad loads AFTER scan was triggered, show it automatically
+  useEffect(() => {
+    if (
+      scanTriggeredRef.current &&
+      adState === 'loaded' &&
+      !adRewardEarned &&
+      !adUnavailable
+    ) {
+      adControllerRef.current?.show().catch(() => setAdUnavailable(true))
+    }
+  }, [adState, adRewardEarned, adUnavailable])
+
+  // Fallback: if ad fails, allow result without ad after delay
+  useEffect(() => {
+    if (adState === 'error' && !adUnavailable) {
+      const timer = setTimeout(() => setAdUnavailable(true), 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [adState, adUnavailable])
+
+  // Auto-transition to result when both scan and ad are done
+  useEffect(() => {
+    if (canShowResult && menu && swimmers.length > 0) {
+      setStep('result')
+    }
+  }, [canShowResult, menu, swimmers])
 
   const pickImage = async (useCamera: boolean) => {
     setError(null)
@@ -109,14 +178,27 @@ export const ScannerScreen: React.FC = () => {
 
     setStep('scanning')
     setError(null)
+    scanTriggeredRef.current = true
 
+    // --- Show ad (parallel with scanning) ---
+    const controller = adControllerRef.current
+    if (controller) {
+      const currentState = controller.getState()
+      if (currentState === 'loaded') {
+        controller.show().catch(() => setAdUnavailable(true))
+      } else if (currentState !== 'loading') {
+        setAdUnavailable(true)
+      }
+    }
+
+    // --- Start API scan ---
     try {
       const response = await scanTimesheet({
         image: imageBase64,
         mimeType: imageMimeType as 'image/jpeg' | 'image/png',
       })
       setResult(response)
-      setStep('result')
+      setScanComplete(true)
       // 利用状況を再取得
       fetchUserStatus()
     } catch (err) {
@@ -158,6 +240,13 @@ export const ScannerScreen: React.FC = () => {
     setImageBase64(null)
     setError(null)
     resetResult()
+    setScanComplete(false)
+    scanTriggeredRef.current = false
+    setAdState('idle')
+    setAdRewardEarned(false)
+    setAdUnavailable(false)
+    adControllerRef.current?.dispose()
+    adControllerRef.current = null
   }
 
   const showImagePickerOptions = () => {
@@ -197,7 +286,11 @@ export const ScannerScreen: React.FC = () => {
         <View style={styles.scanningContainer}>
           <ActivityIndicator size="large" color="#2563EB" />
           <Text style={styles.scanningText}>画像を解析しています...</Text>
-          <Text style={styles.scanningSubtext}>しばらくお待ちください</Text>
+          {scanComplete && !adRewardEarned && !adUnavailable ? (
+            <Text style={styles.scanningSubtext}>広告の視聴をお願いします</Text>
+          ) : (
+            <Text style={styles.scanningSubtext}>しばらくお待ちください</Text>
+          )}
         </View>
       </SafeAreaView>
     )

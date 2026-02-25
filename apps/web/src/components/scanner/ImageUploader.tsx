@@ -90,12 +90,12 @@ export function ImageUploader({ onImageSelect, disabled }: ImageUploaderProps) {
           onClick={() => !disabled && fileInputRef.current?.click()}
           className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 transition-all duration-200 ${
             isDragging
-              ? "border-primary-500 bg-primary-50"
-              : "border-gray-300 bg-white hover:border-primary-400 hover:bg-gray-50"
+              ? "border-primary bg-primary/5"
+              : "border-border bg-card hover:border-primary/40 hover:bg-muted"
           } ${disabled ? "pointer-events-none opacity-50" : ""}`}
         >
           <svg
-            className="mb-4 h-12 w-12 text-gray-400"
+            className="mb-4 h-12 w-12 text-muted-foreground"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -113,14 +113,14 @@ export function ImageUploader({ onImageSelect, disabled }: ImageUploaderProps) {
               d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
             />
           </svg>
-          <p className="text-sm font-medium text-gray-700">
+          <p className="text-sm font-medium text-foreground">
             画像をドラッグ&ドロップ または クリックして選択
           </p>
-          <p className="mt-1 text-xs text-gray-500">JPEG / PNG 形式、10MB以下</p>
+          <p className="mt-1 text-xs text-muted-foreground">JPEG / PNG 形式、10MB以下</p>
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="relative overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+          <div className="relative overflow-hidden rounded-lg border border-border bg-surface-raised">
             <img src={preview} alt="プレビュー" className="mx-auto max-h-80 object-contain" />
           </div>
           <div className="flex justify-center">

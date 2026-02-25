@@ -1,4 +1,8 @@
 {
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-4640414097368188~XXXXXXXXXX",
+    "ios_app_id": "ca-app-pub-4640414097368188~YYYYYYYYYY"
+  },
   "expo": {
     "name": "SwimHub Scanner",
     "slug": "swimhub-scanner-mobile",
@@ -15,6 +19,21 @@
         {
           "photosPermission": "タイム記録表の画像を選択するためにフォトライブラリを使用します",
           "cameraPermission": "タイム記録表を撮影するためにカメラを使用します"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-4640414097368188~XXXXXXXXXX",
+          "iosAppId": "ca-app-pub-4640414097368188~YYYYYYYYYY"
         }
       ]
     ],

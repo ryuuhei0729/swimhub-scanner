@@ -4,20 +4,24 @@ import Image from "next/image";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { ScannerFlow } from "@/components/scanner/ScannerFlow";
+import { SwimHubFamilyFooter } from "@/components/layout/SwimHubFamilyFooter";
 
 export default function HomePage() {
   return (
     <AuthGuard>
-      <main className="min-h-screen bg-gray-50">
-        <header className="sticky top-0 z-40 flex items-center justify-between border-b bg-white px-4 sm:px-6 py-3 shadow-sm">
+      <div className="min-h-dvh flex flex-col">
+        <header className="h-14 shrink-0 border-b border-border bg-surface/80 backdrop-blur-xl px-4 flex items-center justify-between relative z-50">
           <div className="flex items-center gap-2">
-            <Image src="/icon.png" alt="SwimHub Scanner" width={32} height={32} className="h-8 w-8" />
-            <h1 className="text-lg sm:text-xl font-bold text-gray-900">SwimHub Scanner</h1>
+            <Image src="/icon.png" alt="SwimHub Scanner" width={16} height={16} className="h-4 w-4" />
+            <span className="font-semibold text-sm tracking-tight">SwimHub Scanner</span>
           </div>
           <UserMenu />
         </header>
-        <ScannerFlow />
-      </main>
+        <main className="flex-1">
+          <ScannerFlow />
+        </main>
+        <SwimHubFamilyFooter />
+      </div>
     </AuthGuard>
   );
 }

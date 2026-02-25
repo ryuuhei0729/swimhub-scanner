@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { enableScreens } from 'react-native-screens'
 import { NavigationContainer } from '@react-navigation/native'
 import { StatusBar } from 'expo-status-bar'
@@ -57,6 +57,16 @@ const AppNavigator: React.FC = () => {
 }
 
 export default function App() {
+  // Initialize Google Mobile Ads SDK
+  useEffect(() => {
+    try {
+      const mobileAds = require('react-native-google-mobile-ads').default
+      mobileAds().initialize()
+    } catch {
+      // Ad module not available (e.g., running in Expo Go)
+    }
+  }, [])
+
   return (
     <SafeAreaProvider>
       <AuthProvider>

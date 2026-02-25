@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import type {
   ScanTimesheetResponse,
   UserStatusResponse,
@@ -13,6 +13,11 @@ import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PullToRefresh } from "@/components/ui/PullToRefresh";
 import { openTimesheetPrintWindow } from "@/lib/timesheet-print";
+import {
+  createRewardedAdController,
+  type AdState,
+  type RewardedAdController,
+} from "@/lib/ads/rewarded-ad";
 
 type Step = "upload" | "scanning" | "result";
 
@@ -23,6 +28,17 @@ export function ScannerFlow() {
   const [error, setError] = useState<string | null>(null);
   const [userStatus, setUserStatus] = useState<UserStatusResponse | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
+
+  // --- Ad state ---
+  const adControllerRef = useRef<RewardedAdController | null>(null);
+  const [adState, setAdState] = useState<AdState>("idle");
+  const [adRewardEarned, setAdRewardEarned] = useState(false);
+  const [adUnavailable, setAdUnavailable] = useState(false);
+  const [scanComplete, setScanComplete] = useState(false);
+  const [scanTriggered, setScanTriggered] = useState(false);
+
+  // --- Derived ---
+  const canShowResult = scanComplete && (adRewardEarned || adUnavailable);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -42,6 +58,59 @@ export function ScannerFlow() {
     fetchStatus();
   }, [fetchStatus]);
 
+  // Preload ad when user selects an image
+  useEffect(() => {
+    if (!image) return;
+
+    const controller = createRewardedAdController();
+    if (!controller) {
+      const timer = setTimeout(() => setAdUnavailable(true), 0);
+      return () => clearTimeout(timer);
+    }
+    adControllerRef.current = controller;
+
+    const unsubscribe = controller.onStateChange((state) => {
+      setAdState(state);
+      if (state === "rewarded") {
+        setAdRewardEarned(true);
+      }
+    });
+
+    controller.load();
+
+    return () => {
+      unsubscribe();
+      controller.dispose();
+    };
+  }, [image]);
+
+  // If ad loads AFTER scan was triggered, show it automatically
+  useEffect(() => {
+    if (
+      scanTriggered &&
+      adState === "loaded" &&
+      !adRewardEarned &&
+      !adUnavailable
+    ) {
+      adControllerRef.current?.show();
+    }
+  }, [scanTriggered, adState, adRewardEarned, adUnavailable]);
+
+  // Fallback: if ad fails, allow result without ad after delay
+  useEffect(() => {
+    if (adState === "error" && !adUnavailable) {
+      const timer = setTimeout(() => setAdUnavailable(true), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [adState, adUnavailable]);
+
+  // Auto-transition to result when both scan and ad are done
+  useEffect(() => {
+    if (canShowResult && result) {
+      setStep("result");
+    }
+  }, [canShowResult, result]);
+
   const handleRefresh = useCallback(async () => {
     await fetchStatus();
   }, [fetchStatus]);
@@ -59,7 +128,20 @@ export function ScannerFlow() {
 
     setStep("scanning");
     setError(null);
+    setScanTriggered(true);
 
+    // --- Show ad (parallel with scanning) ---
+    const controller = adControllerRef.current;
+    if (controller) {
+      const currentState = controller.getState();
+      if (currentState === "loaded") {
+        controller.show();
+      } else if (currentState !== "loading") {
+        setAdUnavailable(true);
+      }
+    }
+
+    // --- Start API scan ---
     try {
       const res = await fetch("/api/scan-timesheet", {
         method: "POST",
@@ -78,7 +160,7 @@ export function ScannerFlow() {
 
       const data: ScanTimesheetResponse = await res.json();
       setResult(data);
-      setStep("result");
+      setScanComplete(true);
 
       // Refresh user status after scan
       await fetchStatus();
@@ -93,6 +175,13 @@ export function ScannerFlow() {
     setImage(null);
     setResult(null);
     setError(null);
+    setScanComplete(false);
+    setScanTriggered(false);
+    setAdState("idle");
+    setAdRewardEarned(false);
+    setAdUnavailable(false);
+    adControllerRef.current?.dispose();
+    adControllerRef.current = null;
   }, []);
 
   const isLimitReached =
@@ -103,14 +192,14 @@ export function ScannerFlow() {
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
       {/* Usage status bar */}
       {!statusLoading && userStatus && (
-        <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
-          <div className="text-sm text-gray-600">
+        <div className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3">
+          <div className="text-sm text-muted-foreground">
             {userStatus.plan === "premium" ? (
               <span className="font-medium text-purple-600">Premium プラン</span>
             ) : (
               <>
                 残り利用回数:{" "}
-                <span className="font-bold">
+                <span className="font-bold text-foreground">
                   {Math.max(0, (userStatus.dailyLimit ?? 0) - userStatus.todayScanCount)}
                 </span>
                 /{userStatus.dailyLimit} (0:00 JSTにリセット)
@@ -128,7 +217,7 @@ export function ScannerFlow() {
       {/* Step 1: Upload */}
       {step === "upload" && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Step 1: 画像アップロード</h2>
+          <h2 className="text-lg font-semibold text-foreground">Step 1: 画像アップロード</h2>
 
           {isLimitReached && (
             <div role="alert" className="rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
@@ -176,8 +265,12 @@ export function ScannerFlow() {
       {step === "scanning" && (
         <div className="flex flex-col items-center justify-center space-y-4 py-16">
           <LoadingSpinner className="h-12 w-12" />
-          <p className="text-lg font-medium text-gray-700">画像を解析しています...</p>
-          <p className="text-sm text-gray-500">AI が手書きのタイム記録表を読み取っています</p>
+          <p className="text-lg font-medium text-foreground">画像を解析しています...</p>
+          {scanComplete && !adRewardEarned && !adUnavailable ? (
+            <p className="text-sm text-muted-foreground">広告の視聴をお願いします</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">AI が手書きのタイム記録表を読み取っています</p>
+          )}
         </div>
       )}
 
@@ -185,7 +278,7 @@ export function ScannerFlow() {
       {step === "result" && result && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Step 3: 結果確認・修正</h2>
+            <h2 className="text-lg font-semibold text-foreground">Step 3: 結果確認・修正</h2>
             <Button variant="ghost" size="sm" onClick={handleReset}>
               新しいスキャン
             </Button>
@@ -193,8 +286,8 @@ export function ScannerFlow() {
 
           <ResultTable data={result} onDataChange={setResult} />
 
-          <div className="border-t pt-4">
-            <h3 className="mb-3 text-sm font-medium text-gray-700">出力</h3>
+          <div className="border-t border-border pt-4">
+            <h3 className="mb-3 text-sm font-medium text-muted-foreground">出力</h3>
             <ExportButtons data={result} />
           </div>
         </div>
