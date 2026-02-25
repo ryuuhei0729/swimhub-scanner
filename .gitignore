@@ -4,6 +4,8 @@ dist/
 .turbo/
 .env
 .env.local
+.env.production
+!apps/web/.env.production
 .dev.vars
 *.tsbuildinfo
 .open-next/
