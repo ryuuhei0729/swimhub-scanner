@@ -18,7 +18,10 @@ export const metadata: Metadata = {
   title: "SwimHub Scanner",
   description: "手書きタイム記録表をAIで自動デジタル化",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+    ],
     apple: "/apple-touch-icon.png",
   },
 };

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -76,6 +77,13 @@ export function LoginForm() {
   return (
     <div className="max-w-md w-full space-y-6 bg-white p-6 sm:p-8 md:p-10 rounded-2xl shadow-xl animate-fade-in">
       <div className="text-center">
+        <Image
+          src="/icon.png"
+          alt="SwimHub Scanner"
+          width={80}
+          height={80}
+          className="mx-auto h-16 w-16 sm:h-20 sm:w-20 mb-3"
+        />
         <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">
           {isSignUp ? "アカウント作成" : "ログイン"}
         </h2>
