@@ -94,7 +94,7 @@ export function SwimHubFamilyFooter() {
             <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
               サポート・情報
             </h4>
-            <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
               {footerLinks.map((link) => (
                 <Link
                   key={link.name}
@@ -182,12 +182,12 @@ export function SwimHubFamilyFooter() {
                 © {currentYear} SwimHub Scanner. All rights reserved.
               </div>
               <div className="text-xs text-gray-400">
-                Built with Next.js, Tailwind CSS, and Supabase
+                
               </div>
             </div>
 
             <div className="flex items-center space-x-4 text-xs text-gray-400">
-              <span>Version 1.0.0</span>
+              <span>Last updated: {new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" })}</span>
             </div>
           </div>
         </div>
