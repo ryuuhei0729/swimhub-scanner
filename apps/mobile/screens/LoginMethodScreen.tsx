@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, Text, Pressable, StyleSheet, ActivityIndicator, Image } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -49,6 +49,10 @@ export const LoginMethodScreen: React.FC = () => {
 
       <View style={styles.content}>
         <View style={styles.titleContainer}>
+          <Image
+            source={require('@/assets/icon.png')}
+            style={styles.appIcon}
+          />
           <Text style={styles.title}>ログイン</Text>
           <Text style={styles.subtitle}>SwimHub Scannerへようこそ</Text>
         </View>
@@ -124,6 +128,10 @@ const styles = StyleSheet.create({
   titleContainer: {
     alignItems: 'center',
     marginBottom: 32,
+  },
+  appIcon: {
+    width: 180,
+    height: 180,
   },
   title: {
     fontSize: 28,

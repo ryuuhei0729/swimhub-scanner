@@ -1,9 +1,8 @@
 import React from 'react'
-import { View, Text, Pressable, StyleSheet } from 'react-native'
+import { View, Text, Pressable, StyleSheet, Image } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Feather } from '@expo/vector-icons'
 import type { AuthStackParamList } from '@/navigation/types'
 
 export const WelcomeScreen: React.FC = () => {
@@ -13,10 +12,13 @@ export const WelcomeScreen: React.FC = () => {
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.content}>
         <View style={styles.logoContainer}>
-          <Feather name="camera" size={80} color="#1E3A8A" />
+          <Image
+            source={require('@/assets/icon.png')}
+            style={styles.appIcon}
+          />
           <Text style={styles.appName}>SwimHub Scanner</Text>
           <Text style={styles.tagline}>
-            手書きタイム記録表をAIで読み取り{'\n'}デジタル化するアプリ
+            手書きの記録表をAIで解析
           </Text>
         </View>
       </View>
@@ -63,6 +65,10 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     gap: 16,
+  },
+  appIcon: {
+    width: 180,
+    height: 180,
   },
   appName: {
     fontSize: 32,

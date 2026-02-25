@@ -6,6 +6,7 @@ import type {
   UserStatusResponse,
   ApiErrorResponse,
 } from "@swimhub-scanner/shared";
+import Image from "next/image";
 import { ImageUploader } from "./ImageUploader";
 import { ResultTable } from "./ResultTable";
 import { ExportButtons } from "./ExportButtons";
@@ -34,13 +35,8 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
   // --- Ad state ---
   const adControllerRef = useRef<RewardedAdController | null>(null);
   const [adState, setAdState] = useState<AdState>("idle");
-  const [adRewardEarned, setAdRewardEarned] = useState(false);
   const [adUnavailable, setAdUnavailable] = useState(false);
-  const [scanComplete, setScanComplete] = useState(false);
   const [scanTriggered, setScanTriggered] = useState(false);
-
-  // --- Derived ---
-  const canShowResult = scanComplete && (adRewardEarned || adUnavailable);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -78,9 +74,6 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
 
     const unsubscribe = controller.onStateChange((state) => {
       setAdState(state);
-      if (state === "rewarded") {
-        setAdRewardEarned(true);
-      }
     });
 
     controller.load();
@@ -93,30 +86,10 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
 
   // If ad loads AFTER scan was triggered, show it automatically
   useEffect(() => {
-    if (
-      scanTriggered &&
-      adState === "loaded" &&
-      !adRewardEarned &&
-      !adUnavailable
-    ) {
+    if (scanTriggered && adState === "loaded" && !adUnavailable) {
       adControllerRef.current?.show();
     }
-  }, [scanTriggered, adState, adRewardEarned, adUnavailable]);
-
-  // Fallback: if ad fails, allow result without ad after delay
-  useEffect(() => {
-    if (adState === "error" && !adUnavailable) {
-      const timer = setTimeout(() => setAdUnavailable(true), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [adState, adUnavailable]);
-
-  // Auto-transition to result when both scan and ad are done
-  useEffect(() => {
-    if (canShowResult && result) {
-      setStep("result");
-    }
-  }, [canShowResult, result]);
+  }, [scanTriggered, adState, adUnavailable]);
 
   const handleRefresh = useCallback(async () => {
     await fetchStatus();
@@ -167,7 +140,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
 
       const data: ScanTimesheetResponse = await res.json();
       setResult(data);
-      setScanComplete(true);
+      setStep("result");
 
       // Refresh user status after scan
       await fetchStatus();
@@ -182,10 +155,8 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
     setImage(null);
     setResult(null);
     setError(null);
-    setScanComplete(false);
     setScanTriggered(false);
     setAdState("idle");
-    setAdRewardEarned(false);
     setAdUnavailable(false);
     adControllerRef.current?.dispose();
     adControllerRef.current = null;
@@ -197,6 +168,15 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
   return (
     <PullToRefresh onRefresh={handleRefresh} disabled={step === "scanning"}>
     <div className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
+      {/* Hero */}
+      {step === "upload" && (
+        <div className="flex flex-col items-center gap-1 text-center">
+          <Image src="/icon.png" alt="SwimHub Scanner" width={180} height={180} />
+          <h1 className="text-3xl font-bold tracking-tight">SwimHub Scanner</h1>
+          <p className="text-sm text-muted-foreground">手書きの記録表をAIで解析</p>
+        </div>
+      )}
+
       {/* Usage status bar */}
       {!statusLoading && userStatus && (
         <div className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3">
@@ -273,11 +253,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
         <div className="flex flex-col items-center justify-center space-y-4 py-16">
           <LoadingSpinner className="h-12 w-12" />
           <p className="text-lg font-medium text-foreground">画像を解析しています...</p>
-          {scanComplete && !adRewardEarned && !adUnavailable ? (
-            <p className="text-sm text-muted-foreground">広告の視聴をお願いします</p>
-          ) : (
-            <p className="text-sm text-muted-foreground">AI が手書きのタイム記録表を読み取っています</p>
-          )}
+          <p className="text-sm text-muted-foreground">AI が手書きのタイム記録表を読み取っています</p>
         </div>
       )}
 
