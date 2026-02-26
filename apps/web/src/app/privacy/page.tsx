@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { Metadata } from "next";
+import { BackButton } from "@/components/ui/BackButton";
 
 export const metadata: Metadata = {
   title: "プライバシーポリシー | SwimHub Scanner",
@@ -8,9 +8,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-12">
-      <Link href="/login" className="text-sm text-blue-600 hover:text-blue-800">
-        ← ログインに戻る
-      </Link>
+      <BackButton />
 
       <h1 className="mt-6 text-2xl font-bold">プライバシーポリシー</h1>
       <p className="mt-2 text-sm text-gray-500">最終更新日: 2026年2月23日</p>
