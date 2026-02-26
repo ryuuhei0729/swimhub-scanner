@@ -38,21 +38,25 @@ const footerLinks = [
     name: "プライバシーポリシー",
     href: "/privacy",
     icon: ShieldCheck,
+    external: false,
   },
   {
     name: "利用規約",
     href: "/terms",
     icon: FileText,
+    external: false,
   },
   {
     name: "サポート",
-    href: "/support",
+    href: "https://swim-hub.app/support",
     icon: HelpCircle,
+    external: true,
   },
   {
     name: "お問い合わせ",
-    href: "/contact",
+    href: "https://swim-hub.app/contact",
     icon: Mail,
+    external: true,
   },
 ];
 
@@ -95,16 +99,29 @@ export function SwimHubFamilyFooter() {
               サポート・情報
             </h4>
             <div className="grid grid-cols-2 gap-2">
-              {footerLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  className="flex items-center text-sm text-gray-600 hover:text-blue-600 transition-colors duration-200"
-                >
-                  <link.icon className="h-4 w-4 mr-2" />
-                  {link.name}
-                </Link>
-              ))}
+              {footerLinks.map((link) =>
+                link.external ? (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center text-sm text-gray-600 hover:text-blue-600 transition-colors duration-200"
+                  >
+                    <link.icon className="h-4 w-4 mr-2" />
+                    {link.name}
+                  </a>
+                ) : (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="flex items-center text-sm text-gray-600 hover:text-blue-600 transition-colors duration-200"
+                  >
+                    <link.icon className="h-4 w-4 mr-2" />
+                    {link.name}
+                  </Link>
+                )
+              )}
             </div>
           </div>
         </div>
