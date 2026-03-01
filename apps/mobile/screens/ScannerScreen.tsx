@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import { getUserStatus, scanTimesheet, ApiError } from '@/lib/api-client'
 import { useScanResultStore } from '@/stores/scanResultStore'
+import { shareTimesheetPdf, shareTimesheetImage } from '@/lib/timesheet-print'
 import { validateImageMimeType, validateImageSize, estimateBase64Size } from '@swimhub-scanner/shared'
 import type { UserStatusResponse } from '@swimhub-scanner/shared'
 import { ResultTable } from '@/components/scanner/ResultTable'
@@ -386,6 +387,27 @@ export const ScannerScreen: React.FC = () => {
           </Text>
         </TouchableOpacity>
 
+        {/* 記録表テンプレートボタン */}
+        <Text style={styles.templateLabel}>記録表テンプレートをダウンロード</Text>
+        <View style={styles.templateButtonRow}>
+          <TouchableOpacity
+            style={styles.templateButton}
+            onPress={shareTimesheetPdf}
+            activeOpacity={0.7}
+          >
+            <Feather name="file-text" size={18} color="#2563EB" />
+            <Text style={styles.templateButtonText}>PDF</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.templateButton}
+            onPress={shareTimesheetImage}
+            activeOpacity={0.7}
+          >
+            <Feather name="image" size={18} color="#2563EB" />
+            <Text style={styles.templateButtonText}>画像</Text>
+          </TouchableOpacity>
+        </View>
+
         {!canScan && userStatus && (
           <View style={styles.limitWarning}>
             <Text style={styles.limitWarningText}>
@@ -514,6 +536,34 @@ const styles = StyleSheet.create({
   },
   scanButtonTextDisabled: {
     color: '#9CA3AF',
+  },
+  templateLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '500',
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  templateButtonRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  templateButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#ffffff',
+    gap: 6,
+  },
+  templateButtonText: {
+    color: '#2563EB',
+    fontSize: 13,
+    fontWeight: '600',
   },
   limitWarning: {
     marginTop: 16,
