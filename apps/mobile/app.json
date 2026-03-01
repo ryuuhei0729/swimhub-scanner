@@ -1,7 +1,7 @@
 {
   "react-native-google-mobile-ads": {
     "android_app_id": "ca-app-pub-4640414097368188~XXXXXXXXXX",
-    "ios_app_id": "ca-app-pub-4640414097368188~YYYYYYYYYY"
+    "ios_app_id": "ca-app-pub-4640414097368188~6995328031"
   },
   "expo": {
     "name": "SwimHub Scanner",
@@ -61,7 +61,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": ""
+        "projectId": "d123c26f-8ad7-4505-b6f2-11d82a741b99"
       }
     }
   }
