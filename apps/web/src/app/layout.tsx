@@ -16,8 +16,42 @@ const notoSansJP = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  title: "SwimHub Scanner",
-  description: "手書きタイム記録表をAIで自動デジタル化",
+  metadataBase: new URL("https://scanner.swim-hub.app"),
+  title: {
+    default: "SwimHub Scanner - 手書きタイム記録表をAIで自動デジタル化",
+    template: "%s | SwimHub Scanner",
+  },
+  description:
+    "手書きの水泳タイム記録表を撮影するだけでAIが自動解析。デジタルデータに変換して記録管理を効率化します。",
+  keywords: [
+    "水泳",
+    "記録表",
+    "手書き",
+    "デジタル化",
+    "AI",
+    "OCR",
+    "スイミング",
+    "タイム記録",
+  ],
+  openGraph: {
+    type: "website",
+    locale: "ja_JP",
+    url: "https://scanner.swim-hub.app",
+    siteName: "SwimHub Scanner",
+    title: "SwimHub Scanner - 手書きタイム記録表をAIで自動デジタル化",
+    description:
+      "手書きの水泳タイム記録表を撮影するだけでAIが自動解析。デジタルデータに変換して記録管理を効率化します。",
+  },
+  twitter: {
+    card: "summary",
+    title: "SwimHub Scanner - 手書きタイム記録表をAIで自動デジタル化",
+    description:
+      "手書きの水泳タイム記録表を撮影するだけでAIが自動解析。デジタルデータに変換して記録管理を効率化します。",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },

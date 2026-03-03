@@ -6,7 +6,7 @@
   "expo": {
     "name": "SwimHub Scanner",
     "slug": "swimhub-scanner-mobile",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "description": "手書きタイム記録表をAIで読み取りデジタル化するアプリ",
     "scheme": "swimhub-scanner",
     "orientation": "portrait",
