@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, type DragEvent, type ChangeEvent } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 
 interface ImageUploaderProps {
@@ -121,7 +122,7 @@ export function ImageUploader({ onImageSelect, disabled }: ImageUploaderProps) {
       ) : (
         <div className="space-y-3">
           <div className="relative overflow-hidden rounded-lg border border-border bg-surface-raised">
-            <img src={preview} alt="プレビュー" className="mx-auto max-h-80 object-contain" />
+            <Image src={preview} alt="プレビュー" width={400} height={320} className="mx-auto max-h-80 object-contain" unoptimized />
           </div>
           <div className="flex justify-center">
             <Button variant="ghost" size="sm" onClick={handleClear} disabled={disabled}>
