@@ -229,26 +229,37 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
       )}
 
       {/* Usage status bar */}
-      {!statusLoading && (
+      {!statusLoading && (isGuest ? guestTokens !== null : userStatus != null) && (
         <div className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3">
           <div className="text-sm text-muted-foreground">
             {isGuest && guestTokens !== null && (
-              <>
-                お試し残り:{" "}
-                <span className="font-bold text-foreground">{guestTokens}</span>回
-              </>
+              <div className="flex flex-col gap-0.5">
+                <span>
+                  お試し残り:{" "}
+                  <span className="font-bold text-foreground">{guestTokens}</span>
+                  {" "}/ 3回
+                </span>
+                <span className="text-xs text-muted-foreground/70">
+                  アカウント登録すると毎日無料で使えます
+                </span>
+              </div>
             )}
             {!isGuest && userStatus?.plan === "premium" && (
               <span className="font-medium text-purple-600">Premium — 回数無制限</span>
             )}
-            {!isGuest && userStatus && userStatus.tokenBalance !== null && (
-              <>
-                トークン残高:{" "}
-                <span className="font-bold text-foreground">
-                  {userStatus.tokenBalance}
+            {!isGuest && userStatus?.plan === "free" && userStatus.tokenBalance !== null && (
+              <div className="flex flex-col gap-0.5">
+                <span>
+                  今日の残り:{" "}
+                  <span className="font-bold text-foreground">
+                    {userStatus.tokenBalance}
+                  </span>
+                  {" "}/ 1回
                 </span>
-                回
-              </>
+                <span className="text-xs text-muted-foreground/70">
+                  毎日0:00にリセットされます
+                </span>
+              </div>
             )}
           </div>
           {isGuest && (
@@ -275,13 +286,13 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
             <div role="alert" className="rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
               {isGuest ? (
                 <div className="flex flex-col items-center gap-2">
-                  <span>無料トークンを使い切りました。</span>
+                  <span>お試し3回分を使い切りました。アカウント登録（無料）すると、毎日1回使えるようになります。</span>
                   <Link href="/login">
-                    <Button size="sm">アカウント登録してもっと使う</Button>
+                    <Button size="sm">無料アカウントを作成</Button>
                   </Link>
                 </div>
               ) : (
-                "トークンを使い切りました。Premiumにアップグレードすると無制限でご利用いただけます。"
+                "今日のトークン（1回/日）を使い切りました。明日0:00にリセットされます。Premiumなら回数無制限で使えます。"
               )}
             </div>
           )}
