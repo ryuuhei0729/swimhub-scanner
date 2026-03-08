@@ -7,6 +7,7 @@ import type {
   ApiErrorResponse,
 } from "@swimhub-scanner/shared";
 import Image from "next/image";
+import Link from "next/link";
 import { ImageUploader } from "./ImageUploader";
 import { ResultTable } from "./ResultTable";
 import { ExportButtons } from "./ExportButtons";
@@ -14,6 +15,8 @@ import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PullToRefresh } from "@/components/ui/PullToRefresh";
 import { openTimesheetPrintWindow } from "@/lib/timesheet-print";
+import { useAuth } from "@/hooks/useAuth";
+import { getGuestTokenBalance, consumeGuestToken } from "@/lib/guest-tokens";
 import {
   createRewardedAdController,
   type AdState,
@@ -25,11 +28,13 @@ type Step = "upload" | "scanning" | "result";
 export type { Step };
 
 export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => void }) {
+  const { isGuest, isAuthenticated } = useAuth();
   const [step, setStep] = useState<Step>("upload");
   const [image, setImage] = useState<{ base64: string; mimeType: "image/jpeg" | "image/png" } | null>(null);
   const [result, setResult] = useState<ScanTimesheetResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [userStatus, setUserStatus] = useState<UserStatusResponse | null>(null);
+  const [guestTokens, setGuestTokens] = useState<number | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
 
   // --- Ad state ---
@@ -39,24 +44,32 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
   const [scanTriggered, setScanTriggered] = useState(false);
 
   const fetchStatus = useCallback(async () => {
+    setStatusLoading(true);
     try {
-      const res = await fetch("/api/user/status");
-      if (res.ok) {
-        setUserStatus(await res.json());
+      if (isGuest) {
+        const balance = getGuestTokenBalance();
+        setGuestTokens(balance);
+        setUserStatus(null);
+      } else if (isAuthenticated) {
+        const res = await fetch("/api/user/status");
+        if (res.ok) {
+          setUserStatus(await res.json());
+        }
+        setGuestTokens(null);
       }
     } catch {
       // Silently fail - status is non-critical
     } finally {
       setStatusLoading(false);
     }
-  }, []);
+  }, [isGuest, isAuthenticated]);
 
   // Notify parent of step changes
   useEffect(() => {
     onStepChange?.(step);
   }, [step, onStepChange]);
 
-  // Fetch user status on mount (cookie-based auth — no token needed)
+  // Fetch user status on mount
   useEffect(() => {
     fetchStatus();
   }, [fetchStatus]);
@@ -106,6 +119,15 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
   const handleScan = useCallback(async () => {
     if (!image) return;
 
+    // ゲスト: ローカルトークンチェック & 消費
+    if (isGuest) {
+      const success = consumeGuestToken();
+      if (!success) {
+        setError("無料トークンを使い切りました。アカウント登録するとトークンを購入できます。");
+        return;
+      }
+    }
+
     setStep("scanning");
     setError(null);
     setScanTriggered(true);
@@ -123,17 +145,35 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
 
     // --- Start API scan ---
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (isGuest) {
+        headers["X-Guest-Mode"] = "true";
+      }
+
       const res = await fetch("/api/scan-timesheet", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({ image: image.base64, mimeType: image.mimeType }),
       });
 
       if (!res.ok) {
-        const err: ApiErrorResponse = await res.json();
-        setError(err.error);
+        const errBody: ApiErrorResponse = await res.json();
+        switch (errBody.code) {
+          case "DAILY_LIMIT_EXCEEDED":
+          case "TOKEN_EXHAUSTED":
+            setError("利用回数上限に達しました。アカウント登録するとトークンを購入できます。");
+            break;
+          case "SWIMMER_LIMIT_EXCEEDED":
+            setError("無料プランでは8名まで解析可能です");
+            break;
+          case "PARSE_ERROR":
+            setError("画像からタイム情報を読み取れませんでした。鮮明なタイム記録表の画像を使用してください");
+            break;
+          default:
+            setError(errBody.error);
+        }
         setStep("upload");
         return;
       }
@@ -148,7 +188,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
       setError("ネットワークエラーです。接続を確認してください。");
       setStep("upload");
     }
-  }, [image, fetchStatus]);
+  }, [image, isGuest, fetchStatus]);
 
   const handleReset = useCallback(() => {
     setStep("upload");
@@ -162,8 +202,19 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
     adControllerRef.current = null;
   }, []);
 
-  const isLimitReached =
-    !!userStatus && userStatus.dailyLimit !== null && userStatus.todayScanCount >= userStatus.dailyLimit;
+  // canScan の判定
+  const canScan = (() => {
+    if (isGuest) {
+      return guestTokens !== null && guestTokens > 0;
+    }
+    if (userStatus) {
+      // Premium (tokenBalance === null) は無制限
+      if (userStatus.tokenBalance === null) return true;
+      // Free: トークン残高チェック
+      return userStatus.tokenBalance > 0;
+    }
+    return false;
+  })();
 
   return (
     <PullToRefresh onRefresh={handleRefresh} disabled={step === "scanning"}>
@@ -178,22 +229,36 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
       )}
 
       {/* Usage status bar */}
-      {!statusLoading && userStatus && (
+      {!statusLoading && (
         <div className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3">
           <div className="text-sm text-muted-foreground">
-            {userStatus.plan === "premium" ? (
-              <span className="font-medium text-purple-600">Premium プラン</span>
-            ) : (
+            {isGuest && guestTokens !== null && (
               <>
-                残り利用回数:{" "}
+                お試し残り:{" "}
+                <span className="font-bold text-foreground">{guestTokens}</span>回
+              </>
+            )}
+            {!isGuest && userStatus?.plan === "premium" && (
+              <span className="font-medium text-purple-600">Premium — 回数無制限</span>
+            )}
+            {!isGuest && userStatus && userStatus.tokenBalance !== null && (
+              <>
+                トークン残高:{" "}
                 <span className="font-bold text-foreground">
-                  {Math.max(0, (userStatus.dailyLimit ?? 0) - userStatus.todayScanCount)}
+                  {userStatus.tokenBalance}
                 </span>
-                /{userStatus.dailyLimit} (0:00 JSTにリセット)
+                回
               </>
             )}
           </div>
-          {userStatus.plan === "free" && (
+          {isGuest && (
+            <Link href="/login">
+              <Button variant="ghost" size="sm" className="text-blue-600">
+                アカウント登録
+              </Button>
+            </Link>
+          )}
+          {!isGuest && userStatus?.plan === "free" && (
             <Button variant="ghost" size="sm" className="text-purple-600">
               Premium にアップグレード
             </Button>
@@ -206,13 +271,22 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-foreground">Step 1: 画像アップロード</h2>
 
-          {isLimitReached && (
+          {!canScan && !statusLoading && (
             <div role="alert" className="rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
-              本日の利用回数に達しました。Premium プランにアップグレードすると無制限に利用できます。
+              {isGuest ? (
+                <div className="flex flex-col items-center gap-2">
+                  <span>無料トークンを使い切りました。</span>
+                  <Link href="/login">
+                    <Button size="sm">アカウント登録してもっと使う</Button>
+                  </Link>
+                </div>
+              ) : (
+                "トークンを使い切りました。Premiumにアップグレードすると無制限でご利用いただけます。"
+              )}
             </div>
           )}
 
-          <ImageUploader onImageSelect={handleImageSelect} disabled={isLimitReached} />
+          <ImageUploader onImageSelect={handleImageSelect} disabled={!canScan} />
 
           {error && <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
 
@@ -220,7 +294,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
             <Button
               size="lg"
               onClick={handleScan}
-              disabled={!image || isLimitReached}
+              disabled={!image || !canScan}
             >
               解析する
             </Button>
@@ -273,6 +347,16 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
             <h3 className="mb-3 text-sm font-medium text-muted-foreground">出力</h3>
             <ExportButtons data={result} />
           </div>
+
+          {isGuest && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-center">
+              <Link href="/login">
+                <Button size="sm" variant="outline" className="text-blue-600 border-blue-300">
+                  アカウント登録してもっと使う
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </div>

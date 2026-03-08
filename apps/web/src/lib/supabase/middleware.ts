@@ -32,11 +32,6 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // 未ログインで保護ルートにアクセス → /login へリダイレクト
-  if (!user && pathname === "/") {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
   // ログイン済みで /login にアクセス → / へリダイレクト
   if (user && pathname === "/login") {
     return NextResponse.redirect(new URL("/", request.url));

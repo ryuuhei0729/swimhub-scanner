@@ -1,24 +1,55 @@
 "use client";
 
-import { createContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { createContext, useEffect, useState, useCallback, useRef, type ReactNode } from "react";
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getGuestTokenBalance, clearGuestTokens } from "@/lib/guest-tokens";
 
 export interface AuthContextValue {
   user: User | null;
   loading: boolean;
+  isAuthenticated: boolean;
+  isGuest: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  enterGuestMode: () => void;
+  exitGuestMode: () => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
+/**
+ * ゲストのローカルトークン残高をサーバーに引き継ぐ
+ */
+async function migrateGuestTokens(): Promise<void> {
+  try {
+    const guestBalance = getGuestTokenBalance();
+    if (guestBalance <= 0) return;
+    const supabase = getSupabaseBrowserClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+    await fetch("/api/user/migrate-tokens", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ guestTokensRemaining: guestBalance }),
+    });
+    clearGuestTokens();
+  } catch (err) {
+    console.error("トークン引き継ぎに失敗:", err);
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isGuest, setIsGuest] = useState(false);
+  const wasGuestRef = useRef(false);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -39,8 +70,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const newUser = session?.user ?? null;
+      setUser(newUser);
       setLoading(false);
+
+      // ゲストからログインした場合、トークンを引き継ぐ
+      if (newUser && wasGuestRef.current) {
+        wasGuestRef.current = false;
+        setIsGuest(false);
+        migrateGuestTokens();
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -91,11 +130,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // scope: 'local' でサーバーへのリクエストをスキップし、ローカルセッションのみ破棄
     // サーバー不到達時の ERR_CONNECTION_REFUSED を防止
     await supabase.auth.signOut({ scope: "local" });
+    setIsGuest(false);
+  }, []);
+
+  const enterGuestMode = useCallback(() => {
+    wasGuestRef.current = true;
+    setIsGuest(true);
+  }, []);
+
+  const exitGuestMode = useCallback(() => {
+    setIsGuest(false);
   }, []);
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail, signOut }}
+      value={{
+        user,
+        loading,
+        isAuthenticated: !!user,
+        isGuest,
+        signInWithGoogle,
+        signInWithApple,
+        signInWithEmail,
+        signUpWithEmail,
+        signOut,
+        enterGuestMode,
+        exitGuestMode,
+      }}
     >
       {children}
     </AuthContext.Provider>

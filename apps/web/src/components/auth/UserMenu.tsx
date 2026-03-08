@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 
 export function UserMenu() {
@@ -38,7 +39,16 @@ export function UserMenu() {
     }
   };
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <Link
+        href="/login"
+        className="rounded-lg px-3 py-2 text-sm font-medium text-primary hover:bg-muted transition-colors duration-200"
+      >
+        ログイン
+      </Link>
+    );
+  }
 
   const displayName = user.user_metadata?.full_name ?? user.email;
 

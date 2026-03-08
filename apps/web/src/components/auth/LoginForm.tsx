@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 
 export function LoginForm() {
-  const { signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail } = useAuth();
+  const { signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail, enterGuestMode } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(
@@ -236,6 +236,28 @@ export function LoginForm() {
               Apple で{isSignUp ? "サインアップ" : "ログイン"}
             </button>
           </div>
+
+          {/* 区切り線 */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">または</span>
+            </div>
+          </div>
+
+          {/* ゲストとして利用 */}
+          <button
+            type="button"
+            onClick={() => {
+              enterGuestMode();
+              router.replace("/");
+            }}
+            className="w-full py-3 px-4 rounded-lg text-sm font-medium text-gray-500 border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"
+          >
+            ログインせずに試す（無料3回）
+          </button>
 
           <div className="text-center">
             <button
