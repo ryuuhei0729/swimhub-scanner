@@ -71,6 +71,9 @@ export const ScannerScreen: React.FC = () => {
         const status = await getUserStatus()
         setUserStatus(status)
         setGuestTokens(null)
+      } else {
+        setUserStatus(null)
+        setGuestTokens(null)
       }
     } catch (err) {
       console.error('ステータスの取得に失敗:', err)
