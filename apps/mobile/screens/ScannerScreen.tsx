@@ -11,11 +11,17 @@ import {
   ScrollView,
   RefreshControl,
   StyleSheet,
+  Modal,
+  Dimensions,
 } from 'react-native'
 import { Feather } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
-import { getUserStatus, scanTimesheet, ApiError } from '@/lib/api-client'
+import { useNavigation } from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { getUserStatus, scanTimesheet, guestScanTimesheet, ApiError } from '@/lib/api-client'
+import { getGuestTokenBalance, consumeGuestToken } from '@/lib/guest-tokens'
+import { useAuth } from '@/contexts/AuthProvider'
 import { useScanResultStore } from '@/stores/scanResultStore'
 import { shareTimesheetPdf, shareTimesheetImage } from '@/lib/timesheet-print'
 import { validateImageMimeType, validateImageSize, estimateBase64Size } from '@swimhub-scanner/shared'
@@ -27,18 +33,24 @@ import {
   type AdState,
   type RewardedAdController,
 } from '@/lib/ads/rewarded-ad'
+import type { MainStackParamList } from '@/navigation/types'
 
 type Step = 'idle' | 'scanning' | 'result'
 
 export const ScannerScreen: React.FC = () => {
+  const { isGuest, isAuthenticated } = useAuth()
+  const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>()
+
   const [step, setStep] = useState<Step>('idle')
   const [imageUri, setImageUri] = useState<string | null>(null)
   const [imageBase64, setImageBase64] = useState<string | null>(null)
   const [imageMimeType, setImageMimeType] = useState<string>('image/jpeg')
   const [userStatus, setUserStatus] = useState<UserStatusResponse | null>(null)
+  const [guestTokens, setGuestTokens] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [statusLoading, setStatusLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [templatePreviewVisible, setTemplatePreviewVisible] = useState(false)
 
   // --- Ad state ---
   const adControllerRef = useRef<RewardedAdController | null>(null)
@@ -48,27 +60,34 @@ export const ScannerScreen: React.FC = () => {
 
   const { menu, swimmers, setResult, reset: resetResult } = useScanResultStore()
 
-  const fetchUserStatus = useCallback(async () => {
+  const fetchStatus = useCallback(async () => {
     setStatusLoading(true)
     try {
-      const status = await getUserStatus()
-      setUserStatus(status)
+      if (isGuest) {
+        const balance = await getGuestTokenBalance()
+        setGuestTokens(balance)
+        setUserStatus(null)
+      } else if (isAuthenticated) {
+        const status = await getUserStatus()
+        setUserStatus(status)
+        setGuestTokens(null)
+      }
     } catch (err) {
-      console.error('ユーザーステータスの取得に失敗:', err)
+      console.error('ステータスの取得に失敗:', err)
     } finally {
       setStatusLoading(false)
     }
-  }, [])
+  }, [isGuest, isAuthenticated])
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
-    await fetchUserStatus()
+    await fetchStatus()
     setRefreshing(false)
-  }, [fetchUserStatus])
+  }, [fetchStatus])
 
   useEffect(() => {
-    fetchUserStatus()
-  }, [fetchUserStatus])
+    fetchStatus()
+  }, [fetchStatus])
 
   // Preload ad when user selects an image
   useEffect(() => {
@@ -149,6 +168,15 @@ export const ScannerScreen: React.FC = () => {
   const startScan = async () => {
     if (!imageBase64) return
 
+    // ゲスト: ローカルトークンチェック & 消費
+    if (isGuest) {
+      const success = await consumeGuestToken()
+      if (!success) {
+        setError('無料トークンを使い切りました。アカウント登録するとトークンを購入できます。')
+        return
+      }
+    }
+
     setStep('scanning')
     setError(null)
     scanTriggeredRef.current = true
@@ -166,20 +194,25 @@ export const ScannerScreen: React.FC = () => {
 
     // --- Start API scan ---
     try {
-      const response = await scanTimesheet({
+      const request = {
         image: imageBase64,
         mimeType: imageMimeType as 'image/jpeg' | 'image/png',
-      })
+      }
+      const response = isGuest
+        ? await guestScanTimesheet(request)
+        : await scanTimesheet(request)
       setResult(response)
       setStep('result')
       // 利用状況を再取得
-      fetchUserStatus()
+      fetchStatus()
     } catch (err) {
       setStep('idle')
+      // ゲストでAPIエラーの場合、消費したトークンは戻さない（不正防止）
       if (err instanceof ApiError) {
         switch (err.code) {
           case 'DAILY_LIMIT_EXCEEDED':
-            setError('本日の利用回数上限に達しました')
+          case 'TOKEN_EXHAUSTED':
+            setError('利用回数上限に達しました。アカウント登録するとトークンを購入できます。')
             break
           case 'SWIMMER_LIMIT_EXCEEDED':
             setError('無料プランでは8名まで解析可能です')
@@ -241,14 +274,26 @@ export const ScannerScreen: React.FC = () => {
     }
   }
 
-  const canScan = userStatus && (
-    userStatus.dailyLimit === null ||
-    userStatus.todayScanCount < userStatus.dailyLimit
-  )
+  // canScan の判定
+  const canScan = (() => {
+    if (isGuest) {
+      return guestTokens !== null && guestTokens > 0
+    }
+    if (userStatus) {
+      // Premium (tokenBalance === null) は無制限
+      if (userStatus.tokenBalance === null) return true
+      // Free: トークン残高チェック
+      return userStatus.tokenBalance > 0
+    }
+    return false
+  })()
 
-  const remainingScans = userStatus?.dailyLimit !== null && userStatus?.dailyLimit !== undefined
-    ? userStatus.dailyLimit - userStatus.todayScanCount
-    : null
+  // 表示用のトークン残高
+  const displayTokens = (() => {
+    if (isGuest) return guestTokens
+    if (userStatus?.tokenBalance !== undefined) return userStatus.tokenBalance
+    return null
+  })()
 
   // Step 2: 解析中
   if (step === 'scanning') {
@@ -298,6 +343,17 @@ export const ScannerScreen: React.FC = () => {
             <Text style={styles.resetButtonText}>新しい画像を解析する</Text>
           </TouchableOpacity>
 
+          {isGuest && (
+            <TouchableOpacity
+              style={styles.signupPromptButton}
+              onPress={() => navigation.navigate('GuestSignup')}
+            >
+              <Text style={styles.signupPromptText}>
+                アカウント登録してもっと使う
+              </Text>
+            </TouchableOpacity>
+          )}
+
           <View style={{ height: 32 }} />
         </ScrollView>
       </SafeAreaView>
@@ -315,16 +371,21 @@ export const ScannerScreen: React.FC = () => {
         }
       >
         {/* 利用状況 */}
-        {!statusLoading && userStatus && (
+        {!statusLoading && (
           <View style={styles.statusBar}>
-            {remainingScans !== null ? (
+            {isGuest && guestTokens !== null && (
               <Text style={styles.statusText}>
-                残り利用回数: {remainingScans} / {userStatus.dailyLimit}
-                {' '}(0:00にリセット)
+                お試し残り: {guestTokens}回
               </Text>
-            ) : (
+            )}
+            {!isGuest && userStatus && displayTokens === null && (
               <Text style={styles.statusText}>
                 Premium — 回数無制限
+              </Text>
+            )}
+            {!isGuest && userStatus && displayTokens !== null && (
+              <Text style={styles.statusText}>
+                トークン残高: {displayTokens}回
               </Text>
             )}
           </View>
@@ -400,7 +461,7 @@ export const ScannerScreen: React.FC = () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.templateButton}
-            onPress={shareTimesheetImage}
+            onPress={() => setTemplatePreviewVisible(true)}
             activeOpacity={0.7}
           >
             <Feather name="image" size={18} color="#2563EB" />
@@ -408,15 +469,72 @@ export const ScannerScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {!canScan && userStatus && (
+        {/* トークン切れの案内 */}
+        {!canScan && (
           <View style={styles.limitWarning}>
-            <Text style={styles.limitWarningText}>
-              本日の利用回数上限に達しました。{'\n'}
-              Premiumにアップグレードすると無制限でご利用いただけます。
-            </Text>
+            {isGuest ? (
+              <>
+                <Text style={styles.limitWarningText}>
+                  無料トークンを使い切りました。
+                </Text>
+                <TouchableOpacity
+                  style={styles.signupButton}
+                  onPress={() => navigation.navigate('GuestSignup')}
+                >
+                  <Text style={styles.signupButtonText}>アカウント登録してもっと使う</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <Text style={styles.limitWarningText}>
+                トークンを使い切りました。{'\n'}
+                Premiumにアップグレードすると無制限でご利用いただけます。
+              </Text>
+            )}
           </View>
         )}
       </ScrollView>
+
+      {/* テンプレート画像プレビューモーダル */}
+      <Modal
+        visible={templatePreviewVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTemplatePreviewVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setTemplatePreviewVisible(false)}
+        >
+          <SafeAreaView style={styles.modalContent} pointerEvents="box-none">
+            <View style={styles.modalImageContainer}>
+              <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+                <Image
+                  source={require('../assets/timesheet-template.png')}
+                  style={styles.modalImage}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.modalShareButton}
+                onPress={shareTimesheetImage}
+              >
+                <Feather name="download" size={22} color="#ffffff" />
+                <Text style={styles.modalShareText}>保存</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setTemplatePreviewVisible(false)}
+              >
+                <Feather name="x" size={22} color="#ffffff" />
+                <Text style={styles.modalCloseText}>閉じる</Text>
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   )
 }
@@ -570,12 +688,39 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF3C7',
     borderRadius: 8,
     padding: 12,
+    alignItems: 'center',
   },
   limitWarningText: {
     color: '#92400E',
     fontSize: 13,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  signupButton: {
+    marginTop: 8,
+    backgroundColor: '#2563EB',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  signupButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  signupPromptButton: {
+    marginTop: 12,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  signupPromptText: {
+    color: '#2563EB',
+    fontSize: 14,
+    fontWeight: '600',
   },
   // Step 2: Scanning
   scanningContainer: {
@@ -643,5 +788,48 @@ const styles = StyleSheet.create({
     color: '#374151',
     fontSize: 15,
     fontWeight: '600',
+  },
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+  },
+  modalContent: {
+    flex: 1,
+  },
+  modalImageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalImage: {
+    width: Dimensions.get('window').width - 32,
+    height: Dimensions.get('window').height * 0.7,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 32,
+    paddingBottom: 24,
+    paddingTop: 12,
+  },
+  modalShareButton: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  modalShareText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  modalCloseButton: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  modalCloseText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '500',
   },
 })

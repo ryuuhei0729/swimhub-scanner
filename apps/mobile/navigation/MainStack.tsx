@@ -5,10 +5,14 @@ import { Feather } from '@expo/vector-icons'
 import type { MainStackParamList } from './types'
 import { ScannerScreen } from '@/screens/ScannerScreen'
 import { AccountScreen } from '@/screens/AccountScreen'
+import { GuestSignupScreen } from '@/screens/GuestSignupScreen'
+import { useAuth } from '@/contexts/AuthProvider'
 
 const Stack = createNativeStackNavigator<MainStackParamList>()
 
 export const MainStack: React.FC = () => {
+  const { isGuest } = useAuth()
+
   return (
     <Stack.Navigator>
       <Stack.Screen
@@ -20,10 +24,14 @@ export const MainStack: React.FC = () => {
           headerTitleStyle: { fontWeight: '600' },
           headerRight: () => (
             <TouchableOpacity
-              onPress={() => navigation.navigate('Account')}
+              onPress={() => navigation.navigate(isGuest ? 'GuestSignup' : 'Account')}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Feather name="user" size={22} color="#374151" />
+              <Feather
+                name={isGuest ? 'log-in' : 'user'}
+                size={22}
+                color="#374151"
+              />
             </TouchableOpacity>
           ),
         })}
@@ -33,6 +41,15 @@ export const MainStack: React.FC = () => {
         component={AccountScreen}
         options={{
           headerTitle: 'アカウント',
+          headerStyle: { backgroundColor: '#ffffff' },
+          headerTitleStyle: { fontWeight: '600' },
+        }}
+      />
+      <Stack.Screen
+        name="GuestSignup"
+        component={GuestSignupScreen}
+        options={{
+          headerTitle: 'アカウント登録',
           headerStyle: { backgroundColor: '#ffffff' },
           headerTitleStyle: { fontWeight: '600' },
         }}

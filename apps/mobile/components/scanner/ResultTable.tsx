@@ -79,7 +79,7 @@ export const ResultTable: React.FC = () => {
     setEditValue('')
   }
 
-  const showStylePicker = (swimmerNo: number, currentStyle: SwimStroke) => {
+  const showStylePicker = (swimmerNo: number, _currentStyle: SwimStroke) => {
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {

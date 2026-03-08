@@ -4,9 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { AuthStackParamList } from '@/navigation/types'
+import { useAuth } from '@/contexts/AuthProvider'
+import { GUEST_INITIAL_TOKENS } from '@swimhub-scanner/shared'
 
 export const WelcomeScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>()
+  const { enterGuestMode } = useAuth()
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
@@ -46,6 +49,20 @@ export const WelcomeScreen: React.FC = () => {
           accessibilityLabel="ログイン"
         >
           <Text style={styles.secondaryButtonText}>ログイン</Text>
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.guestButton,
+            pressed && styles.guestButtonPressed,
+          ]}
+          onPress={enterGuestMode}
+          accessibilityRole="button"
+          accessibilityLabel="ログインせずに試す"
+        >
+          <Text style={styles.guestButtonText}>
+            ログインせずに試す（無料{GUEST_INITIAL_TOKENS}回）
+          </Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -117,5 +134,17 @@ const styles = StyleSheet.create({
     color: '#374151',
     fontSize: 17,
     fontWeight: '600',
+  },
+  guestButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guestButtonPressed: {
+    opacity: 0.6,
+  },
+  guestButtonText: {
+    color: '#6B7280',
+    fontSize: 14,
   },
 })

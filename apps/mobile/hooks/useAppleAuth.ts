@@ -119,6 +119,11 @@ export const useAppleAuth = (): UseAppleAuthReturn => {
         return { success: false, error: new Error('認証がキャンセルされました') }
       }
 
+      if (err.code === 'ERR_REQUEST_NOT_HANDLED' || err.code === 'ERR_REQUEST_FAILED') {
+        setError('Apple認証に失敗しました。Googleでのログインもお試しください。')
+        return { success: false, error: err }
+      }
+
       const rawMessage = err.message || '不明なエラーが発生しました'
       const localizedMessage = localizeSupabaseAuthError({ message: rawMessage })
       setError(localizedMessage)

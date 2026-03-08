@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 export function UserMenu() {
   const { user, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -17,6 +18,25 @@ export function UserMenu() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleDeleteAccount = async () => {
+    if (!confirm("アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消せません。\n\n本当に削除しますか？")) {
+      return;
+    }
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/user/delete", { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? "アカウントの削除に失敗しました");
+      }
+      await signOut();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "アカウントの削除に失敗しました");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   if (!user) return null;
 
@@ -99,6 +119,30 @@ export function UserMenu() {
                 />
               </svg>
               ログアウト
+            </button>
+            <button
+              role="menuitem"
+              onClick={() => {
+                setIsOpen(false);
+                handleDeleteAccount();
+              }}
+              disabled={deleting}
+              className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200 disabled:opacity-50"
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                />
+              </svg>
+              {deleting ? "削除中..." : "アカウントを削除"}
             </button>
           </div>
         </div>

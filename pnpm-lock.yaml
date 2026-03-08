@@ -111,15 +111,27 @@ importers:
         specifier: ^5.0.8
         version: 5.0.11(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
     devDependencies:
+      '@eslint/js':
+        specifier: ^9.39.3
+        version: 9.39.3
       '@types/react':
         specifier: ^19.1.17
         version: 19.1.17
       babel-preset-expo:
         specifier: ~13.0.0
         version: 13.0.0(@babel/core@7.29.0)
+      eslint:
+        specifier: ^9.39.3
+        version: 9.39.3(jiti@2.6.1)
+      globals:
+        specifier: ^17.4.0
+        version: 17.4.0
       typescript:
         specifier: ~5.9.2
         version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.56.0
+        version: 8.56.0(eslint@9.39.3(jiti@2.6.1))(typescript@5.9.3)
 
   apps/web:
     dependencies:
@@ -3980,6 +3992,10 @@ packages:
 
   globals@16.4.0:
     resolution: {integrity: sha512-ob/2LcVVaVGCYN+r14cnwnoDPUufjiYgSqRhiFD0Q1iI4Odora5RE8Iv1D24hAz5oMophRGkGz+yuvQmmUMnMw==}
+    engines: {node: '>=18'}
+
+  globals@17.4.0:
+    resolution: {integrity: sha512-hjrNztw/VajQwOLsMNT1cbJiH2muO3OROCHnbehc8eY5JyD2gqz4AcMHPqgaOR59DjgUjYAYLeH699g/eWi2jw==}
     engines: {node: '>=18'}
 
   globalthis@1.0.4:
@@ -11153,6 +11169,8 @@ snapshots:
   globals@14.0.0: {}
 
   globals@16.4.0: {}
+
+  globals@17.4.0: {}
 
   globalthis@1.0.4:
     dependencies:

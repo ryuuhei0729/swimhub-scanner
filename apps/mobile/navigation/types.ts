@@ -9,4 +9,5 @@ export type AuthStackParamList = {
 export type MainStackParamList = {
   Scanner: undefined
   Account: undefined
+  GuestSignup: undefined
 }

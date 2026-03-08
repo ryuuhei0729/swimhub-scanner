@@ -53,7 +53,9 @@ export const useGoogleAuth = (): UseGoogleAuthReturn => {
         return { success: false, error: oauthError || new Error('OAuth URLの生成に失敗しました') }
       }
 
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri)
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri, {
+        preferEphemeralSession: true,
+      })
 
       if (result.type === 'success' && result.url) {
         const tokens = extractTokensFromUrl(result.url)

@@ -10,13 +10,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Constants from 'expo-constants'
 import { useAuth } from '@/contexts/AuthProvider'
-import { getUserStatus } from '@/lib/api-client'
+import { getUserStatus, deleteAccount, ApiError } from '@/lib/api-client'
 import type { UserStatusResponse } from '@swimhub-scanner/shared'
 
 export const AccountScreen: React.FC = () => {
   const { user, signOut } = useAuth()
   const [userStatus, setUserStatus] = useState<UserStatusResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(false)
 
   const fetchStatus = useCallback(async () => {
     setLoading(true)
@@ -47,6 +48,34 @@ export const AccountScreen: React.FC = () => {
             const { error } = await signOut()
             if (error) {
               Alert.alert('エラー', 'ログアウトに失敗しました')
+            }
+          },
+        },
+      ],
+    )
+  }
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'アカウント削除',
+      'アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消せません。',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '削除する',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true)
+            try {
+              await deleteAccount()
+              await signOut()
+            } catch (err) {
+              const message = err instanceof ApiError
+                ? err.message
+                : 'アカウントの削除に失敗しました。再度お試しください。'
+              Alert.alert('エラー', message)
+            } finally {
+              setDeleting(false)
             }
           },
         },
@@ -96,6 +125,24 @@ export const AccountScreen: React.FC = () => {
           <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
             <Text style={styles.signOutButtonText}>ログアウト</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* アカウント削除 */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={handleDeleteAccount}
+            disabled={deleting}
+          >
+            {deleting ? (
+              <ActivityIndicator color="#DC2626" />
+            ) : (
+              <Text style={styles.deleteButtonText}>アカウントを削除</Text>
+            )}
+          </TouchableOpacity>
+          <Text style={styles.deleteWarning}>
+            すべてのデータが完全に削除されます
+          </Text>
         </View>
 
         {/* アプリ情報 */}
@@ -187,6 +234,25 @@ const styles = StyleSheet.create({
     color: '#DC2626',
     fontSize: 15,
     fontWeight: '600',
+  },
+  deleteButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#DC2626',
+  },
+  deleteButtonText: {
+    color: '#DC2626',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  deleteWarning: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginTop: 8,
   },
   footer: {
     alignItems: 'center',

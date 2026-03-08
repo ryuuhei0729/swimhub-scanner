@@ -64,6 +64,35 @@ async function apiRequest<T>(
   return response.json() as Promise<T>
 }
 
+/**
+ * 認証なしのAPIリクエスト（ゲスト用）
+ */
+async function guestApiRequest<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Guest-Mode': 'true',
+      ...options.headers,
+    },
+  })
+
+  if (!response.ok) {
+    let errorBody: ApiErrorResponse
+    try {
+      errorBody = await response.json() as ApiErrorResponse
+    } catch {
+      throw new ApiError('サーバーエラーが発生しました', 'API_ERROR', response.status)
+    }
+    throw new ApiError(errorBody.error, errorBody.code, response.status)
+  }
+
+  return response.json() as Promise<T>
+}
+
 export async function getUserStatus(): Promise<UserStatusResponse> {
   return apiRequest<UserStatusResponse>('/api/user/status')
 }
@@ -74,5 +103,23 @@ export async function scanTimesheet(
   return apiRequest<ScanTimesheetResponse>('/api/scan-timesheet', {
     method: 'POST',
     body: JSON.stringify(request),
+  })
+}
+
+/**
+ * ゲスト用スキャン（認証なし）
+ */
+export async function guestScanTimesheet(
+  request: ScanTimesheetRequest,
+): Promise<ScanTimesheetResponse> {
+  return guestApiRequest<ScanTimesheetResponse>('/api/scan-timesheet', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  })
+}
+
+export async function deleteAccount(): Promise<{ success: boolean }> {
+  return apiRequest<{ success: boolean }>('/api/user/delete', {
+    method: 'DELETE',
   })
 }

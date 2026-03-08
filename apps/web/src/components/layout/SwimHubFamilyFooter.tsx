@@ -48,9 +48,9 @@ const footerLinks = [
   },
   {
     name: "サポート",
-    href: "https://swim-hub.app/support",
+    href: "/support",
     icon: HelpCircle,
-    external: true,
+    external: false,
   },
   {
     name: "お問い合わせ",

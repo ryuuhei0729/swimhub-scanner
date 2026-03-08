@@ -31,7 +31,7 @@ const SupabaseErrorScreen: React.FC = () => {
  * 認証状態に応じてナビゲーションスタックを切り替え
  */
 const AppNavigator: React.FC = () => {
-  const { isAuthenticated, loading } = useAuth()
+  const { isAuthenticated, isGuest, loading } = useAuth()
 
   if (!supabase) {
     return <SupabaseErrorScreen />
@@ -49,7 +49,7 @@ const AppNavigator: React.FC = () => {
   return (
     <View style={styles.container}>
       <NavigationContainer>
-        {isAuthenticated ? <MainStack /> : <AuthStack />}
+        {(isAuthenticated || isGuest) ? <MainStack /> : <AuthStack />}
         <StatusBar style="auto" />
       </NavigationContainer>
     </View>
