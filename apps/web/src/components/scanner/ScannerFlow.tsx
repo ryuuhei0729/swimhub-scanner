@@ -56,6 +56,9 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
           setUserStatus(await res.json());
         }
         setGuestTokens(null);
+      } else {
+        setUserStatus(null);
+        setGuestTokens(null);
       }
     } catch {
       // Silently fail - status is non-critical
