@@ -8,10 +8,10 @@ import { useGoogleAuth } from '@/hooks/useGoogleAuth'
 import { useAppleAuth } from '@/hooks/useAppleAuth'
 import { AppleLoginButton } from '@/components/auth/AppleLoginButton'
 import { GoogleLoginButton } from '@/components/auth/GoogleLoginButton'
-import type { AuthStackParamList } from '@/navigation/types'
+import type { MainStackParamList } from '@/navigation/types'
 
 export const LoginMethodScreen: React.FC = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>()
+  const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>()
   const { signInWithGoogle, loading: googleLoading, error: googleError, clearError: clearGoogleError } = useGoogleAuth()
   const { signInWithApple, loading: appleLoading, error: appleError, clearError: clearAppleError, isAvailable: isAppleAvailable } = useAppleAuth()
   const [error, setError] = useState<string | null>(null)
@@ -101,6 +101,17 @@ export const LoginMethodScreen: React.FC = () => {
             )}
           </Pressable>
         </View>
+
+        <Pressable
+          style={styles.signupLink}
+          onPress={() => navigation.navigate('EmailSignup')}
+          accessibilityRole="button"
+          accessibilityLabel="アカウントを新規作成"
+        >
+          <Text style={styles.signupLinkText}>
+            アカウントをお持ちでない方は<Text style={styles.signupLinkBold}>新規登録</Text>
+          </Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   )
@@ -186,5 +197,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#374151',
+  },
+  signupLink: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  signupLinkText: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  signupLinkBold: {
+    color: '#2563EB',
+    fontWeight: '600',
   },
 })

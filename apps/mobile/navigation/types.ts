@@ -10,4 +10,7 @@ export type MainStackParamList = {
   Scanner: undefined
   Account: undefined
   GuestSignup: undefined
+  LoginMethod: undefined
+  EmailLogin: undefined
+  EmailSignup: undefined
 }

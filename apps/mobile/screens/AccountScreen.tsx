@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState } from 'react'
 import {
   View,
   Text,
@@ -10,30 +10,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Constants from 'expo-constants'
 import { useAuth } from '@/contexts/AuthProvider'
-import { getUserStatus, deleteAccount, ApiError } from '@/lib/api-client'
-import type { UserStatusResponse } from '@swimhub-scanner/shared'
+import { deleteAccount, ApiError } from '@/lib/api-client'
 
 export const AccountScreen: React.FC = () => {
   const { user, signOut } = useAuth()
-  const [userStatus, setUserStatus] = useState<UserStatusResponse | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading] = useState(false)
   const [deleting, setDeleting] = useState(false)
-
-  const fetchStatus = useCallback(async () => {
-    setLoading(true)
-    try {
-      const status = await getUserStatus()
-      setUserStatus(status)
-    } catch (err) {
-      console.error('ステータス取得エラー:', err)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchStatus()
-  }, [fetchStatus])
 
   const handleSignOut = () => {
     Alert.alert(
@@ -96,26 +78,8 @@ export const AccountScreen: React.FC = () => {
               <Text style={styles.infoLabel}>メールアドレス</Text>
               <Text style={styles.infoValue}>{user?.email || '—'}</Text>
             </View>
-            {loading ? (
+            {loading && (
               <ActivityIndicator style={{ marginTop: 12 }} color="#2563EB" />
-            ) : userStatus && (
-              <>
-                <View style={styles.divider} />
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>プラン</Text>
-                  <View style={[
-                    styles.badge,
-                    userStatus.plan === 'premium' ? styles.premiumBadge : styles.freeBadge,
-                  ]}>
-                    <Text style={[
-                      styles.badgeText,
-                      userStatus.plan === 'premium' ? styles.premiumBadgeText : styles.freeBadgeText,
-                    ]}>
-                      {userStatus.plan === 'premium' ? 'Premium' : 'Free'}
-                    </Text>
-                  </View>
-                </View>
-              </>
             )}
           </View>
         </View>
@@ -195,32 +159,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#374151',
     fontWeight: '500',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 12,
-  },
-  badge: {
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-  },
-  freeBadge: {
-    backgroundColor: '#F3F4F6',
-  },
-  premiumBadge: {
-    backgroundColor: '#FEF3C7',
-  },
-  badgeText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  freeBadgeText: {
-    color: '#6B7280',
-  },
-  premiumBadgeText: {
-    color: '#92400E',
   },
   signOutButton: {
     backgroundColor: '#ffffff',

@@ -175,7 +175,7 @@ export const ScannerScreen: React.FC = () => {
     if (isGuest) {
       const success = await consumeGuestToken()
       if (!success) {
-        setError('無料トークンを使い切りました。アカウント登録するとトークンを購入できます。')
+        setError('無料お試し回数を使い切りました。アカウント登録すると引き続き利用できます。')
         return
       }
     }
@@ -215,10 +215,10 @@ export const ScannerScreen: React.FC = () => {
         switch (err.code) {
           case 'DAILY_LIMIT_EXCEEDED':
           case 'TOKEN_EXHAUSTED':
-            setError('利用回数上限に達しました。アカウント登録するとトークンを購入できます。')
+            setError('本日の利用回数上限に達しました。明日また利用できます。')
             break
           case 'SWIMMER_LIMIT_EXCEEDED':
-            setError('無料プランでは8名まで解析可能です')
+            setError('1回のスキャンで解析できるのは8名までです')
             break
           case 'PARSE_ERROR':
             setError('画像からタイム情報を読み取れませんでした。鮮明なタイム記録表の画像を使用してください')
@@ -283,9 +283,7 @@ export const ScannerScreen: React.FC = () => {
       return guestTokens !== null && guestTokens > 0
     }
     if (userStatus) {
-      // Premium (tokenBalance === null) は無制限
-      if (userStatus.tokenBalance === null) return true
-      // Free: トークン残高チェック
+      if (userStatus.tokenBalance === null) return false
       return userStatus.tokenBalance > 0
     }
     return false
@@ -381,14 +379,9 @@ export const ScannerScreen: React.FC = () => {
                 お試し残り: {guestTokens}回
               </Text>
             )}
-            {!isGuest && userStatus && displayTokens === null && (
-              <Text style={styles.statusText}>
-                Premium — 回数無制限
-              </Text>
-            )}
             {!isGuest && userStatus && displayTokens !== null && (
               <Text style={styles.statusText}>
-                トークン残高: {displayTokens}回
+                残り: {displayTokens}回
               </Text>
             )}
           </View>
@@ -489,8 +482,8 @@ export const ScannerScreen: React.FC = () => {
               </>
             ) : (
               <Text style={styles.limitWarningText}>
-                トークンを使い切りました。{'\n'}
-                Premiumにアップグレードすると無制限でご利用いただけます。
+                本日の利用回数上限に達しました。{'\n'}
+                明日また利用できます。
               </Text>
             )}
           </View>

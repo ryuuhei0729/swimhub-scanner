@@ -6,12 +6,15 @@ import type { MainStackParamList } from './types'
 import { ScannerScreen } from '@/screens/ScannerScreen'
 import { AccountScreen } from '@/screens/AccountScreen'
 import { GuestSignupScreen } from '@/screens/GuestSignupScreen'
+import { LoginMethodScreen } from '@/screens/LoginMethodScreen'
+import { EmailLoginScreen } from '@/screens/EmailLoginScreen'
+import { EmailSignupScreen } from '@/screens/EmailSignupScreen'
 import { useAuth } from '@/contexts/AuthProvider'
 
 const Stack = createNativeStackNavigator<MainStackParamList>()
 
 export const MainStack: React.FC = () => {
-  const { isGuest } = useAuth()
+  const { isGuest, isAuthenticated } = useAuth()
 
   return (
     <Stack.Navigator>
@@ -24,11 +27,17 @@ export const MainStack: React.FC = () => {
           headerTitleStyle: { fontWeight: '600' },
           headerRight: () => (
             <TouchableOpacity
-              onPress={() => navigation.navigate(isGuest ? 'GuestSignup' : 'Account')}
+              onPress={() => {
+                if (isAuthenticated) {
+                  navigation.navigate('Account')
+                } else {
+                  navigation.navigate('LoginMethod')
+                }
+              }}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Feather
-                name={isGuest ? 'log-in' : 'user'}
+                name={isAuthenticated ? 'user' : 'log-in'}
                 size={22}
                 color="#374151"
               />
@@ -50,6 +59,33 @@ export const MainStack: React.FC = () => {
         component={GuestSignupScreen}
         options={{
           headerTitle: 'アカウント登録',
+          headerStyle: { backgroundColor: '#ffffff' },
+          headerTitleStyle: { fontWeight: '600' },
+        }}
+      />
+      <Stack.Screen
+        name="LoginMethod"
+        component={LoginMethodScreen}
+        options={{
+          headerTitle: 'ログイン',
+          headerStyle: { backgroundColor: '#ffffff' },
+          headerTitleStyle: { fontWeight: '600' },
+        }}
+      />
+      <Stack.Screen
+        name="EmailLogin"
+        component={EmailLoginScreen}
+        options={{
+          headerTitle: 'メールでログイン',
+          headerStyle: { backgroundColor: '#ffffff' },
+          headerTitleStyle: { fontWeight: '600' },
+        }}
+      />
+      <Stack.Screen
+        name="EmailSignup"
+        component={EmailSignupScreen}
+        options={{
+          headerTitle: 'アカウント作成',
           headerStyle: { backgroundColor: '#ffffff' },
           headerTitleStyle: { fontWeight: '600' },
         }}

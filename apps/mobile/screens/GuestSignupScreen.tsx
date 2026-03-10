@@ -53,7 +53,7 @@ export const GuestSignupScreen: React.FC = () => {
           />
           <Text style={styles.title}>アカウント登録</Text>
           <Text style={styles.subtitle}>
-            登録するとトークンを購入して{'\n'}もっと多くの記録表を解析できます
+            登録するとスキャン履歴の保存や{'\n'}便利な機能が使えます
           </Text>
         </View>
 

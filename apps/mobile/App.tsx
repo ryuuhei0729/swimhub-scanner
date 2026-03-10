@@ -1,11 +1,10 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { enableScreens } from 'react-native-screens'
 import { NavigationContainer } from '@react-navigation/native'
 import { StatusBar } from 'expo-status-bar'
 import { View, ActivityIndicator, StyleSheet, Text } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AuthProvider, useAuth } from './contexts/AuthProvider'
-import { AuthStack } from './navigation/AuthStack'
 import { MainStack } from './navigation/MainStack'
 import { supabase } from './lib/supabase'
 
@@ -29,9 +28,20 @@ const SupabaseErrorScreen: React.FC = () => {
 
 /**
  * 認証状態に応じてナビゲーションスタックを切り替え
+ * ※ 審査対応: 未ログインでもスキャナー機能にアクセス可能にする
+ *   スキャン機能はアカウント不要のため、常にゲストモードで開始
  */
 const AppNavigator: React.FC = () => {
-  const { isAuthenticated, isGuest, loading } = useAuth()
+  const { isAuthenticated, isGuest, loading, enterGuestMode } = useAuth()
+  const autoGuestDone = useRef(false)
+
+  // 未ログイン・非ゲストの場合は自動的にゲストモードに入る
+  useEffect(() => {
+    if (!loading && !isAuthenticated && !isGuest && !autoGuestDone.current) {
+      autoGuestDone.current = true
+      enterGuestMode()
+    }
+  }, [loading, isAuthenticated, isGuest, enterGuestMode])
 
   if (!supabase) {
     return <SupabaseErrorScreen />
@@ -49,7 +59,7 @@ const AppNavigator: React.FC = () => {
   return (
     <View style={styles.container}>
       <NavigationContainer>
-        {(isAuthenticated || isGuest) ? <MainStack /> : <AuthStack />}
+        <MainStack />
         <StatusBar style="auto" />
       </NavigationContainer>
     </View>

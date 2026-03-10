@@ -23,5 +23,3 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
 } as const;
 
 export const GUEST_INITIAL_TOKENS = 3;
-
-export const PREMIUM_PRICE_JPY = 1000;
