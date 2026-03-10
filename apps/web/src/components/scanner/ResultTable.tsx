@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { ScanTimesheetResponse, SwimmerResult, SwimStroke } from "@swimhub-scanner/shared";
 import { averageTime, fastestTime, slowestTime, formatCircleTime } from "@swimhub-scanner/shared";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
 
 interface ResultTableProps {
@@ -64,25 +65,26 @@ function DeleteConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="w-72 rounded-lg bg-white p-5 shadow-xl">
         <p className="text-sm text-gray-700">
-          <span className="font-medium">{swimmerName || "この選手"}</span>
-          を削除しますか？
+          <span className="font-medium">{swimmerName || t("result.thisSwimmer")}</span>
+          {t("result.deleteSwimmerConfirm")}
         </p>
         <div className="mt-4 flex justify-end gap-2">
           <button
             onClick={onCancel}
             className="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
           >
-            キャンセル
+            {t("common.cancel")}
           </button>
           <button
             onClick={onConfirm}
             className="rounded-md bg-red-500 px-3 py-1.5 text-sm text-white hover:bg-red-600"
           >
-            削除
+            {t("common.delete")}
           </button>
         </div>
       </div>
@@ -91,6 +93,7 @@ function DeleteConfirmDialog({
 }
 
 export function ResultTable({ data, onDataChange }: ResultTableProps) {
+  const { t } = useTranslation();
   const [editingCell, setEditingCell] = useState<{
     swimmerIdx: number;
     field: string;
@@ -156,7 +159,7 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
   // Generate set header labels
   const setHeaders: { label: string; colSpan: number }[] = [];
   for (let s = 0; s < data.menu.setCount; s++) {
-    setHeaders.push({ label: `${s + 1}セット目`, colSpan: data.menu.repCount });
+    setHeaders.push({ label: t("result.setHeader", { n: s + 1 }), colSpan: data.menu.repCount });
   }
 
   const { menu } = data;
@@ -169,11 +172,11 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
           <p className="text-sm text-gray-500">{menu.description}</p>
         )}
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-gray-700">
-          <span>距離: {menu.distance}m</span>
-          <span>本数: {menu.repCount}</span>
-          <span>セット数: {menu.setCount}</span>
+          <span>{t("result.distance")}: {menu.distance}m</span>
+          <span>{t("result.repCount")}: {menu.repCount}</span>
+          <span>{t("result.setCount")}: {menu.setCount}</span>
           {menu.circle != null && (
-            <span>サークル: {formatCircleTime(menu.circle)}</span>
+            <span>{t("result.circle")}: {formatCircleTime(menu.circle)}</span>
           )}
         </div>
       </div>
@@ -207,12 +210,12 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
             {/* Set row + Column headers */}
             <tr className="border-b bg-gray-100">
               <th rowSpan={2} className="sticky left-0 z-10 bg-gray-50 px-1 py-1 text-center align-middle font-medium">
-                No
+                {t("result.no")}
               </th>
               <th rowSpan={2} className="sticky left-7 z-10 bg-gray-50 px-1 py-1 text-left align-middle font-medium">
-                名前
+                {t("result.name")}
               </th>
-              <th rowSpan={2} className="bg-gray-50 px-1 py-1 text-center align-middle font-medium">種目</th>
+              <th rowSpan={2} className="bg-gray-50 px-1 py-1 text-center align-middle font-medium">{t("result.style")}</th>
               {setHeaders.map((h, i) => (
                 <th
                   key={i}
@@ -222,7 +225,7 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
                   {h.label}
                 </th>
               ))}
-              <th rowSpan={2} className="border-l px-2 py-1 text-center align-middle font-medium">平均</th>
+              <th rowSpan={2} className="border-l px-2 py-1 text-center align-middle font-medium">{t("result.average")}</th>
               <th rowSpan={2} className="w-8" />
             </tr>
             <tr className="border-b bg-gray-50">
@@ -263,7 +266,7 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
                         className="cursor-pointer hover:text-blue-600"
                         onClick={() => setEditingCell({ swimmerIdx: sIdx, field: "name" })}
                       >
-                        {swimmer.name || <span className="text-gray-400">未入力</span>}
+                        {swimmer.name || <span className="text-gray-400">{t("result.notEntered")}</span>}
                       </span>
                     )}
                   </td>
@@ -332,7 +335,7 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
                         setDeleteTarget(sIdx);
                       }}
                       className="text-gray-400 hover:text-red-500"
-                      title="削除"
+                      title={t("result.deleteTooltip")}
                     >
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -348,7 +351,7 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
 
       <div className="flex justify-start">
         <Button variant="ghost" size="sm" onClick={addSwimmer}>
-          + 選手を追加
+          {t("result.addSwimmer")}
         </Button>
       </div>
     </div>

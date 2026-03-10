@@ -11,6 +11,7 @@ import {
   StyleSheet,
 } from 'react-native'
 import { Feather } from '@expo/vector-icons'
+import { useTranslation } from 'react-i18next'
 import { useScanResultStore } from '@/stores/scanResultStore'
 import {
   formatTime,
@@ -36,6 +37,7 @@ interface EditingCell {
 }
 
 export const ResultTable: React.FC = () => {
+  const { t } = useTranslation()
   const {
     menu,
     swimmers,
@@ -83,7 +85,7 @@ export const ResultTable: React.FC = () => {
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: ['キャンセル', ...STROKES.map((s) => STROKE_LABELS[s])],
+          options: [t('common.cancel'), ...STROKES.map((s) => STROKE_LABELS[s])],
           cancelButtonIndex: 0,
         },
         (buttonIndex) => {
@@ -93,23 +95,23 @@ export const ResultTable: React.FC = () => {
         },
       )
     } else {
-      Alert.alert('種目を選択', '', [
+      Alert.alert(t('result.style'), '', [
         ...STROKES.map((s) => ({
           text: STROKE_LABELS[s],
           onPress: () => updateSwimmerStyle(swimmerNo, s),
         })),
-        { text: 'キャンセル', style: 'cancel' as const },
+        { text: t('common.cancel'), style: 'cancel' as const },
       ])
     }
   }
 
   const handleRemoveSwimmer = (no: number, name: string) => {
     Alert.alert(
-      '選手を削除',
-      `${name || '名前なし'} を削除しますか？`,
+      t('result.deleteTooltip'),
+      `${name || t('result.notEntered')} ${t('result.deleteSwimmerConfirm')}`,
       [
-        { text: 'キャンセル', style: 'cancel' },
-        { text: '削除', style: 'destructive', onPress: () => removeSwimmer(no) },
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.delete'), style: 'destructive', onPress: () => removeSwimmer(no) },
       ],
     )
   }
@@ -125,7 +127,7 @@ export const ResultTable: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>解析結果</Text>
+      <Text style={styles.title}>{t('scanner.result.title')}</Text>
 
       <View style={styles.tableWrapper}>
         {/* Fixed left columns (名前) */}
@@ -134,7 +136,7 @@ export const ResultTable: React.FC = () => {
           {setCount > 1 && <View style={styles.fixedHeaderCell} />}
           {/* Header */}
           <View style={styles.fixedHeaderCell}>
-            <Text style={styles.headerText}>名前</Text>
+            <Text style={styles.headerText}>{t('result.name')}</Text>
           </View>
 
           {/* Data rows */}
@@ -183,7 +185,7 @@ export const ResultTable: React.FC = () => {
                 <View style={styles.styleCol} />
                 {Array.from({ length: setCount }, (_, s) => (
                   <View key={s} style={[{ width: repCount * 36, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }, s > 0 && styles.setBorder]}>
-                    <Text style={styles.setHeaderText}>{s + 1}セット目</Text>
+                    <Text style={styles.setHeaderText}>{t('result.setHeader', { n: s + 1 })}</Text>
                   </View>
                 ))}
                 <View style={styles.statCol} />
@@ -194,19 +196,19 @@ export const ResultTable: React.FC = () => {
             {/* Column header */}
             <View style={styles.scrollHeaderRow}>
               <View style={styles.styleCol}>
-                <Text style={styles.headerText}>種目</Text>
+                <Text style={styles.headerText}>{t('result.style')}</Text>
               </View>
               {Array.from({ length: maxTimes }, (_, i) => {
                 const isSetStart = i > 0 && i % repCount === 0
                 return (
                   <View key={i} style={[styles.timeCol, isSetStart && styles.setBorder]}>
-                    <Text style={styles.headerText}>{(i % repCount) + 1}本</Text>
+                    <Text style={styles.headerText}>{t('result.repHeader', { n: (i % repCount) + 1 })}</Text>
                   </View>
                 )
               })}
-              <View style={styles.statCol}><Text style={styles.headerText}>平均</Text></View>
-              <View style={styles.statCol}><Text style={styles.headerText}>最速</Text></View>
-              <View style={styles.statCol}><Text style={styles.headerText}>最遅</Text></View>
+              <View style={styles.statCol}><Text style={styles.headerText}>{t('result.average')}</Text></View>
+              <View style={styles.statCol}><Text style={styles.headerText}>{t('result.fastest')}</Text></View>
+              <View style={styles.statCol}><Text style={styles.headerText}>{t('result.slowest')}</Text></View>
             </View>
 
             {/* Data rows */}
@@ -301,7 +303,7 @@ export const ResultTable: React.FC = () => {
 
       {/* Add swimmer */}
       <TouchableOpacity style={styles.addButton} onPress={addSwimmer}>
-        <Text style={styles.addButtonText}>+ 選手を追加</Text>
+        <Text style={styles.addButtonText}>{t('result.addSwimmer')}</Text>
       </TouchableOpacity>
     </View>
   )

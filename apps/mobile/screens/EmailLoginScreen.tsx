@@ -13,9 +13,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { Feather } from '@expo/vector-icons'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/contexts/AuthProvider'
 
 export const EmailLoginScreen: React.FC = () => {
+  const { t } = useTranslation()
   const navigation = useNavigation()
   const { signIn } = useAuth()
 
@@ -26,16 +28,16 @@ export const EmailLoginScreen: React.FC = () => {
 
   const validateForm = (): boolean => {
     if (!email.trim()) {
-      setError('メールアドレスを入力してください')
+      setError(t('auth.errors.invalidCredentials'))
       return false
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
-      setError('有効なメールアドレスを入力してください')
+      setError(t('auth.errors.invalidCredentials'))
       return false
     }
     if (!password) {
-      setError('パスワードを入力してください')
+      setError(t('auth.errors.invalidCredentials'))
       return false
     }
     return true
@@ -46,18 +48,18 @@ export const EmailLoginScreen: React.FC = () => {
     const msg = typeof errorObj.message === 'string' ? errorObj.message.toLowerCase() : ''
 
     if (msg.includes('invalid') && (msg.includes('credentials') || msg.includes('email'))) {
-      return 'メールアドレスまたはパスワードが正しくありません'
+      return t('auth.errors.invalidCredentials')
     }
     if (msg.includes('email not confirmed')) {
-      return 'メールアドレスが確認されていません。確認メールをご確認ください'
+      return t('auth.errors.emailNotConfirmed')
     }
     if (msg.includes('too many requests') || msg.includes('rate limit')) {
-      return 'リクエスト制限に達しました。しばらく時間をおいてから再度お試しください'
+      return t('auth.errors.tooManyRequests')
     }
     if (msg.includes('network') || msg.includes('connection')) {
-      return 'ネットワークエラーが発生しました。接続を確認してください'
+      return t('auth.errors.network')
     }
-    return 'ログインに失敗しました。入力内容を確認してください'
+    return t('auth.errors.loginFailed')
   }
 
   const handleSubmit = async () => {
@@ -72,7 +74,7 @@ export const EmailLoginScreen: React.FC = () => {
         setError(formatAuthError(authError))
       }
     } catch {
-      setError('予期しないエラーが発生しました')
+      setError(t('auth.errors.unknown'))
     } finally {
       setLoading(false)
     }
@@ -85,7 +87,7 @@ export const EmailLoginScreen: React.FC = () => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
           accessibilityRole="button"
-          accessibilityLabel="戻る"
+          accessibilityLabel={t('common.back')}
         >
           <Feather name="arrow-left" size={24} color="#111827" />
         </Pressable>
@@ -101,7 +103,7 @@ export const EmailLoginScreen: React.FC = () => {
         >
           <View style={styles.formContainer}>
             <View style={styles.titleSection}>
-              <Text style={styles.title}>メールでログイン</Text>
+              <Text style={styles.title}>{t('auth.emailLogin')}</Text>
             </View>
 
             {error && (
@@ -112,7 +114,7 @@ export const EmailLoginScreen: React.FC = () => {
 
             <View style={styles.form}>
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>メールアドレス</Text>
+                <Text style={styles.label}>{t('auth.email')}</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="your@email.com"
@@ -128,10 +130,10 @@ export const EmailLoginScreen: React.FC = () => {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>パスワード</Text>
+                <Text style={styles.label}>{t('auth.password')}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="パスワード"
+                  placeholder={t('auth.passwordPlaceholder')}
                   placeholderTextColor="#9CA3AF"
                   value={password}
                   onChangeText={setPassword}
@@ -155,7 +157,7 @@ export const EmailLoginScreen: React.FC = () => {
                 {loading ? (
                   <ActivityIndicator color="#ffffff" />
                 ) : (
-                  <Text style={styles.submitButtonText}>ログイン</Text>
+                  <Text style={styles.submitButtonText}>{t('auth.login')}</Text>
                 )}
               </Pressable>
             </View>
@@ -212,9 +214,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#111827',
+    marginBottom: 8,
   },
   errorContainer: {
     backgroundColor: '#FEF2F2',

@@ -1,45 +1,77 @@
 /**
- * Supabase認証エラーメッセージの日本語化ユーティリティ
+ * Supabase認証エラーメッセージのi18n対応ユーティリティ
  */
+import i18next from 'i18next'
 
 declare const __DEV__: boolean
 
-const errorMessageMap: Record<string, string> = {
-  'invalid login credentials': 'メールアドレスまたはパスワードが正しくありません',
-  'invalid credentials': '認証情報が正しくありません',
-  'email not confirmed': 'メールアドレスが確認されていません',
-  'user not found': 'ユーザーが見つかりません',
-  'user already registered': 'このメールアドレスは既に登録されています',
-  'provider not enabled': 'この認証プロバイダーは有効化されていません',
-  'oauth error': 'OAuth認証でエラーが発生しました',
-  'access_denied': 'アクセスが拒否されました',
-  'invalid_grant': '認証の有効期限が切れました。再度お試しください',
-  'invalid token': '認証トークンが無効です',
-  'token expired': '認証トークンの有効期限が切れました',
-  'invalid refresh token': 'リフレッシュトークンが無効です',
-  'session not found': 'セッションが見つかりません。再度ログインしてください',
-  'session expired': 'セッションの有効期限が切れました。再度ログインしてください',
-  'too many requests': 'リクエスト回数が上限に達しました。しばらくお待ちください',
-  'rate limit exceeded': 'リクエスト制限を超えました。しばらくお待ちください',
-  'network error': 'ネットワークエラーが発生しました。接続を確認してください',
-  'timeout': '接続がタイムアウトしました。再度お試しください',
-}
-
 export const localizeAuthError = (message: string): string => {
+  const t = i18next.t.bind(i18next)
+
   if (!message) {
-    return '認証エラーが発生しました。再度お試しください'
+    return t('auth.errors.generic')
   }
 
   const lowerMessage = message.toLowerCase()
 
-  for (const [key, value] of Object.entries(errorMessageMap)) {
-    if (lowerMessage === key || lowerMessage.includes(key)) {
-      return value
-    }
+  // invalid login credentials / invalid credentials
+  if (lowerMessage.includes('invalid') && (lowerMessage.includes('credentials') || lowerMessage.includes('email') || lowerMessage.includes('login'))) {
+    return t('auth.errors.invalidCredentials')
   }
 
+  // email not confirmed
+  if (lowerMessage.includes('email not confirmed')) {
+    return t('auth.errors.emailNotConfirmed')
+  }
+
+  // user not found
+  if (lowerMessage.includes('user not found')) {
+    return t('auth.errors.invalidCredentials')
+  }
+
+  // user already registered
+  if (lowerMessage.includes('user already registered')) {
+    return t('auth.errors.alreadyRegistered')
+  }
+
+  // provider not enabled
+  if (lowerMessage.includes('provider not enabled')) {
+    return t('auth.errors.generic')
+  }
+
+  // oauth error
+  if (lowerMessage.includes('oauth error') || lowerMessage.includes('oauth')) {
+    return t('auth.errors.googleFailed')
+  }
+
+  // access_denied
+  if (lowerMessage.includes('access_denied')) {
+    return t('auth.errors.generic')
+  }
+
+  // invalid_grant / invalid token / token expired / invalid refresh token
+  if (lowerMessage.includes('invalid_grant') || lowerMessage.includes('invalid token') || lowerMessage.includes('token expired') || lowerMessage.includes('invalid refresh token')) {
+    return t('auth.errors.loginFailedRetry')
+  }
+
+  // session not found / session expired
+  if (lowerMessage.includes('session not found') || lowerMessage.includes('session expired')) {
+    return t('auth.errors.loginFailedRetry')
+  }
+
+  // too many requests / rate limit exceeded
+  if (lowerMessage.includes('too many requests') || lowerMessage.includes('rate limit')) {
+    return t('auth.errors.tooManyRequests')
+  }
+
+  // network error / timeout
+  if (lowerMessage.includes('network error') || lowerMessage.includes('timeout')) {
+    return t('auth.errors.network')
+  }
+
+  // cancel
   if (lowerMessage.includes('cancel') || lowerMessage.includes('キャンセル')) {
-    return '認証がキャンセルされました'
+    return t('auth.errors.generic')
   }
 
   // 既に日本語のメッセージはそのまま返す
@@ -48,17 +80,19 @@ export const localizeAuthError = (message: string): string => {
   }
 
   if (__DEV__) {
-    return `認証エラーが発生しました: ${message}`
+    return t('auth.errors.genericDev', { message, status: '' })
   }
 
-  return '認証エラーが発生しました。再度お試しください'
+  return t('auth.errors.generic')
 }
 
 export const localizeSupabaseAuthError = (
   error: { message?: string; error_description?: string; error?: string } | null | undefined,
 ): string => {
+  const t = i18next.t.bind(i18next)
+
   if (!error) {
-    return '認証エラーが発生しました。再度お試しください'
+    return t('auth.errors.generic')
   }
   const message = error.message || error.error_description || error.error || ''
   return localizeAuthError(message)

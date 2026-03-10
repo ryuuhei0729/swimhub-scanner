@@ -4,6 +4,7 @@ import * as FileSystem from 'expo-file-system/legacy'
 import * as Sharing from 'expo-sharing'
 import { captureRef } from 'react-native-view-shot'
 import XLSX from 'xlsx'
+import { useTranslation } from 'react-i18next'
 import { useScanResultStore } from '@/stores/scanResultStore'
 import {
   formatTime,
@@ -27,6 +28,7 @@ const TIME_WIDTH = 40
 const STAT_WIDTH = 44
 
 export const ExportSheet: React.FC = () => {
+  const { t } = useTranslation()
   const { menu, swimmers } = useScanResultStore()
   const [exporting, setExporting] = useState(false)
   const exportRef = useRef<View>(null)
@@ -39,9 +41,9 @@ export const ExportSheet: React.FC = () => {
 
   const buildRows = () => {
     const headers = [
-      'No', '名前', '種目',
-      ...Array.from({ length: maxTimes }, (_, i) => `${i + 1}本目`),
-      '平均', '最速', '最遅',
+      t('result.no'), t('result.name'), t('result.style'),
+      ...Array.from({ length: maxTimes }, (_, i) => t('result.repHeader', { n: i + 1 })),
+      t('result.average'), t('result.fastest'), t('result.slowest'),
     ]
 
     const rows = swimmers.map((s) => {
@@ -73,7 +75,7 @@ export const ExportSheet: React.FC = () => {
         ...rows.map((r) => r.map((v) => `"${v}"`).join(',')),
       ].join('\n')
 
-      const fileName = `タイム記録_${getDateString()}.csv`
+      const fileName = `${t('result.timeRecordFile')}_${getDateString()}.csv`
       const fileUri = FileSystem.documentDirectory + fileName
       await FileSystem.writeAsStringAsync(fileUri, '\uFEFF' + csvContent, {
         encoding: FileSystem.EncodingType.UTF8,
@@ -81,7 +83,7 @@ export const ExportSheet: React.FC = () => {
 
       await Sharing.shareAsync(fileUri, { mimeType: 'text/csv' })
     } catch (err) {
-      Alert.alert('エラー', 'CSV出力に失敗しました')
+      Alert.alert(t('auth.errors.generic'), t('export.csv'))
       console.error('CSV export error:', err)
     } finally {
       setExporting(false)
@@ -98,7 +100,7 @@ export const ExportSheet: React.FC = () => {
       })
       await Sharing.shareAsync(uri, { mimeType: 'image/png' })
     } catch (err) {
-      Alert.alert('エラー', '画像出力に失敗しました')
+      Alert.alert(t('auth.errors.generic'), t('export.image'))
       console.error('Image export error:', err)
     } finally {
       setExporting(false)
@@ -114,23 +116,23 @@ export const ExportSheet: React.FC = () => {
 
       // メニュー情報シート
       const menuData = [
-        ['メニュー情報'],
-        ['説明', menu.description],
-        ['距離', `${menu.distance}m`],
-        ['本数', `${menu.repCount}本`],
-        ['セット数', `${menu.setCount}セット`],
-        ['サークル', menu.circle ? `${menu.circle}秒` : '—'],
+        [t('result.menu')],
+        [menu.description],
+        [t('result.distance'), `${menu.distance}m`],
+        [t('result.repCount'), `${menu.repCount}`],
+        [t('result.setCount'), `${menu.setCount}`],
+        [t('result.circle'), menu.circle ? `${menu.circle}秒` : '—'],
       ]
       const menuWs = XLSX.utils.aoa_to_sheet(menuData)
-      XLSX.utils.book_append_sheet(wb, menuWs, 'メニュー')
+      XLSX.utils.book_append_sheet(wb, menuWs, t('result.menu'))
 
       // タイム記録シート
       const timeData = [headers, ...rows]
       const timeWs = XLSX.utils.aoa_to_sheet(timeData)
-      XLSX.utils.book_append_sheet(wb, timeWs, 'タイム記録')
+      XLSX.utils.book_append_sheet(wb, timeWs, t('result.timeRecordFile'))
 
       const wbout = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' })
-      const fileName = `タイム記録_${getDateString()}.xlsx`
+      const fileName = `${t('result.timeRecordFile')}_${getDateString()}.xlsx`
       const fileUri = FileSystem.documentDirectory + fileName
       await FileSystem.writeAsStringAsync(fileUri, wbout, {
         encoding: FileSystem.EncodingType.Base64,
@@ -140,7 +142,7 @@ export const ExportSheet: React.FC = () => {
         mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       })
     } catch (err) {
-      Alert.alert('エラー', 'Excel出力に失敗しました')
+      Alert.alert(t('auth.errors.generic'), t('export.excel'))
       console.error('Excel export error:', err)
     } finally {
       setExporting(false)
@@ -162,8 +164,8 @@ export const ExportSheet: React.FC = () => {
           <Text style={styles.exportMenuTitle}>{menu.description}</Text>
           <View style={styles.exportMenuRow}>
             <Text style={styles.exportMenuTag}>{menu.distance}m</Text>
-            <Text style={styles.exportMenuTag}>{menu.repCount}本</Text>
-            <Text style={styles.exportMenuTag}>{menu.setCount}セット</Text>
+            <Text style={styles.exportMenuTag}>{menu.repCount}{t('result.repHeader', { n: '' }).replace('', '').includes('本') ? '本' : ''}</Text>
+            <Text style={styles.exportMenuTag}>{menu.setCount}{t('result.setHeader', { n: '' }).replace('', '').includes('セット') ? 'セット' : ''}</Text>
             {circleLabel && <Text style={styles.exportMenuTag}>{circleLabel}</Text>}
           </View>
 
@@ -175,7 +177,7 @@ export const ExportSheet: React.FC = () => {
                 <View style={{ width: NAME_WIDTH + STYLE_WIDTH }} />
                 {Array.from({ length: setCount }, (_, s) => (
                   <View key={s} style={[{ width: repCount * TIME_WIDTH, alignItems: 'center' }, s > 0 && styles.exportSetBorder]}>
-                    <Text style={styles.exportSetText}>{s + 1}セット目</Text>
+                    <Text style={styles.exportSetText}>{t('result.setHeader', { n: s + 1 })}</Text>
                   </View>
                 ))}
                 <View style={{ width: STAT_WIDTH * 3 }} />
@@ -184,27 +186,27 @@ export const ExportSheet: React.FC = () => {
             {/* Column headers */}
             <View style={[styles.exportRow, styles.exportHeaderRow]}>
               <View style={{ width: NAME_WIDTH, alignItems: 'center' }}>
-                <Text style={styles.exportHeaderText}>名前</Text>
+                <Text style={styles.exportHeaderText}>{t('result.name')}</Text>
               </View>
               <View style={{ width: STYLE_WIDTH, alignItems: 'center' }}>
-                <Text style={styles.exportHeaderText}>種目</Text>
+                <Text style={styles.exportHeaderText}>{t('result.style')}</Text>
               </View>
               {Array.from({ length: maxTimes }, (_, i) => {
                 const isSetStart = i > 0 && i % repCount === 0
                 return (
                   <View key={i} style={[{ width: TIME_WIDTH, alignItems: 'center' }, isSetStart && styles.exportSetBorder]}>
-                    <Text style={styles.exportHeaderText}>{(i % repCount) + 1}本</Text>
+                    <Text style={styles.exportHeaderText}>{t('result.repHeader', { n: (i % repCount) + 1 })}</Text>
                   </View>
                 )
               })}
               <View style={{ width: STAT_WIDTH, alignItems: 'center' }}>
-                <Text style={styles.exportHeaderText}>平均</Text>
+                <Text style={styles.exportHeaderText}>{t('result.average')}</Text>
               </View>
               <View style={{ width: STAT_WIDTH, alignItems: 'center' }}>
-                <Text style={styles.exportHeaderText}>最速</Text>
+                <Text style={styles.exportHeaderText}>{t('result.fastest')}</Text>
               </View>
               <View style={{ width: STAT_WIDTH, alignItems: 'center' }}>
-                <Text style={styles.exportHeaderText}>最遅</Text>
+                <Text style={styles.exportHeaderText}>{t('result.slowest')}</Text>
               </View>
             </View>
 
@@ -258,7 +260,7 @@ export const ExportSheet: React.FC = () => {
       </View>
 
       {/* Buttons */}
-      <Text style={styles.title}>エクスポート</Text>
+      <Text style={styles.title}>{t('scanner.result.output')}</Text>
       <TouchableOpacity
         style={[styles.button, styles.imageButton, { marginBottom: 8 }]}
         onPress={exportImage}
@@ -267,7 +269,7 @@ export const ExportSheet: React.FC = () => {
         {exporting ? (
           <ActivityIndicator size="small" color="#ffffff" />
         ) : (
-          <Text style={styles.buttonText}>画像として出力</Text>
+          <Text style={styles.buttonText}>{t('export.image')}</Text>
         )}
       </TouchableOpacity>
       <View style={styles.buttonRow}>
