@@ -16,7 +16,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PullToRefresh } from "@/components/ui/PullToRefresh";
 import { openTimesheetPrintWindow } from "@/lib/timesheet-print";
 import { useAuth } from "@/hooks/useAuth";
-import { getGuestTokenBalance, consumeGuestToken } from "@/lib/guest-tokens";
+import { canGuestUseToday, markGuestUsedToday, getGuestTodayCount } from "@/lib/guest-daily-limit";
 
 type Step = "upload" | "scanning" | "result";
 
@@ -29,7 +29,8 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
   const [result, setResult] = useState<ScanTimesheetResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [userStatus, setUserStatus] = useState<UserStatusResponse | null>(null);
-  const [guestTokens, setGuestTokens] = useState<number | null>(null);
+  const [guestCanUse, setGuestCanUse] = useState<boolean>(true);
+  const [guestUsedCount, setGuestUsedCount] = useState<number>(0);
   const [statusLoading, setStatusLoading] = useState(true);
 
 
@@ -37,18 +38,20 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
     setStatusLoading(true);
     try {
       if (isGuest) {
-        const balance = getGuestTokenBalance();
-        setGuestTokens(balance);
+        setGuestCanUse(canGuestUseToday("scanner"));
+        setGuestUsedCount(getGuestTodayCount("scanner"));
         setUserStatus(null);
       } else if (isAuthenticated) {
         const res = await fetch("/api/user/status");
         if (res.ok) {
           setUserStatus(await res.json());
         }
-        setGuestTokens(null);
+        setGuestCanUse(true);
+        setGuestUsedCount(0);
       } else {
         setUserStatus(null);
-        setGuestTokens(null);
+        setGuestCanUse(true);
+        setGuestUsedCount(0);
       }
     } catch {
       // Silently fail - status is non-critical
@@ -83,11 +86,11 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
   const handleScan = useCallback(async () => {
     if (!image) return;
 
-    // ゲスト: ローカルトークンがあれば消費（なくてもスキャンは可能）
+    // ゲスト: 日次制限チェック
     if (isGuest) {
-      const balance = getGuestTokenBalance();
-      if (balance > 0) {
-        consumeGuestToken();
+      if (!canGuestUseToday("scanner")) {
+        setError("今日の利用回数に達しました。アカウント登録（無料）すると機能制限なしで毎日使えます");
+        return;
       }
     }
 
@@ -112,11 +115,14 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
         const errBody: ApiErrorResponse = await res.json();
         switch (errBody.code) {
           case "DAILY_LIMIT_EXCEEDED":
-          case "TOKEN_EXHAUSTED":
-            setError("利用回数上限に達しました。アカウント登録するとトークンを購入できます。");
+            setError(
+              isGuest
+                ? "今日の利用回数に達しました。アカウント登録（無料）すると機能制限なしで毎日使えます"
+                : "今日の利用回数に達しました。Premiumなら無制限に利用可能です",
+            );
             break;
           case "SWIMMER_LIMIT_EXCEEDED":
-            setError("無料プランでは8名まで解析可能です");
+            setError("無料プランでは6名まで解析可能です");
             break;
           case "PARSE_ERROR":
             setError("画像からタイム情報を読み取れませんでした。鮮明なタイム記録表の画像を使用してください");
@@ -131,6 +137,11 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
       const data: ScanTimesheetResponse = await res.json();
       setResult(data);
       setStep("result");
+
+      // ゲスト: スキャン成功時に日次利用を記録
+      if (isGuest) {
+        markGuestUsedToday("scanner");
+      }
 
       // Refresh user status after scan
       await fetchStatus();
@@ -150,16 +161,15 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
   // canScan の判定
   const canScan = (() => {
     if (isGuest) {
-      return true;  // ゲストは常にスキャン可能（審査対応: 5.1.1v）
+      return guestCanUse;
     }
     if (userStatus) {
-      // Premium (tokenBalance === null) は無制限
-      if (userStatus.tokenBalance === null) return true;
-      // Free: トークン残高チェック
-      return userStatus.tokenBalance > 0;
+      return userStatus.canScan;
     }
     return false;
   })();
+
+  const guestRemaining = Math.max(0, 1 - guestUsedCount);
 
   return (
     <PullToRefresh onRefresh={handleRefresh} disabled={step === "scanning"}>
@@ -174,15 +184,15 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
       )}
 
       {/* Usage status bar */}
-      {!statusLoading && (isGuest ? guestTokens !== null : userStatus != null) && (
+      {!statusLoading && (isGuest || userStatus != null) && (
         <div className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3">
           <div className="text-sm text-muted-foreground">
-            {isGuest && guestTokens !== null && (
+            {isGuest && (
               <div className="flex flex-col gap-0.5">
                 <span>
-                  お試し残り:{" "}
-                  <span className="font-bold text-foreground">{guestTokens}</span>
-                  {" "}/ 3回
+                  今日の残り:{" "}
+                  <span className="font-bold text-foreground">{guestRemaining}</span>
+                  {" "}/ 1回
                 </span>
                 <span className="text-xs text-muted-foreground/70">
                   アカウント登録すると毎日無料で使えます
@@ -192,12 +202,12 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
             {!isGuest && userStatus?.plan === "premium" && (
               <span className="font-medium text-foreground">回数無制限</span>
             )}
-            {!isGuest && userStatus?.plan === "free" && userStatus.tokenBalance !== null && (
+            {!isGuest && userStatus?.plan === "free" && (
               <div className="flex flex-col gap-0.5">
                 <span>
                   今日の残り:{" "}
                   <span className="font-bold text-foreground">
-                    {userStatus.tokenBalance}
+                    {userStatus.remainingScans ?? 0}
                   </span>
                   {" "}/ 1回
                 </span>
@@ -226,13 +236,13 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
             <div role="alert" className="rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
               {isGuest ? (
                 <div className="flex flex-col items-center gap-2">
-                  <span>お試し3回分を使い切りました。アカウント登録（無料）すると、毎日1回使えるようになります。</span>
+                  <span>今日の利用回数に達しました。アカウント登録（無料）すると機能制限なしで毎日使えます</span>
                   <Link href="/login">
                     <Button size="sm">無料アカウントを作成</Button>
                   </Link>
                 </div>
               ) : (
-                "今日のトークン（1回/日）を使い切りました。明日0:00にリセットされます。"
+                "今日の利用回数に達しました。Premiumなら無制限に利用可能です"
               )}
             </div>
           )}

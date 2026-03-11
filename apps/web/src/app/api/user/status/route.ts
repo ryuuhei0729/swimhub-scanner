@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyAuth, ensureUserDocument } from "@/lib/api-helpers";
 import { getTodayScanCount } from "@/lib/supabase/usage";
-import { getTokenBalance } from "@/lib/supabase/tokens";
 import { PLAN_LIMITS } from "@swimhub-scanner/shared";
 import type { UserStatusResponse } from "@swimhub-scanner/shared";
 
@@ -20,21 +19,23 @@ export async function GET(request: NextRequest) {
   const todayScanCount = await getTodayScanCount(supabase, uid);
 
   // 4. Get plan limits
-  const limits = PLAN_LIMITS[userDoc.plan];
+  const plan = userDoc.plan;
+  const limits = PLAN_LIMITS[plan];
 
-  // 5. Get token balance (null for premium = unlimited)
-  const tokenBalance = limits.useTokens
-    ? await getTokenBalance(supabase, uid)
-    : null;
+  // 5. Compute canScan and remainingScans
+  const dailyLimit = limits.dailyScanLimit;
+  const canScan = dailyLimit === null || todayScanCount < dailyLimit;
+  const remainingScans = dailyLimit === null ? null : Math.max(0, dailyLimit - todayScanCount);
 
   // 6. Build response
   const response: UserStatusResponse = {
-    plan: userDoc.plan,
+    plan,
     premiumExpiresAt: userDoc.premiumExpiresAt?.toISOString() ?? null,
     todayScanCount,
-    dailyLimit: limits.dailyScanLimit,
+    dailyLimit,
     maxSwimmers: limits.maxSwimmers,
-    tokenBalance,
+    canScan,
+    remainingScans,
   };
 
   return NextResponse.json<UserStatusResponse>(response);

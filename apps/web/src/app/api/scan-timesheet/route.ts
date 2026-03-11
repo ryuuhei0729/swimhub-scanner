@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyAuth, ensureUserDocument } from "@/lib/api-helpers";
 import { canUserScan, incrementScanCount } from "@/lib/supabase/usage";
-import { getTokenBalance, consumeToken } from "@/lib/supabase/tokens";
 import { scanTimesheetWithGemini } from "@/lib/gemini/client";
 import {
   validateImageMimeType,
@@ -115,8 +114,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ゲストはfreeプランの制限を適用（選手数上限）
-    const maxSwimmers = PLAN_LIMITS.free.maxSwimmers;
+    // ゲストはguestプランの制限を適用（選手数上限）
+    const maxSwimmers = PLAN_LIMITS.guest.maxSwimmers;
     return performScan(body, maxSwimmers);
   }
 
@@ -141,27 +140,22 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // トークン制チェック（freeプラン）
+  // 日次制限チェック
   const planLimits = PLAN_LIMITS[userDoc.plan];
-  if (planLimits.useTokens) {
-    const balance = await getTokenBalance(supabase, uid);
-    if (balance <= 0) {
-      return NextResponse.json<ApiErrorResponse>(
-        { error: "トークンを使い切りました", code: "TOKEN_EXHAUSTED" },
-        { status: 429 },
-      );
-    }
+  const canScan = await canUserScan(supabase, uid, userDoc.plan);
+  if (!canScan) {
+    return NextResponse.json<ApiErrorResponse>(
+      { error: "今日の利用回数に達しました", code: "DAILY_LIMIT_EXCEEDED" },
+      { status: 429 },
+    );
   }
 
   // Perform scan
   const maxSwimmers = planLimits.maxSwimmers;
   const result = await performScan(body, maxSwimmers);
 
-  // スキャン成功時のみトークン消費 & 使用回数記録
+  // スキャン成功時のみ使用回数記録
   if (result.status === 200) {
-    if (planLimits.useTokens) {
-      await consumeToken(supabase, uid);
-    }
     await incrementScanCount(supabase, uid);
   }
 

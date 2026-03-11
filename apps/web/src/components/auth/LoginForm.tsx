@@ -26,7 +26,9 @@ export function LoginForm() {
       await signInWithGoogle();
     } catch (err) {
       setError("Googleログインに失敗しました。もう一度お試しください。");
-      console.error("Google sign-in error:", err);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Google sign-in error:", err);
+      }
       setLoading(false);
     }
   };
@@ -38,7 +40,9 @@ export function LoginForm() {
       await signInWithApple();
     } catch (err) {
       setError("Appleログインに失敗しました。もう一度お試しください。");
-      console.error("Apple sign-in error:", err);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Apple sign-in error:", err);
+      }
       setLoading(false);
     }
   };
@@ -68,7 +72,9 @@ export function LoginForm() {
             : "メールログインに失敗しました。もう一度お試しください。",
         );
       }
-      console.error("Email auth error:", err);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Email auth error:", err);
+      }
     } finally {
       setLoading(false);
     }

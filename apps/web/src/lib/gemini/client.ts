@@ -25,7 +25,9 @@ export interface GeminiScanOptions {
 export async function scanTimesheetWithGemini(options: GeminiScanOptions): Promise<string> {
   // Mock mode for development without Gemini API key
   if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "mock") {
-    console.log("[DEV] Using mock Gemini response");
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[DEV] Using mock Gemini response");
+    }
     const { MOCK_SCAN_RESPONSE } = await import("./mock");
     return JSON.stringify(MOCK_SCAN_RESPONSE);
   }

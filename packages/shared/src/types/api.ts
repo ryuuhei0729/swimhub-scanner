@@ -47,7 +47,8 @@ export interface UserStatusResponse {
   todayScanCount: number;
   dailyLimit: number | null; // null = unlimited
   maxSwimmers: number | null; // null = unlimited
-  tokenBalance: number | null; // null = unlimited (premium)
+  canScan: boolean;
+  remainingScans: number | null; // null = unlimited
 }
 
 // === Error Response ===
@@ -55,7 +56,6 @@ export interface UserStatusResponse {
 export type ErrorCode =
   | "UNAUTHORIZED"
   | "DAILY_LIMIT_EXCEEDED"
-  | "TOKEN_EXHAUSTED"
   | "SWIMMER_LIMIT_EXCEEDED"
   | "PARSE_ERROR"
   | "IMAGE_ERROR"
@@ -66,4 +66,4 @@ export interface ApiErrorResponse {
   code: ErrorCode;
 }
 
-export type PlanType = "free" | "premium";
+export type PlanType = "guest" | "free" | "premium";
