@@ -59,19 +59,29 @@ export const useAppleAuth = (): UseAppleAuthReturn => {
 
     try {
       const isAppleAuthAvailable = await AppleAuthentication.isAvailableAsync()
+      console.log('[AppleAuth] isAvailableAsync:', isAppleAuthAvailable, 'Platform:', Platform.OS, 'isPad:', (Platform as any).isPad)
       if (!isAppleAuthAvailable) {
         setError('このデバイスではApple認証を利用できません')
         return { success: false, error: new Error('このデバイスではApple認証を利用できません') }
       }
 
       // nonce生成（リプレイ攻撃防止）
-      const rawNonce = Crypto.getRandomValues(new Uint8Array(32))
-        .reduce((acc, val) => acc + val.toString(16).padStart(2, '0'), '')
-      const hashedNonce = await Crypto.digestStringAsync(
-        Crypto.CryptoDigestAlgorithm.SHA256,
-        rawNonce,
-      )
+      let rawNonce: string
+      let hashedNonce: string
+      try {
+        rawNonce = Crypto.getRandomValues(new Uint8Array(32))
+          .reduce((acc, val) => acc + val.toString(16).padStart(2, '0'), '')
+        hashedNonce = await Crypto.digestStringAsync(
+          Crypto.CryptoDigestAlgorithm.SHA256,
+          rawNonce,
+        )
+      } catch (cryptoError) {
+        console.error('[AppleAuth] Nonce generation failed:', cryptoError)
+        setError('認証の初期化に失敗しました。アプリを再起動してお試しください。')
+        return { success: false, error: new Error('Nonce generation failed') }
+      }
 
+      console.log('[AppleAuth] Nonce generated, calling signInAsync...')
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
@@ -79,9 +89,11 @@ export const useAppleAuth = (): UseAppleAuthReturn => {
         ],
         nonce: hashedNonce,
       })
+      console.log('[AppleAuth] signInAsync returned. identityToken:', credential.identityToken ? 'present' : 'null', 'user:', credential.user ? 'present' : 'null')
 
       if (!credential.identityToken) {
-        setError('Apple認証トークンが取得できませんでした')
+        console.error('[AppleAuth] identityToken is null. credential keys:', Object.keys(credential))
+        setError('Apple認証トークンが取得できませんでした。もう一度お試しください。')
         return { success: false, error: new Error('Apple認証トークンが取得できませんでした') }
       }
 
@@ -97,10 +109,12 @@ export const useAppleAuth = (): UseAppleAuthReturn => {
       })
 
       if (signInError) {
+        console.error('[AppleAuth] Supabase signInWithIdToken error:', JSON.stringify(signInError, null, 2))
         setError(localizeSupabaseAuthError(signInError))
         return { success: false, error: signInError }
       }
 
+      console.log('[AppleAuth] Sign in successful')
       if (displayName) {
         await supabase.auth.updateUser({
           data: { name: displayName },
@@ -110,17 +124,21 @@ export const useAppleAuth = (): UseAppleAuthReturn => {
       return { success: true }
     } catch (e) {
       const err = e as AppleAuthError
+      console.error('[AppleAuth] Caught error:', JSON.stringify({ code: err.code, message: err.message, name: err.name }, null, 2))
 
+      // ユーザーによるキャンセル
+      // iPad では ERR_REQUEST_UNKNOWN のメッセージが異なる場合があるため、
+      // code だけでもキャンセル扱いとする
       if (
         err.code === 'ERR_REQUEST_CANCELED' ||
-        (err.code === 'ERR_REQUEST_UNKNOWN' && err.message?.toLowerCase().includes('authorization attempt failed'))
+        err.code === 'ERR_REQUEST_UNKNOWN'
       ) {
-        setError('認証がキャンセルされました')
+        setError('認証がキャンセルされました。もう一度お試しください。')
         return { success: false, error: new Error('認証がキャンセルされました') }
       }
 
-      if (err.code === 'ERR_REQUEST_NOT_HANDLED' || err.code === 'ERR_REQUEST_FAILED') {
-        setError('Apple認証に失敗しました。Googleでのログインもお試しください。')
+      if (err.code === 'ERR_REQUEST_NOT_HANDLED' || err.code === 'ERR_REQUEST_FAILED' || err.code === 'ERR_REQUEST_INVALID') {
+        setError('Apple認証に失敗しました。しばらく待ってからもう一度お試しください。')
         return { success: false, error: err }
       }
 

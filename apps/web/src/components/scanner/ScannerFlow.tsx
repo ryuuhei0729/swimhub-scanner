@@ -122,12 +122,11 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
   const handleScan = useCallback(async () => {
     if (!image) return;
 
-    // ゲスト: ローカルトークンチェック & 消費
+    // ゲスト: ローカルトークンがあれば消費（なくてもスキャンは可能）
     if (isGuest) {
-      const success = consumeGuestToken();
-      if (!success) {
-        setError("無料トークンを使い切りました。アカウント登録するとトークンを購入できます。");
-        return;
+      const balance = getGuestTokenBalance();
+      if (balance > 0) {
+        consumeGuestToken();
       }
     }
 
@@ -208,7 +207,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
   // canScan の判定
   const canScan = (() => {
     if (isGuest) {
-      return guestTokens !== null && guestTokens > 0;
+      return true;  // ゲストは常にスキャン可能（審査対応: 5.1.1v）
     }
     if (userStatus) {
       // Premium (tokenBalance === null) は無制限
@@ -248,7 +247,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
               </div>
             )}
             {!isGuest && userStatus?.plan === "premium" && (
-              <span className="font-medium text-purple-600">Premium — 回数無制限</span>
+              <span className="font-medium text-foreground">回数無制限</span>
             )}
             {!isGuest && userStatus?.plan === "free" && userStatus.tokenBalance !== null && (
               <div className="flex flex-col gap-0.5">
@@ -272,11 +271,6 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
               </Button>
             </Link>
           )}
-          {!isGuest && userStatus?.plan === "free" && (
-            <Button variant="ghost" size="sm" className="text-purple-600">
-              Premium にアップグレード
-            </Button>
-          )}
         </div>
       )}
 
@@ -295,7 +289,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
                   </Link>
                 </div>
               ) : (
-                "今日のトークン（1回/日）を使い切りました。明日0:00にリセットされます。Premiumなら回数無制限で使えます。"
+                "今日のトークン（1回/日）を使い切りました。明日0:00にリセットされます。"
               )}
             </div>
           )}
