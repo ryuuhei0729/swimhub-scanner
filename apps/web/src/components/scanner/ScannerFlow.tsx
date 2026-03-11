@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type {
   ScanTimesheetResponse,
   UserStatusResponse,
@@ -17,11 +17,6 @@ import { PullToRefresh } from "@/components/ui/PullToRefresh";
 import { openTimesheetPrintWindow } from "@/lib/timesheet-print";
 import { useAuth } from "@/hooks/useAuth";
 import { getGuestTokenBalance, consumeGuestToken } from "@/lib/guest-tokens";
-import {
-  createRewardedAdController,
-  type AdState,
-  type RewardedAdController,
-} from "@/lib/ads/rewarded-ad";
 
 type Step = "upload" | "scanning" | "result";
 
@@ -37,11 +32,6 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
   const [guestTokens, setGuestTokens] = useState<number | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
 
-  // --- Ad state ---
-  const adControllerRef = useRef<RewardedAdController | null>(null);
-  const [adState, setAdState] = useState<AdState>("idle");
-  const [adUnavailable, setAdUnavailable] = useState(false);
-  const [scanTriggered, setScanTriggered] = useState(false);
 
   const fetchStatus = useCallback(async () => {
     setStatusLoading(true);
@@ -77,35 +67,6 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
     fetchStatus();
   }, [fetchStatus]);
 
-  // Preload ad when user selects an image
-  useEffect(() => {
-    if (!image) return;
-
-    const controller = createRewardedAdController();
-    if (!controller) {
-      const timer = setTimeout(() => setAdUnavailable(true), 0);
-      return () => clearTimeout(timer);
-    }
-    adControllerRef.current = controller;
-
-    const unsubscribe = controller.onStateChange((state) => {
-      setAdState(state);
-    });
-
-    controller.load();
-
-    return () => {
-      unsubscribe();
-      controller.dispose();
-    };
-  }, [image]);
-
-  // If ad loads AFTER scan was triggered, show it automatically
-  useEffect(() => {
-    if (scanTriggered && adState === "loaded" && !adUnavailable) {
-      adControllerRef.current?.show();
-    }
-  }, [scanTriggered, adState, adUnavailable]);
 
   const handleRefresh = useCallback(async () => {
     await fetchStatus();
@@ -132,20 +93,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
 
     setStep("scanning");
     setError(null);
-    setScanTriggered(true);
 
-    // --- Show ad (parallel with scanning) ---
-    const controller = adControllerRef.current;
-    if (controller) {
-      const currentState = controller.getState();
-      if (currentState === "loaded") {
-        controller.show();
-      } else if (currentState !== "loading") {
-        setAdUnavailable(true);
-      }
-    }
-
-    // --- Start API scan ---
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -197,11 +145,6 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
     setImage(null);
     setResult(null);
     setError(null);
-    setScanTriggered(false);
-    setAdState("idle");
-    setAdUnavailable(false);
-    adControllerRef.current?.dispose();
-    adControllerRef.current = null;
   }, []);
 
   // canScan の判定
