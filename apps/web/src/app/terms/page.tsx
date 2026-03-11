@@ -51,15 +51,10 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">第5条（有料プラン）</h2>
+          <h2 className="text-lg font-semibold text-gray-900">第5条（利用制限）</h2>
           <ol className="mt-2 list-inside list-decimal space-y-1">
-            <li>本サービスでは、追加機能を利用できる有料プラン（以下「プレミアムプラン」）を提供します。</li>
-            <li>プレミアムプランの料金は、月額プラン（¥500/月）および年額プラン（¥5,000/年）とします。料金は変更される場合があり、変更時は事前に通知します。</li>
-            <li>サブスクリプションは、現在の期間が終了する少なくとも24時間前にキャンセルしない限り、同じ条件で自動的に更新されます。</li>
-            <li>初回登録時には7日間の無料トライアル期間が設けられます。トライアル期間中にキャンセルしない場合、トライアル終了後に自動的に課金が開始されます。</li>
-            <li>Web経由でのお支払いにはStripeを、モバイルアプリでのお支払いにはApple App Store / Google Playのアプリ内課金（RevenueCat経由）を使用します。</li>
-            <li>解約はいつでも可能です。Web経由の場合はStripeカスタマーポータルから、モバイルの場合は各ストアのサブスクリプション管理画面から行えます。解約後も、現在の課金期間が終了するまでプレミアム機能を利用できます。</li>
-            <li>返金については、各決済プラットフォーム（Stripe、Apple App Store、Google Play）のポリシーに準じます。</li>
+            <li>本サービスでは、1日あたりの解析回数に制限を設けています。</li>
+            <li>将来的に有料プランを提供する場合があります。その際は事前に利用規約を更新し通知します。</li>
           </ol>
         </section>
 

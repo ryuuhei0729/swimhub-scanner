@@ -171,12 +171,11 @@ export const ScannerScreen: React.FC = () => {
   const startScan = async () => {
     if (!imageBase64) return
 
-    // ゲスト: ローカルトークンチェック & 消費
+    // ゲスト: ローカルトークンがあれば消費（なくてもスキャンは可能）
     if (isGuest) {
-      const success = await consumeGuestToken()
-      if (!success) {
-        setError('無料お試し回数を使い切りました。アカウント登録すると引き続き利用できます。')
-        return
+      const balance = await getGuestTokenBalance()
+      if (balance > 0) {
+        await consumeGuestToken()
       }
     }
 
@@ -280,7 +279,7 @@ export const ScannerScreen: React.FC = () => {
   // canScan の判定
   const canScan = (() => {
     if (isGuest) {
-      return guestTokens !== null && guestTokens > 0
+      return true  // ゲストは常にスキャン可能（審査対応: 5.1.1v）
     }
     if (userStatus) {
       if (userStatus.tokenBalance === null) return false
@@ -464,6 +463,22 @@ export const ScannerScreen: React.FC = () => {
             <Text style={styles.templateButtonText}>画像</Text>
           </TouchableOpacity>
         </View>
+
+        {/* ゲスト: トークン残り少ない場合のソフト案内 */}
+        {isGuest && guestTokens !== null && guestTokens <= 0 && (
+          <View style={styles.guestInfoBanner}>
+            <Text style={styles.guestInfoText}>
+              無料お試し回数を使い切りました。{'\n'}
+              引き続きスキャンは利用できます。
+            </Text>
+            <TouchableOpacity
+              style={styles.softSignupButton}
+              onPress={() => navigation.navigate('GuestSignup')}
+            >
+              <Text style={styles.softSignupText}>アカウント登録でもっと便利に</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* トークン切れの案内 */}
         {!canScan && (
@@ -703,6 +718,32 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  guestInfoBanner: {
+    marginTop: 16,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  guestInfoText: {
+    color: '#1E40AF',
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  softSignupButton: {
+    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  softSignupText: {
+    color: '#2563EB',
+    fontSize: 13,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
   signupPromptButton: {
     marginTop: 12,
