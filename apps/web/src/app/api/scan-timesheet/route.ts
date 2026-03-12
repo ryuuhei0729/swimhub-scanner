@@ -1,6 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyAuth, ensureUserDocument } from "@/lib/api-helpers";
-import { canUserScan, incrementScanCount } from "@/lib/supabase/usage";
+import {
+  canUserScan,
+  incrementScanCount,
+  logTokenConsumption,
+} from "@/lib/supabase/usage";
 import { scanTimesheetWithGemini } from "@/lib/gemini/client";
 import {
   validateImageMimeType,
@@ -140,9 +144,17 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // サブスクリプションステータスを取得
+  const { data: subData } = await supabase
+    .from("user_subscriptions")
+    .select("status")
+    .eq("id", uid)
+    .single();
+  const subscriptionStatus = subData?.status ?? null;
+
   // 日次制限チェック
   const planLimits = PLAN_LIMITS[userDoc.plan];
-  const canScan = await canUserScan(supabase, uid, userDoc.plan);
+  const canScan = await canUserScan(supabase, uid, userDoc.plan, subscriptionStatus);
   if (!canScan) {
     return NextResponse.json<ApiErrorResponse>(
       { error: "今日の利用回数に達しました", code: "DAILY_LIMIT_EXCEEDED" },
@@ -150,13 +162,19 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Perform scan
-  const maxSwimmers = planLimits.maxSwimmers;
+  // Premium は maxSwimmers 制限なし
+  const isPremium = subscriptionStatus === "active" || subscriptionStatus === "trialing";
+  const maxSwimmers = isPremium ? null : planLimits.maxSwimmers;
+
   const result = await performScan(body, maxSwimmers);
 
   // スキャン成功時のみ使用回数記録
   if (result.status === 200) {
     await incrementScanCount(supabase, uid);
+    // Premium 以外はトークン消費ログを記録
+    if (!isPremium) {
+      await logTokenConsumption(supabase, uid, "scanner_scan");
+    }
   }
 
   return result;

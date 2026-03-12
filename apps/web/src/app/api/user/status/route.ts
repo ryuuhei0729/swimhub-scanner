@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyAuth, ensureUserDocument } from "@/lib/api-helpers";
-import { getTodayScanCount } from "@/lib/supabase/usage";
+import { getTodayScanCount, getTodayTokensUsed } from "@/lib/supabase/usage";
 import { PLAN_LIMITS } from "@swimhub-scanner/shared";
-import type { UserStatusResponse } from "@swimhub-scanner/shared";
+import type { UserStatusResponse, SubscriptionStatus } from "@swimhub-scanner/shared";
 
 export async function GET(request: NextRequest) {
   // 1. Auth check
@@ -18,24 +18,46 @@ export async function GET(request: NextRequest) {
   // 3. Get today's scan count
   const todayScanCount = await getTodayScanCount(supabase, uid);
 
-  // 4. Get plan limits
+  // 4. Get subscription status
+  const { data: subData } = await supabase
+    .from("user_subscriptions")
+    .select("status")
+    .eq("id", uid)
+    .single();
+  const subscriptionStatus: SubscriptionStatus = subData?.status ?? null;
+
+  // 5. Get today's tokens used (across all apps)
+  const tokensUsedToday = await getTodayTokensUsed(supabase, uid);
+
+  // 6. Get plan limits
   const plan = userDoc.plan;
   const limits = PLAN_LIMITS[plan];
 
-  // 5. Compute canScan and remainingScans
+  // 7. Compute canScan, remainingScans, and tokensRemaining
+  const isPremium = subscriptionStatus === "active" || subscriptionStatus === "trialing";
   const dailyLimit = limits.dailyScanLimit;
-  const canScan = dailyLimit === null || todayScanCount < dailyLimit;
-  const remainingScans = dailyLimit === null ? null : Math.max(0, dailyLimit - todayScanCount);
 
-  // 6. Build response
+  // canScan: Premium always true, otherwise based on daily_tokens_used
+  const canScan = isPremium || dailyLimit === null || tokensUsedToday < dailyLimit;
+  const remainingScans = dailyLimit === null || isPremium
+    ? null
+    : Math.max(0, dailyLimit - todayScanCount);
+  const tokensRemaining = isPremium
+    ? null
+    : Math.max(0, (dailyLimit ?? 1) - tokensUsedToday);
+
+  // 8. Build response
   const response: UserStatusResponse = {
     plan,
     premiumExpiresAt: userDoc.premiumExpiresAt?.toISOString() ?? null,
     todayScanCount,
     dailyLimit,
-    maxSwimmers: limits.maxSwimmers,
+    maxSwimmers: isPremium ? null : limits.maxSwimmers,
     canScan,
     remainingScans,
+    subscriptionStatus,
+    tokensUsedToday,
+    tokensRemaining,
   };
 
   return NextResponse.json<UserStatusResponse>(response);

@@ -49,6 +49,9 @@ export interface UserStatusResponse {
   maxSwimmers: number | null; // null = unlimited
   canScan: boolean;
   remainingScans: number | null; // null = unlimited
+  subscriptionStatus: SubscriptionStatus;
+  tokensUsedToday: number;
+  tokensRemaining: number | null; // null = unlimited
 }
 
 // === Error Response ===
@@ -67,3 +70,11 @@ export interface ApiErrorResponse {
 }
 
 export type PlanType = "guest" | "free" | "premium";
+
+export type SubscriptionStatus =
+  | "trialing"
+  | "active"
+  | "canceled"
+  | "expired"
+  | "past_due"
+  | null;
