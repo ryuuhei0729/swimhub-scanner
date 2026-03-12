@@ -8,6 +8,7 @@ import type {
 } from "@swimhub-scanner/shared";
 import Image from "next/image";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { ImageUploader } from "./ImageUploader";
 import { ResultTable } from "./ResultTable";
 import { ExportButtons } from "./ExportButtons";
@@ -24,6 +25,8 @@ export type { Step };
 
 export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => void }) {
   const { isGuest, isAuthenticated } = useAuth();
+  const params = useParams();
+  const locale = (params.locale as string) || "ja";
   const [step, setStep] = useState<Step>("upload");
   const [image, setImage] = useState<{ base64: string; mimeType: "image/jpeg" | "image/png" } | null>(null);
   const [result, setResult] = useState<ScanTimesheetResponse | null>(null);
@@ -218,7 +221,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
             )}
           </div>
           {isGuest && (
-            <Link href="/login">
+            <Link href={`/${locale}/login`}>
               <Button variant="ghost" size="sm" className="text-blue-600">
                 アカウント登録
               </Button>
@@ -237,7 +240,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
               {isGuest ? (
                 <div className="flex flex-col items-center gap-2">
                   <span>今日の利用回数に達しました。アカウント登録（無料）すると機能制限なしで毎日使えます</span>
-                  <Link href="/login">
+                  <Link href={`/${locale}/login`}>
                     <Button size="sm">無料アカウントを作成</Button>
                   </Link>
                 </div>
@@ -311,7 +314,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
 
           {isGuest && (
             <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-center">
-              <Link href="/login">
+              <Link href={`/${locale}/login`}>
                 <Button size="sm" variant="outline" className="text-blue-600 border-blue-300">
                   アカウント登録してもっと使う
                 </Button>

@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import {
   Heart,
   ShieldCheck,
@@ -61,6 +64,8 @@ const footerLinks = [
 ];
 
 export function SwimHubFamilyFooter() {
+  const params = useParams();
+  const locale = (params.locale as string) || "ja";
   const currentYear = new Date().getFullYear();
 
   return (
@@ -114,7 +119,7 @@ export function SwimHubFamilyFooter() {
                 ) : (
                   <Link
                     key={link.name}
-                    href={link.href}
+                    href={`/${locale}${link.href}`}
                     className="flex items-center text-sm text-gray-600 hover:text-blue-600 transition-colors duration-200"
                   >
                     <link.icon className="h-4 w-4 mr-2" />

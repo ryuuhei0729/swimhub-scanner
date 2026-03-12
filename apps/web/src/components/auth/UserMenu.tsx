@@ -2,10 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 
 export function UserMenu() {
   const { user, signOut } = useAuth();
+  const params = useParams();
+  const locale = (params.locale as string) || "ja";
   const [isOpen, setIsOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -42,7 +45,7 @@ export function UserMenu() {
   if (!user) {
     return (
       <Link
-        href="/login"
+        href={`/${locale}/login`}
         className="rounded-lg px-3 py-2 text-sm font-medium text-primary hover:bg-muted transition-colors duration-200"
       >
         ログイン

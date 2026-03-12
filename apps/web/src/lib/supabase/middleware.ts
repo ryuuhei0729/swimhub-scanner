@@ -32,9 +32,10 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // ログイン済みで /login にアクセス → / へリダイレクト
-  if (user && pathname === "/login") {
-    return NextResponse.redirect(new URL("/", request.url));
+  // ログイン済みで /{locale}/login にアクセス → /{locale} へリダイレクト
+  const loginMatch = pathname.match(/^\/([a-z]{2})\/login$/);
+  if (user && loginMatch) {
+    return NextResponse.redirect(new URL(`/${loginMatch[1]}`, request.url));
   }
 
   return response;

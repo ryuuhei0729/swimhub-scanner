@@ -68,13 +68,13 @@ export async function GET(request: NextRequest) {
   const redirectTo = validateRedirectPath(requestUrl.searchParams.get("redirect_to"), requestUrl.origin);
 
   if (!code) {
-    return NextResponse.redirect(requestUrl.origin + "/login?error=missing_code");
+    return NextResponse.redirect(requestUrl.origin + "/ja/login?error=missing_code");
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.redirect(requestUrl.origin + "/login?error=config_error");
+    return NextResponse.redirect(requestUrl.origin + "/ja/login?error=config_error");
   }
 
   try {
@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error("OAuth callback error:", error);
       const errorResponse = NextResponse.redirect(
-        requestUrl.origin + "/login?error=auth_failed",
+        requestUrl.origin + "/ja/login?error=auth_failed",
       );
       applyCookies(errorResponse, cookiesToSet);
       return errorResponse;
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
     return successResponse;
   } catch (error) {
     console.error("OAuth callback error:", error);
-    return NextResponse.redirect(requestUrl.origin + "/login?error=auth_failed");
+    return NextResponse.redirect(requestUrl.origin + "/ja/login?error=auth_failed");
   }
 }
 

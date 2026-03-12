@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,6 +10,8 @@ export function LoginForm() {
   const { signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail, enterGuestMode } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useParams();
+  const locale = (params.locale as string) || "ja";
   const [error, setError] = useState<string | null>(
     searchParams.get("error") ? "ログインに失敗しました。もう一度お試しください。" : null,
   );
@@ -57,7 +59,7 @@ export function LoginForm() {
         setEmailSent(true);
       } else {
         await signInWithEmail(email, password);
-        router.push("/");
+        router.push(`/${locale}`);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "";
@@ -258,7 +260,7 @@ export function LoginForm() {
             type="button"
             onClick={() => {
               enterGuestMode();
-              router.replace("/");
+              router.replace(`/${locale}`);
             }}
             className="w-full py-3 px-4 rounded-lg text-sm font-medium text-gray-500 border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"
           >
@@ -284,11 +286,11 @@ export function LoginForm() {
 
       <p className="text-center text-xs text-gray-500">
         ログインすることで、
-        <Link href="/terms" className="text-blue-600 underline hover:text-blue-800">
+        <Link href={`/${locale}/terms`} className="text-blue-600 underline hover:text-blue-800">
           利用規約
         </Link>
         および
-        <Link href="/privacy" className="text-blue-600 underline hover:text-blue-800">
+        <Link href={`/${locale}/privacy`} className="text-blue-600 underline hover:text-blue-800">
           プライバシーポリシー
         </Link>
         に同意したものとします。
