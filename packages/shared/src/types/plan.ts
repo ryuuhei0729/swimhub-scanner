@@ -1,5 +1,8 @@
 import type { PlanType } from "./api";
 
+/** ゲストユーザーの初期トークン数 */
+export const GUEST_INITIAL_TOKENS = 3;
+
 export interface PlanLimits {
   dailyScanLimit: number | null; // null = unlimited
   maxSwimmers: number | null; // null = unlimited

@@ -282,8 +282,8 @@ export const ScannerScreen: React.FC = () => {
       return true  // ゲストは常にスキャン可能（審査対応: 5.1.1v）
     }
     if (userStatus) {
-      if (userStatus.tokenBalance === null) return false
-      return userStatus.tokenBalance > 0
+      if (userStatus.tokensRemaining === null) return false
+      return userStatus.tokensRemaining > 0
     }
     return false
   })()
@@ -291,7 +291,7 @@ export const ScannerScreen: React.FC = () => {
   // 表示用のトークン残高
   const displayTokens = (() => {
     if (isGuest) return guestTokens
-    if (userStatus?.tokenBalance !== undefined) return userStatus.tokenBalance
+    if (userStatus?.tokensRemaining !== undefined) return userStatus.tokensRemaining
     return null
   })()
 
