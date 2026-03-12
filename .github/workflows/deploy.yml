@@ -37,14 +37,14 @@ jobs:
 
       - name: Build for Cloudflare
         working-directory: apps/web
-        run: npx opennextjs-cloudflare build
+        run: pnpm exec opennextjs-cloudflare build
 
       - name: Deploy to Cloudflare Workers
         working-directory: apps/web
         run: |
           # .env.production から変数を読み込んで wrangler に渡す
           set -a && source .env.production && set +a
-          npx wrangler deploy \
+          pnpm exec wrangler deploy \
             --var NEXT_PUBLIC_SUPABASE_URL:$NEXT_PUBLIC_SUPABASE_URL \
             --var NEXT_PUBLIC_SUPABASE_ANON_KEY:$NEXT_PUBLIC_SUPABASE_ANON_KEY
         env:

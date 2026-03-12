@@ -5,16 +5,16 @@
   "description": "タイム記録表スキャナー - モバイルアプリケーション",
   "main": "index.ts",
   "scripts": {
-    "start": "npx dotenvx run -f .env.local -- expo start",
-    "start:clear": "npx dotenvx run -f .env.local -- expo start --clear",
-    "android": "npx dotenvx run -f .env.local -- expo start --android",
-    "android:clear": "npx dotenvx run -f .env.local -- expo start --android --clear",
-    "ios": "npx dotenvx run -f .env.local -- expo start --ios --dev-client",
-    "ios:run": "npx dotenvx run -f .env.local -- expo run:ios",
-    "ios:clear": "npx dotenvx run -f .env.local -- expo start --ios --dev-client --clear",
+    "start": "pnpm exec dotenvx run -f .env.local -- expo start",
+    "start:clear": "pnpm exec dotenvx run -f .env.local -- expo start --clear",
+    "android": "pnpm exec dotenvx run -f .env.local -- expo start --android",
+    "android:clear": "pnpm exec dotenvx run -f .env.local -- expo start --android --clear",
+    "ios": "pnpm exec dotenvx run -f .env.local -- expo start --ios --dev-client",
+    "ios:run": "pnpm exec dotenvx run -f .env.local -- expo run:ios",
+    "ios:clear": "pnpm exec dotenvx run -f .env.local -- expo start --ios --dev-client --clear",
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
-    "clean": "npx expo clean"
+    "clean": "pnpm exec expo clean"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.51.1",
