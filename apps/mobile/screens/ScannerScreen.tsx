@@ -20,7 +20,8 @@ import * as ImagePicker from 'expo-image-picker'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { getUserStatus, scanTimesheet, guestScanTimesheet, ApiError } from '@/lib/api-client'
-import { getGuestTokenBalance, consumeGuestToken } from '@/lib/guest-tokens'
+import { canGuestScanToday, recordGuestScan, getGuestTodayCount } from '@/lib/guest-daily-limit'
+import { PLAN_LIMITS } from '@swimhub-scanner/shared'
 import { useAuth } from '@/contexts/AuthProvider'
 import { useScanResultStore } from '@/stores/scanResultStore'
 import { shareTimesheetPdf, shareTimesheetImage } from '@/lib/timesheet-print'
@@ -46,7 +47,8 @@ export const ScannerScreen: React.FC = () => {
   const [imageBase64, setImageBase64] = useState<string | null>(null)
   const [imageMimeType, setImageMimeType] = useState<string>('image/jpeg')
   const [userStatus, setUserStatus] = useState<UserStatusResponse | null>(null)
-  const [guestTokens, setGuestTokens] = useState<number | null>(null)
+  const [guestCanScan, setGuestCanScan] = useState<boolean>(true)
+  const [guestTodayCount, setGuestTodayCount] = useState<number>(0)
   const [error, setError] = useState<string | null>(null)
   const [statusLoading, setStatusLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -64,16 +66,20 @@ export const ScannerScreen: React.FC = () => {
     setStatusLoading(true)
     try {
       if (isGuest) {
-        const balance = await getGuestTokenBalance()
-        setGuestTokens(balance)
+        const canScan = await canGuestScanToday()
+        const todayCount = await getGuestTodayCount()
+        setGuestCanScan(canScan)
+        setGuestTodayCount(todayCount)
         setUserStatus(null)
       } else if (isAuthenticated) {
         const status = await getUserStatus()
         setUserStatus(status)
-        setGuestTokens(null)
+        setGuestCanScan(true)
+        setGuestTodayCount(0)
       } else {
         setUserStatus(null)
-        setGuestTokens(null)
+        setGuestCanScan(true)
+        setGuestTodayCount(0)
       }
     } catch (err) {
       console.error('ステータスの取得に失敗:', err)
@@ -171,12 +177,9 @@ export const ScannerScreen: React.FC = () => {
   const startScan = async () => {
     if (!imageBase64) return
 
-    // ゲスト: ローカルトークンがあれば消費（なくてもスキャンは可能）
+    // ゲスト: 日次利用を記録
     if (isGuest) {
-      const balance = await getGuestTokenBalance()
-      if (balance > 0) {
-        await consumeGuestToken()
-      }
+      await recordGuestScan()
     }
 
     setStep('scanning')
@@ -279,7 +282,7 @@ export const ScannerScreen: React.FC = () => {
   // canScan の判定
   const canScan = (() => {
     if (isGuest) {
-      return true  // ゲストは常にスキャン可能（審査対応: 5.1.1v）
+      return guestCanScan
     }
     if (userStatus) {
       if (userStatus.tokensRemaining === null) return false
@@ -288,9 +291,11 @@ export const ScannerScreen: React.FC = () => {
     return false
   })()
 
-  // 表示用のトークン残高
+  // 表示用の残り回数
+  const dailyLimit = PLAN_LIMITS.guest.dailyScanLimit ?? 1
+  const guestRemaining = Math.max(0, dailyLimit - guestTodayCount)
   const displayTokens = (() => {
-    if (isGuest) return guestTokens
+    if (isGuest) return guestRemaining
     if (userStatus?.tokensRemaining !== undefined) return userStatus.tokensRemaining
     return null
   })()
@@ -373,9 +378,9 @@ export const ScannerScreen: React.FC = () => {
         {/* 利用状況 */}
         {!statusLoading && (
           <View style={styles.statusBar}>
-            {isGuest && guestTokens !== null && (
+            {isGuest && (
               <Text style={styles.statusText}>
-                お試し残り: {guestTokens}回
+                残り: {guestRemaining}回（今日）
               </Text>
             )}
             {!isGuest && userStatus && displayTokens !== null && (
@@ -464,12 +469,12 @@ export const ScannerScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* ゲスト: トークン残り少ない場合のソフト案内 */}
-        {isGuest && guestTokens !== null && guestTokens <= 0 && (
+        {/* ゲスト: 今日の回数を使い切った場合の案内 */}
+        {isGuest && !guestCanScan && (
           <View style={styles.guestInfoBanner}>
             <Text style={styles.guestInfoText}>
-              無料お試し回数を使い切りました。{'\n'}
-              引き続きスキャンは利用できます。
+              本日の利用回数上限に達しました。{'\n'}
+              明日また利用できます。
             </Text>
             <TouchableOpacity
               style={styles.softSignupButton}
@@ -486,7 +491,8 @@ export const ScannerScreen: React.FC = () => {
             {isGuest ? (
               <>
                 <Text style={styles.limitWarningText}>
-                  無料トークンを使い切りました。
+                  本日の利用回数上限に達しました。{'\n'}
+                  明日また利用できます。
                 </Text>
                 <TouchableOpacity
                   style={styles.signupButton}

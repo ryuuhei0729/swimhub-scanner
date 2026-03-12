@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { AuthStackParamList } from '@/navigation/types'
 import { useAuth } from '@/contexts/AuthProvider'
-import { GUEST_INITIAL_TOKENS } from '@swimhub-scanner/shared'
+import { PLAN_LIMITS } from '@swimhub-scanner/shared'
 
 export const WelcomeScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>()
@@ -61,7 +61,7 @@ export const WelcomeScreen: React.FC = () => {
           accessibilityLabel="ログインせずに試す"
         >
           <Text style={styles.guestButtonText}>
-            ログインせずに試す（無料{GUEST_INITIAL_TOKENS}回）
+            ログインせずに試す（1日{PLAN_LIMITS.guest.dailyScanLimit}回無料）
           </Text>
         </Pressable>
       </View>

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { getGuestTokenBalance, clearGuestTokens } from '@/lib/guest-tokens'
+import { getGuestTodayCount, clearGuestUsage } from '@/lib/guest-daily-limit'
 import type { User, Session } from '@supabase/supabase-js'
 import Constants from 'expo-constants'
 
@@ -22,22 +22,22 @@ export interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 /**
- * ゲストのローカルトークン残高をサーバーに引き継ぐ
+ * ゲストのローカル利用データをサーバーに引き継ぎ、ローカルをクリアする
  */
 async function migrateGuestTokens(accessToken: string): Promise<void> {
   try {
-    const guestBalance = await getGuestTokenBalance()
+    const todayCount = await getGuestTodayCount()
     await fetch(`${API_BASE_URL}/api/user/migrate-tokens`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${accessToken}`,
       },
-      body: JSON.stringify({ guestTokensRemaining: guestBalance }),
+      body: JSON.stringify({ guestTodayCount: todayCount }),
     })
-    await clearGuestTokens()
+    await clearGuestUsage()
   } catch (err) {
-    console.error('トークン引き継ぎに失敗:', err)
+    console.error('ゲスト利用データの引き継ぎに失敗:', err)
   }
 }
 
