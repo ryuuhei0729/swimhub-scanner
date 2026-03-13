@@ -4,7 +4,7 @@
     "ios_app_id": "ca-app-pub-4640414097368188~6995328031"
   },
   "expo": {
-    "name": "SwimHub Scanner",
+    "name": "SH Scanner",
     "slug": "swimhub-scanner-mobile",
     "version": "2.0.0",
     "description": "手書きタイム記録表をAIで読み取りデジタル化するアプリ",
