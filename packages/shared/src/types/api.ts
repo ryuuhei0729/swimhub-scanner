@@ -71,10 +71,4 @@ export interface ApiErrorResponse {
 
 export type PlanType = "guest" | "free" | "premium";
 
-export type SubscriptionStatus =
-  | "trialing"
-  | "active"
-  | "canceled"
-  | "expired"
-  | "past_due"
-  | null;
+export type SubscriptionStatus = "trialing" | "active" | "canceled" | "expired" | "past_due" | null;

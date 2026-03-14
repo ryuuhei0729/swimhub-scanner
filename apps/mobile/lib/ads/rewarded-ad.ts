@@ -1,5 +1,12 @@
 import { Platform } from "react-native";
 
+/** Dynamic require の戻り値用に MobileAd の使用メソッドを定義 */
+interface RewardedAdInstance {
+  addAdEventListener(type: string, listener: () => void): () => void;
+  load(): void;
+  show(): Promise<void>;
+}
+
 function getAdModule() {
   try {
     return require("react-native-google-mobile-ads");
@@ -24,13 +31,7 @@ function getRewardedAdUnitId(): string {
   }) as string;
 }
 
-export type AdState =
-  | "idle"
-  | "loading"
-  | "loaded"
-  | "showing"
-  | "rewarded"
-  | "error";
+export type AdState = "idle" | "loading" | "loaded" | "showing" | "rewarded" | "error";
 
 export interface RewardedAdController {
   load: () => void;
@@ -50,7 +51,7 @@ export function createRewardedAdController(): RewardedAdController | null {
   let state: AdState = "idle";
   let listeners: ((state: AdState) => void)[] = [];
   let unsubscribers: (() => void)[] = [];
-  let rewardedAd: any = null;
+  let rewardedAd: RewardedAdInstance | null = null;
   let adRewardEarned = false;
 
   function setState(newState: AdState) {
@@ -63,36 +64,35 @@ export function createRewardedAdController(): RewardedAdController | null {
     unsubscribers = [];
     adRewardEarned = false;
 
-    rewardedAd = RewardedAd.createForAdRequest(adUnitId);
+    rewardedAd = RewardedAd.createForAdRequest(adUnitId) as RewardedAdInstance;
+
+    const ad = rewardedAd;
 
     unsubscribers.push(
-      rewardedAd.addAdEventListener(RewardedAdEventType.LOADED, () => {
+      ad.addAdEventListener(RewardedAdEventType.LOADED, () => {
         setState("loaded");
-      })
+      }),
     );
 
     unsubscribers.push(
-      rewardedAd.addAdEventListener(
-        RewardedAdEventType.EARNED_REWARD,
-        () => {
-          adRewardEarned = true;
-          setState("rewarded");
-        }
-      )
+      ad.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
+        adRewardEarned = true;
+        setState("rewarded");
+      }),
     );
 
     unsubscribers.push(
-      rewardedAd.addAdEventListener(AdEventType.CLOSED, () => {
+      ad.addAdEventListener(AdEventType.CLOSED, () => {
         if (!adRewardEarned) {
           setState("error");
         }
-      })
+      }),
     );
 
     unsubscribers.push(
-      rewardedAd.addAdEventListener(AdEventType.ERROR, () => {
+      ad.addAdEventListener(AdEventType.ERROR, () => {
         setState("error");
-      })
+      }),
     );
   }
 
@@ -100,7 +100,7 @@ export function createRewardedAdController(): RewardedAdController | null {
     load() {
       setupAd();
       setState("loading");
-      rewardedAd.load();
+      rewardedAd!.load();
     },
 
     async show() {
@@ -108,7 +108,7 @@ export function createRewardedAdController(): RewardedAdController | null {
         throw new Error("Ad is not loaded yet");
       }
       setState("showing");
-      await rewardedAd.show();
+      await rewardedAd!.show();
     },
 
     getState() {

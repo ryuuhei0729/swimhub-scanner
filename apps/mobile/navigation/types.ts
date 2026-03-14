@@ -1,16 +1,16 @@
 export type AuthStackParamList = {
-  Welcome: undefined
-  GetStarted: undefined
-  LoginMethod: undefined
-  EmailLogin: undefined
-  EmailSignup: undefined
-}
+  Welcome: undefined;
+  GetStarted: undefined;
+  LoginMethod: undefined;
+  EmailLogin: undefined;
+  EmailSignup: undefined;
+};
 
 export type MainStackParamList = {
-  Scanner: undefined
-  Account: undefined
-  GuestSignup: undefined
-  LoginMethod: undefined
-  EmailLogin: undefined
-  EmailSignup: undefined
-}
+  Scanner: undefined;
+  Account: undefined;
+  GuestSignup: undefined;
+  LoginMethod: undefined;
+  EmailLogin: undefined;
+  EmailSignup: undefined;
+};

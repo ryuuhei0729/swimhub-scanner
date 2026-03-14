@@ -1,74 +1,64 @@
-import React, { useState } from 'react'
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ActivityIndicator,
-  Alert,
-  StyleSheet,
-} from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import Constants from 'expo-constants'
-import { useAuth } from '@/contexts/AuthProvider'
-import { deleteAccount, ApiError } from '@/lib/api-client'
+import React, { useState } from "react";
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Constants from "expo-constants";
+import { useAuth } from "@/contexts/AuthProvider";
+import { deleteAccount, ApiError } from "@/lib/api-client";
 
 export const AccountScreen: React.FC = () => {
-  const { user, signOut } = useAuth()
-  const [loading] = useState(false)
-  const [deleting, setDeleting] = useState(false)
+  const { user, signOut } = useAuth();
+  const [loading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleSignOut = () => {
-    Alert.alert(
-      'ログアウト',
-      'ログアウトしますか？',
-      [
-        { text: 'キャンセル', style: 'cancel' },
-        {
-          text: 'ログアウト',
-          style: 'destructive',
-          onPress: async () => {
-            const { error } = await signOut()
-            if (error) {
-              Alert.alert('エラー', 'ログアウトに失敗しました')
-            }
-          },
+    Alert.alert("ログアウト", "ログアウトしますか？", [
+      { text: "キャンセル", style: "cancel" },
+      {
+        text: "ログアウト",
+        style: "destructive",
+        onPress: async () => {
+          const { error } = await signOut();
+          if (error) {
+            Alert.alert("エラー", "ログアウトに失敗しました");
+          }
         },
-      ],
-    )
-  }
+      },
+    ]);
+  };
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      'アカウント削除',
-      'アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消せません。',
+      "アカウント削除",
+      "アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消せません。",
       [
-        { text: 'キャンセル', style: 'cancel' },
+        { text: "キャンセル", style: "cancel" },
         {
-          text: '削除する',
-          style: 'destructive',
+          text: "削除する",
+          style: "destructive",
           onPress: async () => {
-            setDeleting(true)
+            setDeleting(true);
             try {
-              await deleteAccount()
-              await signOut()
+              await deleteAccount();
+              await signOut();
             } catch (err) {
-              const message = err instanceof ApiError
-                ? err.message
-                : 'アカウントの削除に失敗しました。再度お試しください。'
-              Alert.alert('エラー', message)
+              const message =
+                err instanceof ApiError
+                  ? err.message
+                  : "アカウントの削除に失敗しました。再度お試しください。";
+              Alert.alert("エラー", message);
             } finally {
-              setDeleting(false)
+              setDeleting(false);
             }
           },
         },
       ],
-    )
-  }
+    );
+  };
 
-  const appVersion = Constants.expoConfig?.version || '1.0.0'
+  const appVersion = Constants.expoConfig?.version || "1.0.0";
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={["bottom"]}>
       <View style={styles.content}>
         {/* ユーザー情報 */}
         <View style={styles.section}>
@@ -76,11 +66,9 @@ export const AccountScreen: React.FC = () => {
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>メールアドレス</Text>
-              <Text style={styles.infoValue}>{user?.email || '—'}</Text>
+              <Text style={styles.infoValue}>{user?.email || "—"}</Text>
             </View>
-            {loading && (
-              <ActivityIndicator style={{ marginTop: 12 }} color="#2563EB" />
-            )}
+            {loading && <ActivityIndicator style={{ marginTop: 12 }} color="#2563EB" />}
           </View>
         </View>
 
@@ -104,9 +92,7 @@ export const AccountScreen: React.FC = () => {
               <Text style={styles.deleteButtonText}>アカウントを削除</Text>
             )}
           </TouchableOpacity>
-          <Text style={styles.deleteWarning}>
-            すべてのデータが完全に削除されます
-          </Text>
+          <Text style={styles.deleteWarning}>すべてのデータが完全に削除されます</Text>
         </View>
 
         {/* アプリ情報 */}
@@ -115,13 +101,13 @@ export const AccountScreen: React.FC = () => {
         </View>
       </View>
     </SafeAreaView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
   },
   content: {
     flex: 1,
@@ -132,73 +118,73 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#6B7280',
+    fontWeight: "600",
+    color: "#6B7280",
     marginBottom: 8,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   infoCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: "#E5E7EB",
   },
   infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 4,
   },
   infoLabel: {
     fontSize: 15,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   infoValue: {
     fontSize: 15,
-    color: '#374151',
-    fontWeight: '500',
+    color: "#374151",
+    fontWeight: "500",
   },
   signOutButton: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderRadius: 12,
     padding: 14,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: '#FCA5A5',
+    borderColor: "#FCA5A5",
   },
   signOutButtonText: {
-    color: '#DC2626',
+    color: "#DC2626",
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   deleteButton: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderRadius: 12,
     padding: 14,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: '#DC2626',
+    borderColor: "#DC2626",
   },
   deleteButtonText: {
-    color: '#DC2626',
+    color: "#DC2626",
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   deleteWarning: {
     fontSize: 12,
-    color: '#9CA3AF',
-    textAlign: 'center',
+    color: "#9CA3AF",
+    textAlign: "center",
     marginTop: 8,
   },
   footer: {
-    alignItems: 'center',
-    marginTop: 'auto',
+    alignItems: "center",
+    marginTop: "auto",
     paddingBottom: 16,
   },
   footerText: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: "#9CA3AF",
   },
-})
+});

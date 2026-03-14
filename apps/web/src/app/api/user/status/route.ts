@@ -10,7 +10,10 @@ export async function GET(request: NextRequest) {
   if ("error" in authResult) {
     return authResult.error;
   }
-  const { auth: { uid }, supabase } = authResult.result;
+  const {
+    auth: { uid },
+    supabase,
+  } = authResult.result;
 
   // 2. Get user data
   const userDoc = await ensureUserDocument(supabase, uid);
@@ -39,12 +42,9 @@ export async function GET(request: NextRequest) {
 
   // canScan: Premium always true, otherwise based on daily_tokens_used
   const canScan = isPremium || dailyLimit === null || tokensUsedToday < dailyLimit;
-  const remainingScans = dailyLimit === null || isPremium
-    ? null
-    : Math.max(0, dailyLimit - todayScanCount);
-  const tokensRemaining = isPremium
-    ? null
-    : Math.max(0, (dailyLimit ?? 1) - tokensUsedToday);
+  const remainingScans =
+    dailyLimit === null || isPremium ? null : Math.max(0, dailyLimit - todayScanCount);
+  const tokensRemaining = isPremium ? null : Math.max(0, (dailyLimit ?? 1) - tokensUsedToday);
 
   // 8. Build response
   const response: UserStatusResponse = {

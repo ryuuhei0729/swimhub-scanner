@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  estimateBase64Size,
-  validateImageMimeType,
-  validateImageSize,
-} from "../image";
+import { estimateBase64Size, validateImageMimeType, validateImageSize } from "../image";
 
 describe("validateImageMimeType", () => {
   it("accepts image/jpeg", () => {

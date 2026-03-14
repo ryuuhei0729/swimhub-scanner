@@ -17,7 +17,8 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-semibold text-gray-900">1. はじめに</h2>
           <p className="mt-2">
-            SwimHub Scanner（以下「本サービス」）は、ユーザーのプライバシーを尊重し、個人情報の保護に努めます。本ポリシーは、本サービスにおける個人情報の取り扱いについて説明します。
+            SwimHub
+            Scanner（以下「本サービス」）は、ユーザーのプライバシーを尊重し、個人情報の保護に努めます。本ポリシーは、本サービスにおける個人情報の取り扱いについて説明します。
           </p>
         </section>
 
@@ -95,8 +96,8 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-semibold text-gray-900">7. Cookie について</h2>
           <p className="mt-2">
-            本サービスでは、認証状態の維持のために Cookie
-            を使用しています。ブラウザの設定により Cookie
+            本サービスでは、認証状態の維持のために Cookie を使用しています。ブラウザの設定により
+            Cookie
             を無効にすることができますが、本サービスの一部機能が利用できなくなる場合があります。
           </p>
         </section>

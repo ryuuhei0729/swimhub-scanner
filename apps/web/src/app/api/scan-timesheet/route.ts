@@ -1,10 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyAuth, ensureUserDocument } from "@/lib/api-helpers";
-import {
-  canUserScan,
-  incrementScanCount,
-  logTokenConsumption,
-} from "@/lib/supabase/usage";
+import { canUserScan, incrementScanCount, logTokenConsumption } from "@/lib/supabase/usage";
 import { scanTimesheetWithGemini } from "@/lib/gemini/client";
 import {
   validateImageMimeType,
@@ -128,7 +124,10 @@ export async function POST(request: NextRequest) {
   if ("error" in authResult) {
     return authResult.error;
   }
-  const { auth: { uid }, supabase } = authResult.result;
+  const {
+    auth: { uid },
+    supabase,
+  } = authResult.result;
 
   // Get user document (auto-create on first login)
   const userDoc = await ensureUserDocument(supabase, uid);

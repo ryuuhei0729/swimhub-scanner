@@ -23,7 +23,9 @@ export function PullToRefresh({ onRefresh, disabled = false, children }: PullToR
       {/* Pull indicator */}
       <div
         className="flex items-center justify-center overflow-hidden transition-[height] duration-200 ease-out"
-        style={{ height: showIndicator ? `${Math.max(pullDistance, isRefreshing ? 48 : 0)}px` : "0px" }}
+        style={{
+          height: showIndicator ? `${Math.max(pullDistance, isRefreshing ? 48 : 0)}px` : "0px",
+        }}
       >
         <div
           className="transition-transform duration-200"

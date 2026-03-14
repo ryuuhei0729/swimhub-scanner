@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -10,81 +10,81 @@ import {
   Platform,
   ScrollView,
   Alert,
-} from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { useNavigation } from '@react-navigation/native'
-import { Feather } from '@expo/vector-icons'
-import { useAuth } from '@/contexts/AuthProvider'
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import { Feather } from "@expo/vector-icons";
+import { useAuth } from "@/contexts/AuthProvider";
 
 export const EmailSignupScreen: React.FC = () => {
-  const navigation = useNavigation()
-  const { signUp } = useAuth()
+  const navigation = useNavigation();
+  const { signUp } = useAuth();
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const validateForm = (): boolean => {
     if (!email.trim()) {
-      setError('メールアドレスを入力してください')
-      return false
+      setError("メールアドレスを入力してください");
+      return false;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError('有効なメールアドレスを入力してください')
-      return false
+      setError("有効なメールアドレスを入力してください");
+      return false;
     }
     if (!password) {
-      setError('パスワードを入力してください')
-      return false
+      setError("パスワードを入力してください");
+      return false;
     }
     if (password.length < 6) {
-      setError('パスワードは6文字以上で入力してください')
-      return false
+      setError("パスワードは6文字以上で入力してください");
+      return false;
     }
-    return true
-  }
+    return true;
+  };
 
   const formatAuthError = (err: unknown): string => {
-    const errorObj = err && typeof err === 'object' ? (err as Record<string, unknown>) : {}
-    const msg = typeof errorObj.message === 'string' ? errorObj.message.toLowerCase() : ''
+    const errorObj = err && typeof err === "object" ? (err as Record<string, unknown>) : {};
+    const msg = typeof errorObj.message === "string" ? errorObj.message.toLowerCase() : "";
 
-    if (msg.includes('user already registered')) {
-      return 'このメールアドレスは既に登録されています'
+    if (msg.includes("user already registered")) {
+      return "このメールアドレスは既に登録されています";
     }
-    if (msg.includes('too many requests') || msg.includes('rate limit')) {
-      return 'リクエスト制限に達しました。しばらく時間をおいてから再度お試しください'
+    if (msg.includes("too many requests") || msg.includes("rate limit")) {
+      return "リクエスト制限に達しました。しばらく時間をおいてから再度お試しください";
     }
-    if (msg.includes('network') || msg.includes('connection')) {
-      return 'ネットワークエラーが発生しました。接続を確認してください'
+    if (msg.includes("network") || msg.includes("connection")) {
+      return "ネットワークエラーが発生しました。接続を確認してください";
     }
-    return '登録に失敗しました。入力内容を確認してください'
-  }
+    return "登録に失敗しました。入力内容を確認してください";
+  };
 
   const handleSubmit = async () => {
-    if (!validateForm()) return
+    if (!validateForm()) return;
 
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
-      const { error: authError } = await signUp(email, password)
+      const { error: authError } = await signUp(email, password);
       if (authError) {
-        setError(formatAuthError(authError))
+        setError(formatAuthError(authError));
       } else {
         Alert.alert(
-          '確認メール送信',
-          'ご登録のメールアドレスに確認メールを送信しました。メール内のリンクをクリックして登録を完了してください。',
-          [{ text: 'OK', onPress: () => navigation.goBack() }],
-        )
+          "確認メール送信",
+          "ご登録のメールアドレスに確認メールを送信しました。メール内のリンクをクリックして登録を完了してください。",
+          [{ text: "OK", onPress: () => navigation.goBack() }],
+        );
       }
     } catch {
-      setError('予期しないエラーが発生しました')
+      setError("予期しないエラーが発生しました");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -101,7 +101,7 @@ export const EmailSignupScreen: React.FC = () => {
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -171,17 +171,17 @@ export const EmailSignupScreen: React.FC = () => {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: "#EFF6FF",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
@@ -193,19 +193,19 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     padding: 20,
   },
   formContainer: {
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
-    alignSelf: 'center',
-    backgroundColor: '#ffffff',
+    alignSelf: "center",
+    backgroundColor: "#ffffff",
     borderRadius: 16,
     padding: 24,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 8,
@@ -217,23 +217,23 @@ const styles = StyleSheet.create({
   },
   titleSection: {
     marginBottom: 24,
-    alignItems: 'center',
+    alignItems: "center",
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
+    fontWeight: "bold",
+    color: "#111827",
   },
   errorContainer: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FECACA",
     borderWidth: 1,
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
   },
   errorText: {
-    color: '#DC2626',
+    color: "#DC2626",
     fontSize: 14,
     lineHeight: 20,
   },
@@ -245,35 +245,35 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
+    fontWeight: "500",
+    color: "#374151",
   },
   input: {
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: "#D1D5DB",
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#111827',
-    backgroundColor: '#ffffff',
+    color: "#111827",
+    backgroundColor: "#ffffff",
   },
   submitButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: "#2563EB",
     borderRadius: 8,
     padding: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 8,
   },
   submitButtonDisabled: {
     opacity: 0.5,
   },
   submitButtonPressed: {
-    backgroundColor: '#1D4ED8',
+    backgroundColor: "#1D4ED8",
   },
   submitButtonText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
-})
+});

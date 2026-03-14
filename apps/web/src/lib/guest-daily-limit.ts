@@ -40,10 +40,7 @@ export function markGuestUsedToday(app: "scanner" | "timer"): void {
     usage.count += 1;
     localStorage.setItem(getKey(app), JSON.stringify(usage));
   } else {
-    localStorage.setItem(
-      getKey(app),
-      JSON.stringify({ date: today, count: 1 }),
-    );
+    localStorage.setItem(getKey(app), JSON.stringify({ date: today, count: 1 }));
   }
 }
 

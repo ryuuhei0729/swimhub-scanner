@@ -1,13 +1,13 @@
-import React from 'react'
-import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import type { AuthStackParamList } from './types'
-import { WelcomeScreen } from '@/screens/WelcomeScreen'
-import { GetStartedScreen } from '@/screens/GetStartedScreen'
-import { LoginMethodScreen } from '@/screens/LoginMethodScreen'
-import { EmailLoginScreen } from '@/screens/EmailLoginScreen'
-import { EmailSignupScreen } from '@/screens/EmailSignupScreen'
+import React from "react";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import type { AuthStackParamList } from "./types";
+import { WelcomeScreen } from "@/screens/WelcomeScreen";
+import { GetStartedScreen } from "@/screens/GetStartedScreen";
+import { LoginMethodScreen } from "@/screens/LoginMethodScreen";
+import { EmailLoginScreen } from "@/screens/EmailLoginScreen";
+import { EmailSignupScreen } from "@/screens/EmailSignupScreen";
 
-const Stack = createNativeStackNavigator<AuthStackParamList>()
+const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 export const AuthStack: React.FC = () => {
   return (
@@ -16,7 +16,7 @@ export const AuthStack: React.FC = () => {
       screenOptions={{
         headerShown: false,
         contentStyle: {
-          backgroundColor: '#EFF6FF',
+          backgroundColor: "#EFF6FF",
         },
       }}
     >
@@ -26,5 +26,5 @@ export const AuthStack: React.FC = () => {
       <Stack.Screen name="EmailLogin" component={EmailLoginScreen} />
       <Stack.Screen name="EmailSignup" component={EmailSignupScreen} />
     </Stack.Navigator>
-  )
-}
+  );
+};

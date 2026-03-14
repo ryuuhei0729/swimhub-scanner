@@ -1,12 +1,12 @@
-import React from 'react'
-import { Pressable, Text, StyleSheet, ActivityIndicator, View } from 'react-native'
-import Svg, { Path } from 'react-native-svg'
+import React from "react";
+import { Pressable, Text, StyleSheet, ActivityIndicator, View } from "react-native";
+import Svg, { Path } from "react-native-svg";
 
 interface GoogleLoginButtonProps {
-  onPress: () => void
-  loading?: boolean
-  disabled?: boolean
-  label?: string
+  onPress: () => void;
+  loading?: boolean;
+  disabled?: boolean;
+  label?: string;
 }
 
 const GoogleLogo: React.FC = () => (
@@ -28,15 +28,15 @@ const GoogleLogo: React.FC = () => (
       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
     />
   </Svg>
-)
+);
 
 export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   onPress,
   loading = false,
   disabled = false,
-  label = 'Googleでログイン',
+  label = "Googleでログイン",
 }) => {
-  const isDisabled = disabled || loading
+  const isDisabled = disabled || loading;
 
   return (
     <Pressable
@@ -60,36 +60,36 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
         </View>
       )}
     </Pressable>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
     borderRadius: 8,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: "#D1D5DB",
     minHeight: 48,
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   buttonPressed: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
   },
   content: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   buttonText: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#374151',
+    fontWeight: "500",
+    color: "#374151",
   },
-})
+});

@@ -8,22 +8,18 @@ export async function DELETE(request: NextRequest) {
   if ("error" in authResult) {
     return authResult.error;
   }
-  const { auth: { uid } } = authResult.result;
+  const {
+    auth: { uid },
+  } = authResult.result;
 
   try {
     const adminClient = createAdminClient();
 
     // Delete user's usage data
-    await adminClient
-      .from("app_daily_usage")
-      .delete()
-      .eq("user_id", uid);
+    await adminClient.from("app_daily_usage").delete().eq("user_id", uid);
 
     // Delete user's subscription data
-    await adminClient
-      .from("user_subscriptions")
-      .delete()
-      .eq("id", uid);
+    await adminClient.from("user_subscriptions").delete().eq("id", uid);
 
     // Delete the Supabase auth user
     const { error: deleteError } = await adminClient.auth.admin.deleteUser(uid);

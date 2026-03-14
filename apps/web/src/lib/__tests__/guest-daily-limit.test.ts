@@ -1,9 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  canGuestUseToday,
-  getGuestTodayCount,
-  markGuestUsedToday,
-} from "../guest-daily-limit";
+import { canGuestUseToday, getGuestTodayCount, markGuestUsedToday } from "../guest-daily-limit";
 
 describe("guest-daily-limit", () => {
   beforeEach(() => {
@@ -30,7 +26,7 @@ describe("guest-daily-limit", () => {
     it("returns true when usage is from a different day", () => {
       localStorage.setItem(
         "swimhub_guest_daily_usage_scanner",
-        JSON.stringify({ date: "2026-03-11", count: 1 })
+        JSON.stringify({ date: "2026-03-11", count: 1 }),
       );
       expect(canGuestUseToday("scanner")).toBe(true);
     });
@@ -70,7 +66,7 @@ describe("guest-daily-limit", () => {
     it("returns 0 when usage is from different day", () => {
       localStorage.setItem(
         "swimhub_guest_daily_usage_timer",
-        JSON.stringify({ date: "2026-03-11", count: 3 })
+        JSON.stringify({ date: "2026-03-11", count: 3 }),
       );
       expect(getGuestTodayCount("timer")).toBe(0);
     });

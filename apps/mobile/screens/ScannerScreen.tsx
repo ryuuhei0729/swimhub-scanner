@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -13,187 +13,191 @@ import {
   StyleSheet,
   Modal,
   Dimensions,
-} from 'react-native'
-import { Feather } from '@expo/vector-icons'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import * as ImagePicker from 'expo-image-picker'
-import { useNavigation } from '@react-navigation/native'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { getUserStatus, scanTimesheet, guestScanTimesheet, ApiError } from '@/lib/api-client'
-import { canGuestScanToday, recordGuestScan, getGuestTodayCount } from '@/lib/guest-daily-limit'
-import { PLAN_LIMITS } from '@swimhub-scanner/shared'
-import { useAuth } from '@/contexts/AuthProvider'
-import { useScanResultStore } from '@/stores/scanResultStore'
-import { shareTimesheetPdf, shareTimesheetImage } from '@/lib/timesheet-print'
-import { validateImageMimeType, validateImageSize, estimateBase64Size } from '@swimhub-scanner/shared'
-import type { UserStatusResponse } from '@swimhub-scanner/shared'
-import { ResultTable } from '@/components/scanner/ResultTable'
-import { ExportSheet } from '@/components/scanner/ExportSheet'
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import * as ImagePicker from "expo-image-picker";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { getUserStatus, scanTimesheet, guestScanTimesheet, ApiError } from "@/lib/api-client";
+import { canGuestScanToday, recordGuestScan, getGuestTodayCount } from "@/lib/guest-daily-limit";
+import { PLAN_LIMITS } from "@swimhub-scanner/shared";
+import { useAuth } from "@/contexts/AuthProvider";
+import { useScanResultStore } from "@/stores/scanResultStore";
+import { shareTimesheetPdf, shareTimesheetImage } from "@/lib/timesheet-print";
+import {
+  validateImageMimeType,
+  validateImageSize,
+  estimateBase64Size,
+} from "@swimhub-scanner/shared";
+import type { UserStatusResponse } from "@swimhub-scanner/shared";
+import { ResultTable } from "@/components/scanner/ResultTable";
+import { ExportSheet } from "@/components/scanner/ExportSheet";
 import {
   createRewardedAdController,
   type AdState,
   type RewardedAdController,
-} from '@/lib/ads/rewarded-ad'
-import type { MainStackParamList } from '@/navigation/types'
+} from "@/lib/ads/rewarded-ad";
+import type { MainStackParamList } from "@/navigation/types";
 
-type Step = 'idle' | 'scanning' | 'result'
+type Step = "idle" | "scanning" | "result";
 
 export const ScannerScreen: React.FC = () => {
-  const { isGuest, isAuthenticated } = useAuth()
-  const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>()
+  const { isGuest, isAuthenticated } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
 
-  const [step, setStep] = useState<Step>('idle')
-  const [imageUri, setImageUri] = useState<string | null>(null)
-  const [imageBase64, setImageBase64] = useState<string | null>(null)
-  const [imageMimeType, setImageMimeType] = useState<string>('image/jpeg')
-  const [userStatus, setUserStatus] = useState<UserStatusResponse | null>(null)
-  const [guestCanScan, setGuestCanScan] = useState<boolean>(true)
-  const [guestTodayCount, setGuestTodayCount] = useState<number>(0)
-  const [error, setError] = useState<string | null>(null)
-  const [statusLoading, setStatusLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [templatePreviewVisible, setTemplatePreviewVisible] = useState(false)
+  const [step, setStep] = useState<Step>("idle");
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const [imageMimeType, setImageMimeType] = useState<string>("image/jpeg");
+  const [userStatus, setUserStatus] = useState<UserStatusResponse | null>(null);
+  const [guestCanScan, setGuestCanScan] = useState<boolean>(true);
+  const [guestTodayCount, setGuestTodayCount] = useState<number>(0);
+  const [error, setError] = useState<string | null>(null);
+  const [statusLoading, setStatusLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [templatePreviewVisible, setTemplatePreviewVisible] = useState(false);
 
   // --- Ad state ---
-  const adControllerRef = useRef<RewardedAdController | null>(null)
-  const [adState, setAdState] = useState<AdState>('idle')
-  const [adUnavailable, setAdUnavailable] = useState(false)
-  const scanTriggeredRef = useRef(false)
+  const adControllerRef = useRef<RewardedAdController | null>(null);
+  const [adState, setAdState] = useState<AdState>("idle");
+  const [adUnavailable, setAdUnavailable] = useState(false);
+  const scanTriggeredRef = useRef(false);
 
-  const { menu, swimmers, setResult, reset: resetResult } = useScanResultStore()
+  const { menu, swimmers, setResult, reset: resetResult } = useScanResultStore();
 
   const fetchStatus = useCallback(async () => {
-    setStatusLoading(true)
+    setStatusLoading(true);
     try {
       if (isGuest) {
-        const canScan = await canGuestScanToday()
-        const todayCount = await getGuestTodayCount()
-        setGuestCanScan(canScan)
-        setGuestTodayCount(todayCount)
-        setUserStatus(null)
+        const canScan = await canGuestScanToday();
+        const todayCount = await getGuestTodayCount();
+        setGuestCanScan(canScan);
+        setGuestTodayCount(todayCount);
+        setUserStatus(null);
       } else if (isAuthenticated) {
-        const status = await getUserStatus()
-        setUserStatus(status)
-        setGuestCanScan(true)
-        setGuestTodayCount(0)
+        const status = await getUserStatus();
+        setUserStatus(status);
+        setGuestCanScan(true);
+        setGuestTodayCount(0);
       } else {
-        setUserStatus(null)
-        setGuestCanScan(true)
-        setGuestTodayCount(0)
+        setUserStatus(null);
+        setGuestCanScan(true);
+        setGuestTodayCount(0);
       }
     } catch (err) {
-      console.error('ステータスの取得に失敗:', err)
+      console.error("ステータスの取得に失敗:", err);
     } finally {
-      setStatusLoading(false)
+      setStatusLoading(false);
     }
-  }, [isGuest, isAuthenticated])
+  }, [isGuest, isAuthenticated]);
 
   const handleRefresh = useCallback(async () => {
-    setRefreshing(true)
-    await fetchStatus()
-    setRefreshing(false)
-  }, [fetchStatus])
+    setRefreshing(true);
+    await fetchStatus();
+    setRefreshing(false);
+  }, [fetchStatus]);
 
   useEffect(() => {
-    fetchStatus()
-  }, [fetchStatus])
+    fetchStatus();
+  }, [fetchStatus]);
 
   // Preload ad when user selects an image
   useEffect(() => {
-    if (!imageBase64) return
+    if (!imageBase64) return;
 
-    const controller = createRewardedAdController()
+    const controller = createRewardedAdController();
     if (!controller) {
-      setAdUnavailable(true)
-      return
+      setAdUnavailable(true);
+      return;
     }
-    adControllerRef.current = controller
+    adControllerRef.current = controller;
 
     const unsubscribe = controller.onStateChange((state) => {
-      setAdState(state)
-    })
+      setAdState(state);
+    });
 
-    controller.load()
+    controller.load();
 
     return () => {
-      unsubscribe()
-      controller.dispose()
-    }
-  }, [imageBase64])
+      unsubscribe();
+      controller.dispose();
+    };
+  }, [imageBase64]);
 
   // If ad loads AFTER scan was triggered, show it automatically
   useEffect(() => {
-    if (scanTriggeredRef.current && adState === 'loaded' && !adUnavailable) {
-      adControllerRef.current?.show().catch(() => setAdUnavailable(true))
+    if (scanTriggeredRef.current && adState === "loaded" && !adUnavailable) {
+      adControllerRef.current?.show().catch(() => setAdUnavailable(true));
     }
-  }, [adState, adUnavailable])
+  }, [adState, adUnavailable]);
 
   const pickImage = async (useCamera: boolean) => {
-    setError(null)
+    setError(null);
 
     const options: ImagePicker.ImagePickerOptions = {
-      mediaTypes: ['images'],
+      mediaTypes: ["images"],
       quality: 0.8,
       base64: true,
-    }
+    };
 
-    let result: ImagePicker.ImagePickerResult
+    let result: ImagePicker.ImagePickerResult;
 
     if (useCamera) {
-      const permission = await ImagePicker.requestCameraPermissionsAsync()
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('権限エラー', 'カメラへのアクセスが許可されていません')
-        return
+        Alert.alert("権限エラー", "カメラへのアクセスが許可されていません");
+        return;
       }
-      result = await ImagePicker.launchCameraAsync(options)
+      result = await ImagePicker.launchCameraAsync(options);
     } else {
-      result = await ImagePicker.launchImageLibraryAsync(options)
+      result = await ImagePicker.launchImageLibraryAsync(options);
     }
 
-    if (result.canceled || !result.assets?.[0]) return
+    if (result.canceled || !result.assets?.[0]) return;
 
-    const asset = result.assets[0]
-    const mimeType = asset.mimeType || 'image/jpeg'
+    const asset = result.assets[0];
+    const mimeType = asset.mimeType || "image/jpeg";
 
     // バリデーション
     if (!validateImageMimeType(mimeType)) {
-      setError('JPEG または PNG 形式の画像を使用してください')
-      return
+      setError("JPEG または PNG 形式の画像を使用してください");
+      return;
     }
 
     if (asset.base64) {
-      const size = estimateBase64Size(asset.base64)
+      const size = estimateBase64Size(asset.base64);
       if (!validateImageSize(size)) {
-        setError('画像サイズは10MB以下にしてください')
-        return
+        setError("画像サイズは10MB以下にしてください");
+        return;
       }
     }
 
-    setImageUri(asset.uri)
-    setImageBase64(asset.base64 || null)
-    setImageMimeType(mimeType)
-  }
+    setImageUri(asset.uri);
+    setImageBase64(asset.base64 || null);
+    setImageMimeType(mimeType);
+  };
 
   const startScan = async () => {
-    if (!imageBase64) return
+    if (!imageBase64) return;
 
     // ゲスト: 日次利用を記録
     if (isGuest) {
-      await recordGuestScan()
+      await recordGuestScan();
     }
 
-    setStep('scanning')
-    setError(null)
-    scanTriggeredRef.current = true
+    setStep("scanning");
+    setError(null);
+    scanTriggeredRef.current = true;
 
     // --- Show ad (parallel with scanning) ---
-    const controller = adControllerRef.current
+    const controller = adControllerRef.current;
     if (controller) {
-      const currentState = controller.getState()
-      if (currentState === 'loaded') {
-        controller.show().catch(() => setAdUnavailable(true))
-      } else if (currentState !== 'loading') {
-        setAdUnavailable(true)
+      const currentState = controller.getState();
+      if (currentState === "loaded") {
+        controller.show().catch(() => setAdUnavailable(true));
+      } else if (currentState !== "loading") {
+        setAdUnavailable(true);
       }
     }
 
@@ -201,127 +205,127 @@ export const ScannerScreen: React.FC = () => {
     try {
       const request = {
         image: imageBase64,
-        mimeType: imageMimeType as 'image/jpeg' | 'image/png',
-      }
-      const response = isGuest
-        ? await guestScanTimesheet(request)
-        : await scanTimesheet(request)
-      setResult(response)
-      setStep('result')
+        mimeType: imageMimeType as "image/jpeg" | "image/png",
+      };
+      const response = isGuest ? await guestScanTimesheet(request) : await scanTimesheet(request);
+      setResult(response);
+      setStep("result");
       // 利用状況を再取得
-      fetchStatus()
+      fetchStatus();
     } catch (err) {
-      setStep('idle')
+      setStep("idle");
       // ゲストでAPIエラーの場合、消費したトークンは戻さない（不正防止）
       if (err instanceof ApiError) {
         switch (err.code) {
-          case 'DAILY_LIMIT_EXCEEDED':
-          case 'TOKEN_EXHAUSTED':
-            setError('本日の利用回数上限に達しました。明日また利用できます。')
-            break
-          case 'SWIMMER_LIMIT_EXCEEDED':
-            setError('1回のスキャンで解析できるのは8名までです')
-            break
-          case 'PARSE_ERROR':
-            setError('画像からタイム情報を読み取れませんでした。鮮明なタイム記録表の画像を使用してください')
-            break
-          case 'API_ERROR':
-            setError('画像の解析に失敗しました。タイム記録表の画像であることを確認し、再度お試しください')
-            break
-          case 'IMAGE_ERROR':
-            setError(err.message)
-            break
+          case "DAILY_LIMIT_EXCEEDED":
+          case "TOKEN_EXHAUSTED":
+            setError("本日の利用回数上限に達しました。明日また利用できます。");
+            break;
+          case "SWIMMER_LIMIT_EXCEEDED":
+            setError("1回のスキャンで解析できるのは8名までです");
+            break;
+          case "PARSE_ERROR":
+            setError(
+              "画像からタイム情報を読み取れませんでした。鮮明なタイム記録表の画像を使用してください",
+            );
+            break;
+          case "API_ERROR":
+            setError(
+              "画像の解析に失敗しました。タイム記録表の画像であることを確認し、再度お試しください",
+            );
+            break;
+          case "IMAGE_ERROR":
+            setError(err.message);
+            break;
           default:
-            setError('解析中にエラーが発生しました。再度お試しください')
+            setError("解析中にエラーが発生しました。再度お試しください");
         }
       } else {
-        const isNetworkError = err instanceof TypeError && err.message?.includes('Network')
+        const isNetworkError = err instanceof TypeError && err.message?.includes("Network");
         setError(
           isNetworkError
-            ? '通信エラーが発生しました。ネットワーク接続を確認してください'
-            : '解析に失敗しました。再度お試しください'
-        )
+            ? "通信エラーが発生しました。ネットワーク接続を確認してください"
+            : "解析に失敗しました。再度お試しください",
+        );
       }
     }
-  }
+  };
 
   const handleReset = () => {
-    setStep('idle')
-    setImageUri(null)
-    setImageBase64(null)
-    setError(null)
-    resetResult()
-    scanTriggeredRef.current = false
-    setAdState('idle')
-    setAdUnavailable(false)
-    adControllerRef.current?.dispose()
-    adControllerRef.current = null
-  }
+    setStep("idle");
+    setImageUri(null);
+    setImageBase64(null);
+    setError(null);
+    resetResult();
+    scanTriggeredRef.current = false;
+    setAdState("idle");
+    setAdUnavailable(false);
+    adControllerRef.current?.dispose();
+    adControllerRef.current = null;
+  };
 
   const showImagePickerOptions = () => {
-    if (Platform.OS === 'ios') {
+    if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: ['キャンセル', '写真を撮る', 'ライブラリから選ぶ'],
+          options: ["キャンセル", "写真を撮る", "ライブラリから選ぶ"],
           cancelButtonIndex: 0,
         },
         (buttonIndex) => {
-          if (buttonIndex === 1) pickImage(true)
-          else if (buttonIndex === 2) pickImage(false)
+          if (buttonIndex === 1) pickImage(true);
+          else if (buttonIndex === 2) pickImage(false);
         },
-      )
+      );
     } else {
-      Alert.alert('画像を選択', '', [
-        { text: '写真を撮る', onPress: () => pickImage(true) },
-        { text: 'ライブラリから選ぶ', onPress: () => pickImage(false) },
-        { text: 'キャンセル', style: 'cancel' },
-      ])
+      Alert.alert("画像を選択", "", [
+        { text: "写真を撮る", onPress: () => pickImage(true) },
+        { text: "ライブラリから選ぶ", onPress: () => pickImage(false) },
+        { text: "キャンセル", style: "cancel" },
+      ]);
     }
-  }
+  };
 
   // canScan の判定
   const canScan = (() => {
     if (isGuest) {
-      return guestCanScan
+      return guestCanScan;
     }
     if (userStatus) {
-      if (userStatus.tokensRemaining === null) return false
-      return userStatus.tokensRemaining > 0
+      if (userStatus.tokensRemaining === null) return false;
+      return userStatus.tokensRemaining > 0;
     }
-    return false
-  })()
+    return false;
+  })();
 
   // 表示用の残り回数
-  const dailyLimit = PLAN_LIMITS.guest.dailyScanLimit ?? 1
-  const guestRemaining = Math.max(0, dailyLimit - guestTodayCount)
+  const dailyLimit = PLAN_LIMITS.guest.dailyScanLimit ?? 1;
+  const guestRemaining = Math.max(0, dailyLimit - guestTodayCount);
   const displayTokens = (() => {
-    if (isGuest) return guestRemaining
-    if (userStatus?.tokensRemaining !== undefined) return userStatus.tokensRemaining
-    return null
-  })()
+    if (isGuest) return guestRemaining;
+    if (userStatus?.tokensRemaining !== undefined) return userStatus.tokensRemaining;
+    return null;
+  })();
 
   // Step 2: 解析中
-  if (step === 'scanning') {
+  if (step === "scanning") {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={styles.container} edges={["bottom"]}>
         <View style={styles.scanningContainer}>
           <ActivityIndicator size="large" color="#2563EB" />
           <Text style={styles.scanningText}>画像を解析しています...</Text>
           <Text style={styles.scanningSubtext}>しばらくお待ちください</Text>
         </View>
       </SafeAreaView>
-    )
+    );
   }
 
   // Step 3: 結果確認
-  if (step === 'result' && menu && swimmers.length > 0) {
+  if (step === "result" && menu && swimmers.length > 0) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={styles.container} edges={["bottom"]}>
         <ScrollView
           style={styles.resultContainer}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         >
           <View style={styles.menuInfo}>
             <Text style={styles.menuTitle}>メニュー情報</Text>
@@ -332,8 +336,9 @@ export const ScannerScreen: React.FC = () => {
               <Text style={styles.menuDetail}>セット: {menu.setCount}セット</Text>
               {menu.circle && (
                 <Text style={styles.menuDetail}>
-                  サークル: {menu.circle >= 60
-                    ? `${Math.floor(menu.circle / 60)}分${menu.circle % 60 > 0 ? `${menu.circle % 60}秒` : ''}`
+                  サークル:{" "}
+                  {menu.circle >= 60
+                    ? `${Math.floor(menu.circle / 60)}分${menu.circle % 60 > 0 ? `${menu.circle % 60}秒` : ""}`
                     : `${menu.circle}秒`}
                 </Text>
               )}
@@ -351,42 +356,32 @@ export const ScannerScreen: React.FC = () => {
           {isGuest && (
             <TouchableOpacity
               style={styles.signupPromptButton}
-              onPress={() => navigation.navigate('GuestSignup')}
+              onPress={() => navigation.navigate("GuestSignup")}
             >
-              <Text style={styles.signupPromptText}>
-                アカウント登録してもっと使う
-              </Text>
+              <Text style={styles.signupPromptText}>アカウント登録してもっと使う</Text>
             </TouchableOpacity>
           )}
 
           <View style={{ height: 32 }} />
         </ScrollView>
       </SafeAreaView>
-    )
+    );
   }
 
   // Step 1: 画像選択
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={["bottom"]}>
       <ScrollView
         style={styles.idleContainer}
         contentContainerStyle={styles.idleContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
         {/* 利用状況 */}
         {!statusLoading && (
           <View style={styles.statusBar}>
-            {isGuest && (
-              <Text style={styles.statusText}>
-                残り: {guestRemaining}回（今日）
-              </Text>
-            )}
+            {isGuest && <Text style={styles.statusText}>残り: {guestRemaining}回（今日）</Text>}
             {!isGuest && userStatus && displayTokens !== null && (
-              <Text style={styles.statusText}>
-                残り: {displayTokens}回
-              </Text>
+              <Text style={styles.statusText}>残り: {displayTokens}回</Text>
             )}
           </View>
         )}
@@ -409,7 +404,10 @@ export const ScannerScreen: React.FC = () => {
               <Image source={{ uri: imageUri }} style={styles.previewImage} resizeMode="contain" />
               <TouchableOpacity
                 style={styles.removeImageButton}
-                onPress={() => { setImageUri(null); setImageBase64(null) }}
+                onPress={() => {
+                  setImageUri(null);
+                  setImageBase64(null);
+                }}
               >
                 <Feather name="x" size={16} color="#ffffff" />
               </TouchableOpacity>
@@ -433,17 +431,16 @@ export const ScannerScreen: React.FC = () => {
 
         {/* 解析ボタン */}
         <TouchableOpacity
-          style={[
-            styles.scanButton,
-            (!imageBase64 || !canScan) && styles.scanButtonDisabled,
-          ]}
+          style={[styles.scanButton, (!imageBase64 || !canScan) && styles.scanButtonDisabled]}
           onPress={startScan}
           disabled={!imageBase64 || !canScan}
         >
-          <Text style={[
-            styles.scanButtonText,
-            (!imageBase64 || !canScan) && styles.scanButtonTextDisabled,
-          ]}>
+          <Text
+            style={[
+              styles.scanButtonText,
+              (!imageBase64 || !canScan) && styles.scanButtonTextDisabled,
+            ]}
+          >
             解析する
           </Text>
         </TouchableOpacity>
@@ -473,12 +470,12 @@ export const ScannerScreen: React.FC = () => {
         {isGuest && !guestCanScan && (
           <View style={styles.guestInfoBanner}>
             <Text style={styles.guestInfoText}>
-              本日の利用回数上限に達しました。{'\n'}
+              本日の利用回数上限に達しました。{"\n"}
               明日また利用できます。
             </Text>
             <TouchableOpacity
               style={styles.softSignupButton}
-              onPress={() => navigation.navigate('GuestSignup')}
+              onPress={() => navigation.navigate("GuestSignup")}
             >
               <Text style={styles.softSignupText}>アカウント登録でもっと便利に</Text>
             </TouchableOpacity>
@@ -491,19 +488,19 @@ export const ScannerScreen: React.FC = () => {
             {isGuest ? (
               <>
                 <Text style={styles.limitWarningText}>
-                  本日の利用回数上限に達しました。{'\n'}
+                  本日の利用回数上限に達しました。{"\n"}
                   明日また利用できます。
                 </Text>
                 <TouchableOpacity
                   style={styles.signupButton}
-                  onPress={() => navigation.navigate('GuestSignup')}
+                  onPress={() => navigation.navigate("GuestSignup")}
                 >
                   <Text style={styles.signupButtonText}>アカウント登録してもっと使う</Text>
                 </TouchableOpacity>
               </>
             ) : (
               <Text style={styles.limitWarningText}>
-                本日の利用回数上限に達しました。{'\n'}
+                本日の利用回数上限に達しました。{"\n"}
                 明日また利用できます。
               </Text>
             )}
@@ -527,17 +524,14 @@ export const ScannerScreen: React.FC = () => {
             <View style={styles.modalImageContainer}>
               <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
                 <Image
-                  source={require('../assets/timesheet-template.png')}
+                  source={require("../assets/timesheet-template.png")}
                   style={styles.modalImage}
                   resizeMode="contain"
                 />
               </TouchableOpacity>
             </View>
             <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={styles.modalShareButton}
-                onPress={shareTimesheetImage}
-              >
+              <TouchableOpacity style={styles.modalShareButton} onPress={shareTimesheetImage}>
                 <Feather name="download" size={22} color="#ffffff" />
                 <Text style={styles.modalShareText}>保存</Text>
               </TouchableOpacity>
@@ -553,13 +547,13 @@ export const ScannerScreen: React.FC = () => {
         </TouchableOpacity>
       </Modal>
     </SafeAreaView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
   },
   // Step 1: Idle
   idleContainer: {
@@ -569,175 +563,175 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   statusBar: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: "#EFF6FF",
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
   },
   statusText: {
     fontSize: 14,
-    color: '#1E40AF',
-    textAlign: 'center',
-    fontWeight: '500',
+    color: "#1E40AF",
+    textAlign: "center",
+    fontWeight: "500",
   },
   errorContainer: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: "#FEF2F2",
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
   },
   errorText: {
-    color: '#DC2626',
+    color: "#DC2626",
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
   },
   imagePickerSection: {
     marginBottom: 16,
   },
   previewContainer: {
-    position: 'relative',
-    backgroundColor: '#F3F4F6',
+    position: "relative",
+    backgroundColor: "#F3F4F6",
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 12,
   },
   previewImage: {
-    width: '100%',
+    width: "100%",
     height: 240,
   },
   removeImageButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 8,
     right: 8,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: "rgba(0,0,0,0.5)",
     borderRadius: 14,
     width: 28,
     height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   placeholderContainer: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#D1D5DB',
-    borderStyle: 'dashed',
+    borderColor: "#D1D5DB",
+    borderStyle: "dashed",
     paddingVertical: 48,
     paddingHorizontal: 24,
-    alignItems: 'center',
+    alignItems: "center",
     gap: 8,
   },
   placeholderText: {
     fontSize: 16,
-    color: '#374151',
-    fontWeight: '600',
+    color: "#374151",
+    fontWeight: "600",
     marginTop: 8,
   },
   placeholderSubtext: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: "#9CA3AF",
   },
   changeImageHint: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 8,
     right: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 4,
     gap: 4,
   },
   changeImageHintText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   scanButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: "#2563EB",
     height: 52,
     borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   scanButtonDisabled: {
-    backgroundColor: '#D1D5DB',
+    backgroundColor: "#D1D5DB",
   },
   scanButtonText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 17,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   scanButtonTextDisabled: {
-    color: '#9CA3AF',
+    color: "#9CA3AF",
   },
   templateLabel: {
     fontSize: 13,
-    color: '#6B7280',
-    fontWeight: '500',
+    color: "#6B7280",
+    fontWeight: "500",
     marginTop: 16,
     marginBottom: 4,
   },
   templateButtonRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 10,
   },
   templateButton: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     height: 44,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#ffffff',
+    borderColor: "#D1D5DB",
+    backgroundColor: "#ffffff",
     gap: 6,
   },
   templateButtonText: {
-    color: '#2563EB',
+    color: "#2563EB",
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   limitWarning: {
     marginTop: 16,
-    backgroundColor: '#FEF3C7',
+    backgroundColor: "#FEF3C7",
     borderRadius: 8,
     padding: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   limitWarningText: {
-    color: '#92400E',
+    color: "#92400E",
     fontSize: 13,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 20,
   },
   signupButton: {
     marginTop: 8,
-    backgroundColor: '#2563EB',
+    backgroundColor: "#2563EB",
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 20,
   },
   signupButtonText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   guestInfoBanner: {
     marginTop: 16,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: "#EFF6FF",
     borderRadius: 8,
     padding: 12,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: "#BFDBFE",
   },
   guestInfoText: {
-    color: '#1E40AF',
+    color: "#1E40AF",
     fontSize: 13,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 20,
   },
   softSignupButton: {
@@ -746,41 +740,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   softSignupText: {
-    color: '#2563EB',
+    color: "#2563EB",
     fontSize: 13,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
+    fontWeight: "600",
+    textDecorationLine: "underline",
   },
   signupPromptButton: {
     marginTop: 12,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: "#EFF6FF",
     borderRadius: 8,
     paddingVertical: 12,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: "#BFDBFE",
   },
   signupPromptText: {
-    color: '#2563EB',
+    color: "#2563EB",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   // Step 2: Scanning
   scanningContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   scanningText: {
     marginTop: 16,
     fontSize: 18,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: "600",
+    color: "#374151",
   },
   scanningSubtext: {
     marginTop: 8,
     fontSize: 14,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   // Step 3: Result
   resultContainer: {
@@ -788,91 +782,91 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   menuInfo: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: "#EFF6FF",
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
   },
   menuTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1E3A8A',
+    fontWeight: "bold",
+    color: "#1E3A8A",
     marginBottom: 4,
   },
   menuDescription: {
     fontSize: 14,
-    color: '#374151',
+    color: "#374151",
     marginBottom: 8,
   },
   menuDetails: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   menuDetail: {
     fontSize: 13,
-    color: '#6B7280',
-    backgroundColor: '#DBEAFE',
+    color: "#6B7280",
+    backgroundColor: "#DBEAFE",
     borderRadius: 4,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
   resetButton: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
     height: 48,
     borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: 16,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: "#D1D5DB",
   },
   resetButtonText: {
-    color: '#374151',
+    color: "#374151",
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: "rgba(0,0,0,0.8)",
   },
   modalContent: {
     flex: 1,
   },
   modalImageContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 16,
   },
   modalImage: {
-    width: Dimensions.get('window').width - 32,
-    height: Dimensions.get('window').height * 0.7,
+    width: Dimensions.get("window").width - 32,
+    height: Dimensions.get("window").height * 0.7,
   },
   modalFooter: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 32,
     paddingBottom: 24,
     paddingTop: 12,
   },
   modalShareButton: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 4,
   },
   modalShareText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   modalCloseButton: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 4,
   },
   modalCloseText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
   },
-})
+});

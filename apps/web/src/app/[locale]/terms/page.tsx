@@ -17,7 +17,8 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold text-gray-900">第1条（適用）</h2>
           <p className="mt-2">
-            本利用規約（以下「本規約」）は、SwimHub Scanner（以下「本サービス」）の利用に関する条件を定めるものです。ユーザーは本規約に同意の上、本サービスを利用するものとします。
+            本利用規約（以下「本規約」）は、SwimHub
+            Scanner（以下「本サービス」）の利用に関する条件を定めるものです。ユーザーは本規約に同意の上、本サービスを利用するものとします。
           </p>
         </section>
 
@@ -31,7 +32,9 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold text-gray-900">第3条（アカウント）</h2>
           <ol className="mt-2 list-inside list-decimal space-y-1">
-            <li>ユーザーは、Google または Apple のアカウントを使用して本サービスにログインします。</li>
+            <li>
+              ユーザーは、Google または Apple のアカウントを使用して本サービスにログインします。
+            </li>
             <li>ユーザーは、自己のアカウントを適切に管理する責任を負います。</li>
             <li>アカウントの第三者への譲渡・貸与は禁止します。</li>
           </ol>
@@ -54,14 +57,19 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold text-gray-900">第5条（利用制限）</h2>
           <ol className="mt-2 list-inside list-decimal space-y-1">
             <li>本サービスでは、1日あたりの解析回数に制限を設けています。</li>
-            <li>将来的に有料プランを提供する場合があります。その際は事前に利用規約を更新し通知します。</li>
+            <li>
+              将来的に有料プランを提供する場合があります。その際は事前に利用規約を更新し通知します。
+            </li>
           </ol>
         </section>
 
         <section>
           <h2 className="text-lg font-semibold text-gray-900">第6条（免責事項）</h2>
           <ol className="mt-2 list-inside list-decimal space-y-1">
-            <li>AI による変換結果の正確性を保証するものではありません。ユーザーは変換結果を確認の上ご利用ください。</li>
+            <li>
+              AI
+              による変換結果の正確性を保証するものではありません。ユーザーは変換結果を確認の上ご利用ください。
+            </li>
             <li>本サービスの利用により生じた損害について、運営者は一切の責任を負いません。</li>
             <li>本サービスは予告なく変更・停止する場合があります。</li>
           </ol>

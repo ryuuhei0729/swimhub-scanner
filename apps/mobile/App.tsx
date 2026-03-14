@@ -1,14 +1,14 @@
-import React, { useEffect, useRef } from 'react'
-import { enableScreens } from 'react-native-screens'
-import { NavigationContainer } from '@react-navigation/native'
-import { StatusBar } from 'expo-status-bar'
-import { View, ActivityIndicator, StyleSheet, Text } from 'react-native'
-import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { AuthProvider, useAuth } from './contexts/AuthProvider'
-import { MainStack } from './navigation/MainStack'
-import { supabase } from './lib/supabase'
+import React, { useEffect, useRef } from "react";
+import { enableScreens } from "react-native-screens";
+import { NavigationContainer } from "@react-navigation/native";
+import { StatusBar } from "expo-status-bar";
+import { View, ActivityIndicator, StyleSheet, Text } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { AuthProvider, useAuth } from "./contexts/AuthProvider";
+import { MainStack } from "./navigation/MainStack";
+import { supabase } from "./lib/supabase";
 
-enableScreens()
+enableScreens();
 
 /**
  * Supabase未初期化時のエラー画面
@@ -19,12 +19,12 @@ const SupabaseErrorScreen: React.FC = () => {
       <Text style={styles.errorTitle}>設定エラー</Text>
       <Text style={styles.errorMessage}>
         Supabaseの設定が正しく行われていません。
-        {'\n\n'}
+        {"\n\n"}
         アプリの設定を確認してください。
       </Text>
     </View>
-  )
-}
+  );
+};
 
 /**
  * 認証状態に応じてナビゲーションスタックを切り替え
@@ -32,19 +32,19 @@ const SupabaseErrorScreen: React.FC = () => {
  *   スキャン機能はアカウント不要のため、常にゲストモードで開始
  */
 const AppNavigator: React.FC = () => {
-  const { isAuthenticated, isGuest, loading, enterGuestMode } = useAuth()
-  const autoGuestDone = useRef(false)
+  const { isAuthenticated, isGuest, loading, enterGuestMode } = useAuth();
+  const autoGuestDone = useRef(false);
 
   // 未ログイン・非ゲストの場合は自動的にゲストモードに入る
   useEffect(() => {
     if (!loading && !isAuthenticated && !isGuest && !autoGuestDone.current) {
-      autoGuestDone.current = true
-      enterGuestMode()
+      autoGuestDone.current = true;
+      enterGuestMode();
     }
-  }, [loading, isAuthenticated, isGuest, enterGuestMode])
+  }, [loading, isAuthenticated, isGuest, enterGuestMode]);
 
   if (!supabase) {
-    return <SupabaseErrorScreen />
+    return <SupabaseErrorScreen />;
   }
 
   if (loading) {
@@ -53,7 +53,7 @@ const AppNavigator: React.FC = () => {
         <ActivityIndicator size="large" color="#2563EB" />
         <StatusBar style="auto" />
       </View>
-    )
+    );
   }
 
   return (
@@ -63,19 +63,19 @@ const AppNavigator: React.FC = () => {
         <StatusBar style="auto" />
       </NavigationContainer>
     </View>
-  )
-}
+  );
+};
 
 export default function App() {
   // Initialize Google Mobile Ads SDK
   useEffect(() => {
     try {
-      const mobileAds = require('react-native-google-mobile-ads').default
-      mobileAds().initialize()
+      const mobileAds = require("react-native-google-mobile-ads").default;
+      mobileAds().initialize();
     } catch {
       // Ad module not available (e.g., running in Expo Go)
     }
-  }, [])
+  }, []);
 
   return (
     <SafeAreaProvider>
@@ -83,7 +83,7 @@ export default function App() {
         <AppNavigator />
       </AuthProvider>
     </SafeAreaProvider>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -92,27 +92,27 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#EFF6FF',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#EFF6FF",
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#EFF6FF',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#EFF6FF",
     padding: 20,
   },
   errorTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#DC2626',
+    fontWeight: "bold",
+    color: "#DC2626",
     marginBottom: 16,
   },
   errorMessage: {
     fontSize: 16,
-    color: '#374151',
-    textAlign: 'center',
+    color: "#374151",
+    textAlign: "center",
     lineHeight: 24,
   },
-})
+});

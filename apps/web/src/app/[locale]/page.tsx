@@ -22,9 +22,7 @@ function StepIndicator({ currentStep }: { currentStep: Step }) {
         const isActive = s.key === currentStep;
         return (
           <span key={s.key} className="flex items-center">
-            {i > 0 && (
-              <ChevronRight className="w-3 h-3 text-muted-foreground/50 mx-0.5" />
-            )}
+            {i > 0 && <ChevronRight className="w-3 h-3 text-muted-foreground/50 mx-0.5" />}
             <span
               className={`px-2.5 py-1 rounded-md ${
                 isActive
@@ -50,7 +48,13 @@ export default function HomePage() {
         <header className="h-14 shrink-0 border-b border-border bg-surface/80 backdrop-blur-xl px-2 sm:px-4 lg:px-8 flex items-center justify-between relative z-50">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <Image src="/icon.png" alt="SwimHub Scanner" width={40} height={40} className="w-10 h-10 object-contain" />
+              <Image
+                src="/icon.png"
+                alt="SwimHub Scanner"
+                width={40}
+                height={40}
+                className="w-10 h-10 object-contain"
+              />
               <span className="text-lg font-bold tracking-tight">SwimHub Scanner</span>
             </div>
             <StepIndicator currentStep={currentStep} />

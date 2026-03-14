@@ -3,14 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import {
-  Heart,
-  ShieldCheck,
-  FileText,
-  HelpCircle,
-  Mail,
-  ExternalLink,
-} from "lucide-react";
+import { Heart, ShieldCheck, FileText, HelpCircle, Mail, ExternalLink } from "lucide-react";
 
 const familyServices = [
   {
@@ -84,9 +77,7 @@ export function SwimHubFamilyFooter() {
                   className="w-full h-full object-contain"
                 />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                SwimHub Scanner
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900">SwimHub Scanner</h3>
             </div>
             <p className="text-sm text-gray-600 leading-relaxed">
               手書きの記録表をAIで解析してデジタル化できるWebアプリケーション
@@ -125,7 +116,7 @@ export function SwimHubFamilyFooter() {
                     <link.icon className="h-4 w-4 mr-2" />
                     {link.name}
                   </Link>
-                )
+                ),
               )}
             </div>
           </div>
@@ -152,16 +143,12 @@ export function SwimHubFamilyFooter() {
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-blue-700">
-                        {service.name}
-                      </span>
+                      <span className="text-sm font-medium text-blue-700">{service.name}</span>
                       <span className="text-[10px] font-medium text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">
                         利用中
                       </span>
                     </div>
-                    <p className="text-xs text-blue-600/70 truncate">
-                      {service.description}
-                    </p>
+                    <p className="text-xs text-blue-600/70 truncate">{service.description}</p>
                   </div>
                 </div>
               ) : (
@@ -186,12 +173,10 @@ export function SwimHubFamilyFooter() {
                       </span>
                       <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-gray-500" />
                     </div>
-                    <p className="text-xs text-gray-500 truncate">
-                      {service.description}
-                    </p>
+                    <p className="text-xs text-gray-500 truncate">{service.description}</p>
                   </div>
                 </a>
-              )
+              ),
             )}
           </div>
         </div>
@@ -203,13 +188,18 @@ export function SwimHubFamilyFooter() {
               <div className="text-sm text-gray-500">
                 © {currentYear} SwimHub Scanner. All rights reserved.
               </div>
-              <div className="text-xs text-gray-400">
-                
-              </div>
+              <div className="text-xs text-gray-400"></div>
             </div>
 
             <div className="flex items-center space-x-4 text-xs text-gray-400">
-              <span>Last updated: {new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" })}</span>
+              <span>
+                Last updated:{" "}
+                {new Date().toLocaleDateString("ja-JP", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                })}
+              </span>
             </div>
           </div>
         </div>

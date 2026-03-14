@@ -165,16 +165,12 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
     <div className="w-full space-y-4">
       {/* Menu info */}
       <div className="rounded-lg bg-gray-50 px-4 py-3 space-y-1">
-        {menu.description && (
-          <p className="text-sm text-gray-500">{menu.description}</p>
-        )}
+        {menu.description && <p className="text-sm text-gray-500">{menu.description}</p>}
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-gray-700">
           <span>距離: {menu.distance}m</span>
           <span>本数: {menu.repCount}</span>
           <span>セット数: {menu.setCount}</span>
-          {menu.circle != null && (
-            <span>サークル: {formatCircleTime(menu.circle)}</span>
-          )}
+          {menu.circle != null && <span>サークル: {formatCircleTime(menu.circle)}</span>}
         </div>
       </div>
 
@@ -206,13 +202,21 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
           <thead>
             {/* Set row + Column headers */}
             <tr className="border-b bg-gray-100">
-              <th rowSpan={2} className="sticky left-0 z-10 bg-gray-50 px-1 py-1 text-center align-middle font-medium">
+              <th
+                rowSpan={2}
+                className="sticky left-0 z-10 bg-gray-50 px-1 py-1 text-center align-middle font-medium"
+              >
                 No
               </th>
-              <th rowSpan={2} className="sticky left-7 z-10 bg-gray-50 px-1 py-1 text-left align-middle font-medium">
+              <th
+                rowSpan={2}
+                className="sticky left-7 z-10 bg-gray-50 px-1 py-1 text-left align-middle font-medium"
+              >
                 名前
               </th>
-              <th rowSpan={2} className="bg-gray-50 px-1 py-1 text-center align-middle font-medium">種目</th>
+              <th rowSpan={2} className="bg-gray-50 px-1 py-1 text-center align-middle font-medium">
+                種目
+              </th>
               {setHeaders.map((h, i) => (
                 <th
                   key={i}
@@ -222,7 +226,9 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
                   {h.label}
                 </th>
               ))}
-              <th rowSpan={2} className="border-l px-2 py-1 text-center align-middle font-medium">平均</th>
+              <th rowSpan={2} className="border-l px-2 py-1 text-center align-middle font-medium">
+                平均
+              </th>
               <th rowSpan={2} className="w-8" />
             </tr>
             <tr className="border-b bg-gray-50">
@@ -297,29 +303,29 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
                   {swimmer.times.map((time, tIdx) => {
                     const isSetStart = tIdx > 0 && tIdx % data.menu.repCount === 0;
                     return (
-                    <td
-                      key={tIdx}
-                      className={`px-1 py-2 text-center tabular-nums ${isSetStart ? "border-l-2 border-l-gray-400" : "border-l"} ${getCellStyle(time, swimmer)}`}
-                    >
-                      {editingCell?.swimmerIdx === sIdx &&
-                      editingCell?.field === "time" &&
-                      editingCell?.timeIdx === tIdx ? (
-                        <TimeInput
-                          initialValue={time}
-                          onCommit={(val) => updateTime(sIdx, tIdx, val)}
-                          onClose={() => setEditingCell(null)}
-                        />
-                      ) : (
-                        <span
-                          className="cursor-pointer"
-                          onClick={() =>
-                            setEditingCell({ swimmerIdx: sIdx, field: "time", timeIdx: tIdx })
-                          }
-                        >
-                          {time !== null ? time.toFixed(1) : "-"}
-                        </span>
-                      )}
-                    </td>
+                      <td
+                        key={tIdx}
+                        className={`px-1 py-2 text-center tabular-nums ${isSetStart ? "border-l-2 border-l-gray-400" : "border-l"} ${getCellStyle(time, swimmer)}`}
+                      >
+                        {editingCell?.swimmerIdx === sIdx &&
+                        editingCell?.field === "time" &&
+                        editingCell?.timeIdx === tIdx ? (
+                          <TimeInput
+                            initialValue={time}
+                            onCommit={(val) => updateTime(sIdx, tIdx, val)}
+                            onClose={() => setEditingCell(null)}
+                          />
+                        ) : (
+                          <span
+                            className="cursor-pointer"
+                            onClick={() =>
+                              setEditingCell({ swimmerIdx: sIdx, field: "time", timeIdx: tIdx })
+                            }
+                          >
+                            {time !== null ? time.toFixed(1) : "-"}
+                          </span>
+                        )}
+                      </td>
                     );
                   })}
                   <td className="border-l px-2 py-2 text-center tabular-nums font-medium">
@@ -334,8 +340,18 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
                       className="text-gray-400 hover:text-red-500"
                       title="削除"
                     >
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
                       </svg>
                     </button>
                   </td>

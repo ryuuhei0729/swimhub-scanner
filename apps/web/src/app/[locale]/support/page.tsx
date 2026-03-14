@@ -14,38 +14,28 @@ export default function SupportPage() {
 
       <div className="mt-8 space-y-8 text-sm leading-relaxed text-gray-700">
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">
-            よくある質問 (FAQ)
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-900">よくある質問 (FAQ)</h2>
           <div className="mt-4 space-y-4">
             <div>
-              <h3 className="font-medium text-gray-900">
-                Q. スキャンした結果が正確ではありません
-              </h3>
+              <h3 className="font-medium text-gray-900">Q. スキャンした結果が正確ではありません</h3>
               <p className="mt-1">
                 鮮明な画像を使用してください。手書きの文字がはっきり読み取れる画像をお勧めします。撮影時は記録表が画像全体に大きく写るようにしてください。
               </p>
             </div>
             <div>
-              <h3 className="font-medium text-gray-900">
-                Q. 1日の利用回数に制限はありますか？
-              </h3>
+              <h3 className="font-medium text-gray-900">Q. 1日の利用回数に制限はありますか？</h3>
               <p className="mt-1">
                 1日あたりの解析回数に制限があります。毎日0:00にリセットされます。
               </p>
             </div>
             <div>
-              <h3 className="font-medium text-gray-900">
-                Q. 対応している記録表の形式は？
-              </h3>
+              <h3 className="font-medium text-gray-900">Q. 対応している記録表の形式は？</h3>
               <p className="mt-1">
                 アプリ内で提供しているテンプレート形式に対応しています。テンプレートはアプリのスキャン画面からPDFまたは画像としてダウンロードできます。
               </p>
             </div>
             <div>
-              <h3 className="font-medium text-gray-900">
-                Q. アカウントを削除したい
-              </h3>
+              <h3 className="font-medium text-gray-900">Q. アカウントを削除したい</h3>
               <p className="mt-1">
                 アプリ内のアカウント画面から「アカウントを削除」ボタンで削除できます。削除するとすべてのデータが完全に削除されます。
               </p>
@@ -66,9 +56,7 @@ export default function SupportPage() {
               support@swim-hub.app
             </a>
           </p>
-          <p className="mt-2 text-gray-500">
-            通常2営業日以内にご返信いたします。
-          </p>
+          <p className="mt-2 text-gray-500">通常2営業日以内にご返信いたします。</p>
         </section>
       </div>
     </main>

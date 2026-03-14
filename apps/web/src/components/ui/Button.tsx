@@ -20,7 +20,8 @@ export function Button({
     primary: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow",
     outline: "border border-border text-foreground hover:bg-muted shadow-sm hover:shadow",
     ghost: "text-foreground hover:bg-muted",
-    danger: "bg-destructive text-primary-foreground hover:bg-destructive/90 shadow-sm hover:shadow focus:ring-destructive",
+    danger:
+      "bg-destructive text-primary-foreground hover:bg-destructive/90 shadow-sm hover:shadow focus:ring-destructive",
   };
 
   const sizes = {

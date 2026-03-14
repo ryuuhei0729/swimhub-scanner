@@ -122,7 +122,14 @@ export function ImageUploader({ onImageSelect, disabled }: ImageUploaderProps) {
       ) : (
         <div className="space-y-3">
           <div className="relative overflow-hidden rounded-lg border border-border bg-surface-raised">
-            <Image src={preview} alt="プレビュー" width={400} height={320} className="mx-auto max-h-80 object-contain" unoptimized />
+            <Image
+              src={preview}
+              alt="プレビュー"
+              width={400}
+              height={320}
+              className="mx-auto max-h-80 object-contain"
+              unoptimized
+            />
           </div>
           <div className="flex justify-center">
             <Button variant="ghost" size="sm" onClick={handleClear} disabled={disabled}>
@@ -141,7 +148,11 @@ export function ImageUploader({ onImageSelect, disabled }: ImageUploaderProps) {
         className="hidden"
       />
 
-      {error && <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
+      {error && (
+        <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          {error}
+        </div>
+      )}
     </div>
   );
 }

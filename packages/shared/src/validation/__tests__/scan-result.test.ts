@@ -61,7 +61,7 @@ describe("validateScanResult", () => {
     expect(
       validateScanResult({
         menu: { distance: 50, repCount: 1, setCount: 1 },
-      })
+      }),
     ).toBe(false);
   });
 
@@ -70,7 +70,7 @@ describe("validateScanResult", () => {
       validateScanResult({
         menu: { distance: 50, repCount: 1, setCount: 1 },
         swimmers: "not-array",
-      })
+      }),
     ).toBe(false);
   });
 
@@ -79,7 +79,7 @@ describe("validateScanResult", () => {
       validateScanResult({
         menu: { repCount: 1, setCount: 1 },
         swimmers: [],
-      })
+      }),
     ).toBe(false);
   });
 
@@ -88,7 +88,7 @@ describe("validateScanResult", () => {
       validateScanResult({
         menu: { distance: 50, setCount: 1 },
         swimmers: [],
-      })
+      }),
     ).toBe(false);
   });
 
@@ -97,7 +97,7 @@ describe("validateScanResult", () => {
       validateScanResult({
         menu: { distance: 50, repCount: 1 },
         swimmers: [],
-      })
+      }),
     ).toBe(false);
   });
 

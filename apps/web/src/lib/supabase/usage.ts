@@ -9,10 +9,7 @@ const APP = "swimhub_scanner" as const;
 /**
  * Get today's scan count for a user.
  */
-export async function getTodayScanCount(
-  supabase: SupabaseClient,
-  uid: string,
-): Promise<number> {
+export async function getTodayScanCount(supabase: SupabaseClient, uid: string): Promise<number> {
   // Mock mode
   if (process.env.SUPABASE_MOCK_MODE === "true") {
     return 0;
@@ -33,10 +30,7 @@ export async function getTodayScanCount(
 /**
  * Get today's total tokens used across all apps for a user.
  */
-export async function getTodayTokensUsed(
-  supabase: SupabaseClient,
-  uid: string,
-): Promise<number> {
+export async function getTodayTokensUsed(supabase: SupabaseClient, uid: string): Promise<number> {
   // Mock mode
   if (process.env.SUPABASE_MOCK_MODE === "true") {
     return 0;
@@ -54,8 +48,7 @@ export async function getTodayTokensUsed(
   }
 
   return data.reduce(
-    (sum: number, row: { daily_tokens_used: number | null }) =>
-      sum + (row.daily_tokens_used ?? 0),
+    (sum: number, row: { daily_tokens_used: number | null }) => sum + (row.daily_tokens_used ?? 0),
     0,
   );
 }
@@ -89,10 +82,7 @@ export async function canUserScan(
 /**
  * Increment the scan count and daily tokens used for today.
  */
-export async function incrementScanCount(
-  supabase: SupabaseClient,
-  uid: string,
-): Promise<void> {
+export async function incrementScanCount(supabase: SupabaseClient, uid: string): Promise<void> {
   // Mock mode
   if (process.env.SUPABASE_MOCK_MODE === "true") {
     console.log("[DEV] Mock: incrementScanCount for", uid);

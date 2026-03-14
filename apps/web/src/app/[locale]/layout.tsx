@@ -33,16 +33,7 @@ export const metadata: Metadata = {
   },
   description:
     "手書きの水泳タイム記録表を撮影するだけでAIが自動解析。デジタルデータに変換して記録管理を効率化します。",
-  keywords: [
-    "水泳",
-    "記録表",
-    "手書き",
-    "デジタル化",
-    "AI",
-    "OCR",
-    "スイミング",
-    "タイム記録",
-  ],
+  keywords: ["水泳", "記録表", "手書き", "デジタル化", "AI", "OCR", "スイミング", "タイム記録"],
   openGraph: {
     type: "website",
     locale: "ja_JP",
