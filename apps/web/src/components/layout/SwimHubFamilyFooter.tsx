@@ -54,6 +54,12 @@ const footerLinks = [
     icon: Mail,
     external: true,
   },
+  {
+    name: "特定商取引法に基づく表記",
+    href: "https://swim-hub.app/tokushoho",
+    icon: FileText,
+    external: true,
+  },
 ];
 
 export function SwimHubFamilyFooter() {

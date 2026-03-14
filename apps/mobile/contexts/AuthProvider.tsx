@@ -1,23 +1,13 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { getGuestTodayCount, clearGuestUsage } from "@/lib/guest-daily-limit";
-import type { User, Session } from "@supabase/supabase-js";
+import type { ScannerMobileAuthContextType } from "@swimhub-scanner/shared/types/auth";
+import { useAuthState } from "@swimhub-scanner/shared/hooks";
 import Constants from "expo-constants";
 
 const API_BASE_URL = Constants.expoConfig?.extra?.webApiUrl || "https://scanner.swim-hub.app";
 
-export interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  loading: boolean;
-  isAuthenticated: boolean;
-  isGuest: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<{ error: Error | null }>;
-  enterGuestMode: () => void;
-  exitGuestMode: () => void;
-}
+export type AuthContextType = ScannerMobileAuthContextType;
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -42,11 +32,21 @@ async function migrateGuestTokens(accessToken: string): Promise<void> {
 }
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, session, loading } = useAuthState(supabase);
   const [isGuest, setIsGuest] = useState(false);
   const wasGuestRef = useRef(false);
+
+  // ゲストからログインした場合、トークンを引き継ぎ＆ゲストモード解除
+  useEffect(() => {
+    if (user && wasGuestRef.current) {
+      wasGuestRef.current = false;
+      setIsGuest(false);
+      // セッションの access_token でゲスト利用データを引き継ぐ
+      if (session?.access_token) {
+        migrateGuestTokens(session.access_token);
+      }
+    }
+  }, [user, session]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     if (!supabase) {
@@ -112,73 +112,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const exitGuestMode = useCallback(() => {
     setIsGuest(false);
-  }, []);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    if (!supabase) {
-      console.error("Supabaseクライアントが初期化されていません");
-      setLoading(false);
-      return;
-    }
-
-    // タイムアウト設定（10秒後にloadingをfalseにする）
-    const timeoutId = setTimeout(() => {
-      if (isMounted) {
-        setLoading((prev) => {
-          if (prev) {
-            console.warn("認証状態の確認がタイムアウトしました");
-            return false;
-          }
-          return prev;
-        });
-      }
-    }, 10000);
-
-    // 認証状態の変更を監視
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      if (!isMounted) return;
-      clearTimeout(timeoutId);
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-      if (newSession?.user) {
-        // ゲストからログインした場合、トークンを引き継ぐ
-        if (wasGuestRef.current && newSession.access_token) {
-          wasGuestRef.current = false;
-          migrateGuestTokens(newSession.access_token);
-        }
-        setIsGuest(false);
-      }
-      setLoading(false);
-    });
-
-    // 初期セッションを明示的に取得（フォールバック）
-    supabase.auth
-      .getSession()
-      .then(({ data: { session: initialSession } }) => {
-        if (isMounted) {
-          clearTimeout(timeoutId);
-          setSession(initialSession);
-          setUser(initialSession?.user ?? null);
-          setLoading(false);
-        }
-      })
-      .catch((error) => {
-        console.error("初期セッション取得エラー:", error);
-        if (isMounted) {
-          clearTimeout(timeoutId);
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-      clearTimeout(timeoutId);
-      subscription.unsubscribe();
-    };
   }, []);
 
   const value: AuthContextType = {

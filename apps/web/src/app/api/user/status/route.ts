@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyAuth, ensureUserDocument } from "@/lib/api-helpers";
 import { getTodayScanCount, getTodayTokensUsed } from "@/lib/supabase/usage";
-import { PLAN_LIMITS } from "@swimhub-scanner/shared";
-import type { UserStatusResponse, SubscriptionStatus } from "@swimhub-scanner/shared";
+import { PLAN_LIMITS } from "@swimhub-scanner/shared/types/plan";
+import type { UserStatusResponse, SubscriptionStatus } from "@swimhub-scanner/shared/types/api";
 
 export async function GET(request: NextRequest) {
   // 1. Auth check

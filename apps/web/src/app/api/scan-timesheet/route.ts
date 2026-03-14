@@ -2,18 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { verifyAuth, ensureUserDocument } from "@/lib/api-helpers";
 import { canUserScan, incrementScanCount, logTokenConsumption } from "@/lib/supabase/usage";
 import { scanTimesheetWithGemini } from "@/lib/gemini/client";
-import {
-  validateImageMimeType,
-  validateImageSize,
-  estimateBase64Size,
-  validateScanResult,
-  PLAN_LIMITS,
-} from "@swimhub-scanner/shared";
-import type {
-  ScanTimesheetRequest,
-  ScanTimesheetResponse,
-  ApiErrorResponse,
-} from "@swimhub-scanner/shared";
+import { validateImageMimeType, validateImageSize, estimateBase64Size } from "@swimhub-scanner/shared/validation/image";
+import { validateScanResult } from "@swimhub-scanner/shared/validation/scan-result";
+import { PLAN_LIMITS } from "@swimhub-scanner/shared/types/plan";
+import type { ScanTimesheetRequest, ScanTimesheetResponse, ApiErrorResponse } from "@swimhub-scanner/shared/types/api";
 
 /**
  * ゲストリクエストかどうか判定

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyAuth } from "@/lib/api-helpers";
 import { createAdminClient } from "@/lib/supabase/server";
-import type { ApiErrorResponse } from "@swimhub-scanner/shared";
+import type { ApiErrorResponse } from "@swimhub-scanner/shared/types/api";
 
 export async function DELETE(request: NextRequest) {
   const authResult = await verifyAuth(request);

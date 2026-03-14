@@ -1,7 +1,8 @@
 import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { ApiErrorResponse, UserDocument } from "@swimhub-scanner/shared";
+import type { ApiErrorResponse } from "@swimhub-scanner/shared/types/api";
+import type { UserDocument } from "@swimhub-scanner/shared/types/firestore";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
 
 export interface AuthenticatedRequest {

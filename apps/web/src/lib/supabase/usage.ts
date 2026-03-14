@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getTodayJST } from "@swimhub-scanner/shared/utils";
 import { PLAN_LIMITS } from "@swimhub-scanner/shared/types";
-import type { PlanType, SubscriptionStatus } from "@swimhub-scanner/shared";
+import type { PlanType, SubscriptionStatus } from "@swimhub-scanner/shared/types/api";
 
 const APP = "swimhub_scanner" as const;
 
