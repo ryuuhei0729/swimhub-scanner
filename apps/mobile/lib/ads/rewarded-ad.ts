@@ -23,10 +23,9 @@ function getRewardedAdUnitId(): string {
     return mod.TestIds.REWARDED;
   }
 
-  // TODO: Replace with actual ad unit IDs from AdMob console for SwimHub Scanner
   return Platform.select({
-    ios: "ca-app-pub-4640414097368188/SCANNER_IOS_UNIT_ID",
-    android: "ca-app-pub-4640414097368188/SCANNER_ANDROID_UNIT_ID",
+    ios: "ca-app-pub-4640414097368188/5637814644",
+    android: "ca-app-pub-4640414097368188/SCANNER_ANDROID_UNIT_ID", // TODO: Replace with actual Android ad unit ID
     default: "",
   }) as string;
 }
