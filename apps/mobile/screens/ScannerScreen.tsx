@@ -43,7 +43,7 @@ import type { MainStackParamList } from "@/navigation/types";
 type Step = "idle" | "scanning" | "result";
 
 export const ScannerScreen: React.FC = () => {
-  const { isGuest, isAuthenticated } = useAuth();
+  const { isGuest, isAuthenticated, subscription } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
 
   const [step, setStep] = useState<Step>("idle");
@@ -181,6 +181,16 @@ export const ScannerScreen: React.FC = () => {
   const startScan = async () => {
     if (!imageBase64) return;
 
+    // 権限チェック: トークン不足の場合はペイウォールに遷移
+    if (!canScan) {
+      if (isGuest) {
+        navigation.navigate("GuestSignup");
+      } else if (isAuthenticated) {
+        navigation.navigate("Paywall");
+      }
+      return;
+    }
+
     // ゲスト: 日次利用を記録
     if (isGuest) {
       await recordGuestScan();
@@ -285,8 +295,15 @@ export const ScannerScreen: React.FC = () => {
     }
   };
 
+  // Premium ユーザーかどうか
+  const isPremium =
+    subscription?.plan === "premium" &&
+    (subscription?.status === "active" || subscription?.status === "trialing");
+
   // canScan の判定
   const canScan = (() => {
+    // Premium（active / trialing）は常にOK
+    if (isPremium) return true;
     if (isGuest) {
       return guestCanScan;
     }
@@ -301,6 +318,7 @@ export const ScannerScreen: React.FC = () => {
   const dailyLimit = PLAN_LIMITS.guest.dailyScanLimit ?? 1;
   const guestRemaining = Math.max(0, dailyLimit - guestTodayCount);
   const displayTokens = (() => {
+    if (isPremium) return null; // Premium は無制限
     if (isGuest) return guestRemaining;
     if (userStatus?.tokensRemaining !== undefined) return userStatus.tokensRemaining;
     return null;
@@ -376,13 +394,19 @@ export const ScannerScreen: React.FC = () => {
         contentContainerStyle={styles.idleContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
-        {/* 利用状況 */}
+        {/* 利用状況バッジ */}
         {!statusLoading && (
           <View style={styles.statusBar}>
-            {isGuest && <Text style={styles.statusText}>残り: {guestRemaining}回（今日）</Text>}
-            {!isGuest && userStatus && displayTokens !== null && (
-              <Text style={styles.statusText}>残り: {displayTokens}回</Text>
-            )}
+            {isPremium ? (
+              <View style={styles.premiumBadge}>
+                <Feather name="zap" size={14} color="#F59E0B" />
+                <Text style={styles.premiumBadgeText}>Premium</Text>
+              </View>
+            ) : isGuest ? (
+              <Text style={styles.statusText}>残り {guestRemaining}回（今日）</Text>
+            ) : userStatus && displayTokens !== null ? (
+              <Text style={styles.statusText}>残り {displayTokens}回</Text>
+            ) : null}
           </View>
         )}
 
@@ -499,10 +523,17 @@ export const ScannerScreen: React.FC = () => {
                 </TouchableOpacity>
               </>
             ) : (
-              <Text style={styles.limitWarningText}>
-                本日の利用回数上限に達しました。{"\n"}
-                明日また利用できます。
-              </Text>
+              <>
+                <Text style={styles.limitWarningText}>
+                  本日の利用回数上限に達しました。
+                </Text>
+                <TouchableOpacity
+                  style={styles.signupButton}
+                  onPress={() => navigation.navigate("Paywall")}
+                >
+                  <Text style={styles.signupButtonText}>Premium にアップグレード</Text>
+                </TouchableOpacity>
+              </>
             )}
           </View>
         )}
@@ -573,6 +604,17 @@ const styles = StyleSheet.create({
     color: "#1E40AF",
     textAlign: "center",
     fontWeight: "500",
+  },
+  premiumBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+  premiumBadgeText: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#92400E",
   },
   errorContainer: {
     backgroundColor: "#FEF2F2",

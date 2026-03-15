@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import PricingCard from "@/components/settings/PricingCard";
-
-const PREMIUM_FEATURES = ["AI解析が無制限", "広告非表示", "7日間の無料トライアル"];
 
 const MONTHLY_PRICE_ID = process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID ?? "";
 const YEARLY_PRICE_ID = process.env.NEXT_PUBLIC_STRIPE_YEARLY_PRICE_ID ?? "";
@@ -27,10 +26,17 @@ function getTrialDaysRemaining(trialEnd: string | null | undefined): number | nu
 }
 
 export default function SubscriptionSettings() {
+  const { t } = useTranslation();
   const { subscription } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState<"monthly" | "yearly" | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const PREMIUM_FEATURES = [
+    t("subscription.featureUnlimitedScan"),
+    t("subscription.featureNoAds"),
+    t("subscription.featureFreeTrial"),
+  ];
 
   const plan = subscription?.plan ?? "free";
   const status = subscription?.status ?? null;
@@ -53,18 +59,18 @@ export default function SubscriptionSettings() {
       });
       const data = (await res.json()) as { url?: string; error?: string };
       if (!res.ok) {
-        setError(data.error || "チェックアウトの作成に失敗しました");
+        setError(data.error || t("subscription.checkoutError"));
         return;
       }
       if (data.url) {
         window.location.href = data.url;
       }
     } catch {
-      setError("エラーが発生しました。再度お試しください。");
+      setError(t("common.error"));
     } finally {
       setLoadingPlan(null);
     }
-  }, []);
+  }, [t]);
 
   const handleManagePlan = useCallback(async () => {
     setPortalLoading(true);
@@ -76,18 +82,18 @@ export default function SubscriptionSettings() {
       });
       const data = (await res.json()) as { url?: string; error?: string };
       if (!res.ok) {
-        setError(data.error || "ポータルの作成に失敗しました");
+        setError(data.error || t("subscription.portalError"));
         return;
       }
       if (data.url) {
         window.location.href = data.url;
       }
     } catch {
-      setError("エラーが発生しました。再度お試しください。");
+      setError(t("common.error"));
     } finally {
       setPortalLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -101,7 +107,7 @@ export default function SubscriptionSettings() {
   return (
     <div className="rounded-lg border border-border bg-card p-4 sm:p-6 shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 pb-2 mb-4 border-b border-border">
-        <h2 className="text-lg sm:text-xl font-semibold text-foreground">サブスクリプション</h2>
+        <h2 className="text-lg sm:text-xl font-semibold text-foreground">{t("subscription.title")}</h2>
       </div>
 
       {/* 現在のプラン表示 */}
@@ -109,39 +115,39 @@ export default function SubscriptionSettings() {
         {isTrialing ? (
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-sm font-medium text-muted-foreground">現在のプラン:</span>
+              <span className="text-sm font-medium text-muted-foreground">{t("subscription.currentPlan")}</span>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                無料トライアル中
+                {t("subscription.trialing")}
               </span>
             </div>
             {trialDaysRemaining !== null && (
               <p className="text-sm text-muted-foreground">
-                トライアル残り {trialDaysRemaining} 日（{formatDate(trialEnd)} まで）
+                {t("subscription.trialRemaining", { days: trialDaysRemaining, date: formatDate(trialEnd) })}
               </p>
             )}
           </div>
         ) : isPremium && isActive ? (
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-sm font-medium text-muted-foreground">現在のプラン:</span>
+              <span className="text-sm font-medium text-muted-foreground">{t("subscription.currentPlan")}</span>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                Premium
+                {t("subscription.premium")}
               </span>
             </div>
             {premiumExpiresAt && (
-              <p className="text-sm text-muted-foreground">次回更新日: {formatDate(premiumExpiresAt)}</p>
+              <p className="text-sm text-muted-foreground">{t("subscription.nextRenewal", { date: formatDate(premiumExpiresAt) })}</p>
             )}
             {cancelAtPeriodEnd && (
               <p className="text-sm text-amber-600 mt-1">
-                解約予定（期間終了時に Free に戻ります）
+                {t("subscription.cancelScheduled")}
               </p>
             )}
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-muted-foreground">現在のプラン:</span>
+            <span className="text-sm font-medium text-muted-foreground">{t("subscription.currentPlan")}</span>
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-foreground">
-              Free
+              {t("subscription.free")}
             </span>
           </div>
         )}
@@ -158,19 +164,19 @@ export default function SubscriptionSettings() {
       {!isPremium && !isTrialing && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <PricingCard
-            title="月額プラン"
-            price="¥500"
-            period="/月"
+            title={t("subscription.monthlyPlan")}
+            price={t("subscription.monthlyPrice")}
+            period={t("subscription.monthlyPeriod")}
             features={PREMIUM_FEATURES}
             onSelect={() => handleCheckout(MONTHLY_PRICE_ID, "monthly")}
             isLoading={loadingPlan === "monthly"}
             isCurrentPlan={false}
           />
           <PricingCard
-            title="年額プラン"
-            price="¥5,000"
-            period="/年"
-            badge="2ヶ月分お得"
+            title={t("subscription.yearlyPlan")}
+            price={t("subscription.yearlyPrice")}
+            period={t("subscription.yearlyPeriod")}
+            badge={t("subscription.yearlyBadge")}
             features={PREMIUM_FEATURES}
             onSelect={() => handleCheckout(YEARLY_PRICE_ID, "yearly")}
             isLoading={loadingPlan === "yearly"}
@@ -186,7 +192,7 @@ export default function SubscriptionSettings() {
           onClick={handleManagePlan}
           onKeyDown={handleKeyDown}
           disabled={portalLoading}
-          aria-label="プランを管理"
+          aria-label={t("subscription.managePlan")}
           className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {portalLoading ? (
@@ -211,10 +217,10 @@ export default function SubscriptionSettings() {
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 />
               </svg>
-              処理中...
+              {t("common.processing")}
             </>
           ) : (
-            "プランを管理"
+            t("subscription.managePlan")
           )}
         </button>
       )}

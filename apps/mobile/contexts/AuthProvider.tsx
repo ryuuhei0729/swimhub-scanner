@@ -1,13 +1,23 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { getGuestTodayCount, clearGuestUsage } from "@/lib/guest-daily-limit";
-import type { ScannerMobileAuthContextType } from "@swimhub-scanner/shared/types/auth";
+import {
+  initRevenueCat,
+  loginRevenueCat,
+  logoutRevenueCat,
+  addCustomerInfoListener,
+} from "@/lib/revenucat";
+import type { ScannerMobileAuthContextType, SubscriptionInfo } from "@swimhub-scanner/shared/types/auth";
 import { useAuthState } from "@swimhub-scanner/shared/hooks";
 import Constants from "expo-constants";
 
 const API_BASE_URL = Constants.expoConfig?.extra?.webApiUrl || "https://scanner.swim-hub.app";
 
-export type AuthContextType = ScannerMobileAuthContextType;
+/** サブスクリプション情報付きの認証コンテキスト型 */
+export type AuthContextType = ScannerMobileAuthContextType & {
+  subscription: SubscriptionInfo | null;
+  refreshSubscription: () => Promise<void>;
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -31,10 +41,75 @@ async function migrateGuestTokens(accessToken: string): Promise<void> {
   }
 }
 
+/**
+ * Supabase の user_subscriptions テーブルからサブスクリプション情報を取得する
+ */
+async function fetchSubscriptionFromDB(accessToken: string): Promise<SubscriptionInfo | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/user/status`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    // UserStatusResponse から SubscriptionInfo を構築
+    return {
+      plan: data.plan === "premium" ? "premium" : "free",
+      status: data.subscriptionStatus ?? null,
+      cancelAtPeriodEnd: false,
+      premiumExpiresAt: data.premiumExpiresAt ?? null,
+      trialEnd: null,
+    };
+  } catch (err) {
+    console.error("サブスクリプション情報の取得に失敗:", err);
+    return null;
+  }
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, session, loading } = useAuthState(supabase);
   const [isGuest, setIsGuest] = useState(false);
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const wasGuestRef = useRef(false);
+
+  // RevenueCat SDK の初期化
+  useEffect(() => {
+    initRevenueCat();
+  }, []);
+
+  // サブスクリプション情報を再取得する
+  const refreshSubscription = useCallback(async () => {
+    if (!session?.access_token) {
+      setSubscription(null);
+      return;
+    }
+    const sub = await fetchSubscriptionFromDB(session.access_token);
+    setSubscription(sub);
+  }, [session]);
+
+  // ユーザーログイン時: RevenueCat ログイン & サブスクリプション取得
+  useEffect(() => {
+    if (user && session?.access_token) {
+      loginRevenueCat(user.id);
+      fetchSubscriptionFromDB(session.access_token).then(setSubscription);
+    } else {
+      setSubscription(null);
+    }
+  }, [user, session]);
+
+  // RevenueCat の顧客情報変更リスナー: 購入/更新時にサブスクリプションを再取得
+  useEffect(() => {
+    if (!user || !session?.access_token) return;
+
+    const removeListener = addCustomerInfoListener(() => {
+      // RevenueCat 側で変更があった → Supabase からサブスクリプション情報を再取得
+      // (RevenueCat Webhook が user_subscriptions を更新するため)
+      if (session?.access_token) {
+        fetchSubscriptionFromDB(session.access_token).then(setSubscription);
+      }
+    });
+
+    return removeListener;
+  }, [user, session]);
 
   // ゲストからログインした場合、トークンを引き継ぎ＆ゲストモード解除
   useEffect(() => {
@@ -85,10 +160,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { error: new Error("Supabaseクライアントが初期化されていません") };
     }
     try {
+      // RevenueCat からログアウト
+      await logoutRevenueCat();
+
       const { error } = await supabase.auth.signOut();
       if (error) {
         return { error };
       }
+
+      // サブスクリプション情報をクリア
+      setSubscription(null);
 
       // Zustand ストアをリセット
       try {
@@ -120,11 +201,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
     isAuthenticated: !!user,
     isGuest,
+    subscription,
     signIn,
     signUp,
     signOut,
     enterGuestMode,
     exitGuestMode,
+    refreshSubscription,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

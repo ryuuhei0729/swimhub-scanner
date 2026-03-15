@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 interface PricingCardProps {
   title: string;
@@ -23,6 +24,8 @@ export default function PricingCard({
   isLoading,
   isCurrentPlan,
 }: PricingCardProps) {
+  const { t } = useTranslation();
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -70,7 +73,7 @@ export default function PricingCard({
         onClick={onSelect}
         onKeyDown={handleKeyDown}
         disabled={isCurrentPlan || isLoading}
-        aria-label={isCurrentPlan ? "現在のプラン" : `${title}を選択`}
+        aria-label={isCurrentPlan ? t("subscription.currentPlanBadge") : `${title}`}
         className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {isLoading ? (
@@ -95,12 +98,12 @@ export default function PricingCard({
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
-            処理中...
+            {t("common.processing")}
           </>
         ) : isCurrentPlan ? (
-          "現在のプラン"
+          t("subscription.currentPlanBadge")
         ) : (
-          "このプランを選択"
+          t("subscription.selectPlan")
         )}
       </button>
     </div>

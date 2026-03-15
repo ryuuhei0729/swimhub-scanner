@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { useParams, useRouter } from "next/navigation";
 import SubscriptionSettings from "@/components/settings/SubscriptionSettings";
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const { user, loading, refreshSubscription } = useAuth();
   const params = useParams();
   const router = useRouter();
@@ -39,16 +41,16 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold text-foreground mb-6">設定</h1>
+        <h1 className="text-2xl font-bold text-foreground mb-6">{t("settings.title")}</h1>
 
         {/* アカウント情報 */}
         <div className="rounded-lg border border-border bg-card p-4 sm:p-6 shadow-sm mb-6">
           <div className="pb-2 mb-4 border-b border-border">
-            <h2 className="text-lg sm:text-xl font-semibold text-foreground">アカウント</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-foreground">{t("settings.account")}</h2>
           </div>
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">メールアドレス:</span>
+              <span className="text-sm font-medium text-muted-foreground">{t("settings.email")}</span>
               <span className="text-sm text-foreground">{user.email}</span>
             </div>
           </div>

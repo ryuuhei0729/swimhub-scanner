@@ -3,19 +3,23 @@
 import { useState } from "react";
 import Image from "next/image";
 import { ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { UserMenu } from "@/components/auth/UserMenu";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ScannerFlow } from "@/components/scanner/ScannerFlow";
 import type { Step } from "@/components/scanner/ScannerFlow";
 import { SwimHubFamilyFooter } from "@/components/layout/SwimHubFamilyFooter";
 
-const STEPS = [
-  { key: "upload" as const, label: "画像アップロード", num: 1 },
-  { key: "scanning" as const, label: "AI解析", num: 2 },
-  { key: "result" as const, label: "結果確認・出力", num: 3 },
-];
-
 function StepIndicator({ currentStep }: { currentStep: Step }) {
+  const { t } = useTranslation();
+
+  const STEPS = [
+    { key: "upload" as const, label: t("scanner.step1"), num: 1 },
+    { key: "scanning" as const, label: t("scanner.step2"), num: 2 },
+    { key: "result" as const, label: t("scanner.step3"), num: 3 },
+  ];
+
   return (
     <div className="hidden sm:flex items-center gap-1 text-[11px] font-medium">
       {STEPS.map((s, i) => {
@@ -59,7 +63,10 @@ export default function HomePage() {
             </div>
             <StepIndicator currentStep={currentStep} />
           </div>
-          <UserMenu />
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <UserMenu />
+          </div>
         </header>
         <main className="flex-1">
           <ScannerFlow onStepChange={setCurrentStep} />

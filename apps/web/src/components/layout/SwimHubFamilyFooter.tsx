@@ -3,69 +3,71 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { Heart, ShieldCheck, FileText, HelpCircle, Mail, ExternalLink } from "lucide-react";
 
-const familyServices = [
-  {
-    name: "SwimHub",
-    description: "水泳チームの総合管理",
-    href: "https://swim-hub.app",
-    iconSrc: "/swimhub-icon.png",
-    current: false,
-  },
-  {
-    name: "SwimHub Timer",
-    description: "動画にタイムをオーバーレイ",
-    href: "https://timer.swim-hub.app",
-    iconSrc: "/timer-icon.png",
-    current: false,
-  },
-  {
-    name: "SwimHub Scanner",
-    description: "手書きの記録表をAIで解析",
-    href: "https://scanner.swim-hub.app",
-    iconSrc: "/icon.png",
-    current: true,
-  },
-];
-
-const footerLinks = [
-  {
-    name: "プライバシーポリシー",
-    href: "/privacy",
-    icon: ShieldCheck,
-    external: false,
-  },
-  {
-    name: "利用規約",
-    href: "/terms",
-    icon: FileText,
-    external: false,
-  },
-  {
-    name: "サポート",
-    href: "/support",
-    icon: HelpCircle,
-    external: false,
-  },
-  {
-    name: "お問い合わせ",
-    href: "https://swim-hub.app/contact",
-    icon: Mail,
-    external: true,
-  },
-  {
-    name: "特定商取引法に基づく表記",
-    href: "https://swim-hub.app/tokushoho",
-    icon: FileText,
-    external: true,
-  },
-];
-
 export function SwimHubFamilyFooter() {
+  const { t } = useTranslation();
   const params = useParams();
   const locale = (params.locale as string) || "ja";
   const currentYear = new Date().getFullYear();
+
+  const familyServices = [
+    {
+      name: "SwimHub",
+      description: t("footer.swimhubDescription"),
+      href: "https://swim-hub.app",
+      iconSrc: "/swimhub-icon.png",
+      current: false,
+    },
+    {
+      name: "SwimHub Timer",
+      description: t("footer.timerDescription"),
+      href: "https://timer.swim-hub.app",
+      iconSrc: "/timer-icon.png",
+      current: false,
+    },
+    {
+      name: "SwimHub Scanner",
+      description: t("footer.scannerDescription"),
+      href: "https://scanner.swim-hub.app",
+      iconSrc: "/icon.png",
+      current: true,
+    },
+  ];
+
+  const footerLinks = [
+    {
+      name: t("footer.privacyPolicy"),
+      href: "/privacy",
+      icon: ShieldCheck,
+      external: false,
+    },
+    {
+      name: t("footer.terms"),
+      href: "/terms",
+      icon: FileText,
+      external: false,
+    },
+    {
+      name: t("footer.support"),
+      href: "/support",
+      icon: HelpCircle,
+      external: false,
+    },
+    {
+      name: t("footer.contact"),
+      href: "https://swim-hub.app/contact",
+      icon: Mail,
+      external: true,
+    },
+    {
+      name: t("footer.commercialTransaction"),
+      href: "https://swim-hub.app/tokushoho",
+      icon: FileText,
+      external: true,
+    },
+  ];
 
   return (
     <footer className="bg-white border-t border-gray-200 mt-auto">
@@ -86,7 +88,7 @@ export function SwimHubFamilyFooter() {
               <h3 className="text-lg font-semibold text-gray-900">SwimHub Scanner</h3>
             </div>
             <p className="text-sm text-gray-600 leading-relaxed">
-              手書きの記録表をAIで解析してデジタル化できるWebアプリケーション
+              {t("footer.appDescription")}
             </p>
             <div className="flex items-center text-sm text-gray-500">
               <span>Made with</span>
@@ -98,7 +100,7 @@ export function SwimHubFamilyFooter() {
           {/* 右側：法的情報とサポート */}
           <div className="space-y-4">
             <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-              サポート・情報
+              {t("footer.supportInfo")}
             </h4>
             <div className="grid grid-cols-2 gap-2">
               {footerLinks.map((link) =>
@@ -131,7 +133,7 @@ export function SwimHubFamilyFooter() {
         {/* SwimHub サービス一覧 */}
         <div className="mt-8 pt-6 border-t border-gray-200">
           <h4 className="text-sm font-semibold text-gray-900 tracking-wide mb-4">
-            SwimHub サービス一覧
+            {t("footer.serviceList")}
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {familyServices.map((service) =>
@@ -151,7 +153,7 @@ export function SwimHubFamilyFooter() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-blue-700">{service.name}</span>
                       <span className="text-[10px] font-medium text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">
-                        利用中
+                        {t("footer.currentlyUsing")}
                       </span>
                     </div>
                     <p className="text-xs text-blue-600/70 truncate">{service.description}</p>

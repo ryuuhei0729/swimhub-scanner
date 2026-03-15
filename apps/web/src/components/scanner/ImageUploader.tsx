@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, type DragEvent, type ChangeEvent } from "react";
+import { useTranslation } from "react-i18next";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 
@@ -13,6 +14,7 @@ const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png"];
 
 export function ImageUploader({ onImageSelect, disabled }: ImageUploaderProps) {
+  const { t } = useTranslation();
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -23,12 +25,12 @@ export function ImageUploader({ onImageSelect, disabled }: ImageUploaderProps) {
       setError(null);
 
       if (!ALLOWED_TYPES.includes(file.type)) {
-        setError("JPEG または PNG 形式の画像をアップロードしてください");
+        setError(t("uploader.invalidFormat"));
         return;
       }
 
       if (file.size > MAX_SIZE_BYTES) {
-        setError("画像サイズは10MB以下にしてください");
+        setError(t("uploader.tooLarge"));
         return;
       }
 
@@ -42,7 +44,7 @@ export function ImageUploader({ onImageSelect, disabled }: ImageUploaderProps) {
       };
       reader.readAsDataURL(file);
     },
-    [onImageSelect],
+    [onImageSelect, t],
   );
 
   const handleDrop = useCallback(
@@ -115,16 +117,16 @@ export function ImageUploader({ onImageSelect, disabled }: ImageUploaderProps) {
             />
           </svg>
           <p className="text-sm font-medium text-foreground">
-            画像をドラッグ&ドロップ または クリックして選択
+            {t("uploader.dragDrop")}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">JPEG / PNG 形式、10MB以下</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("uploader.formatHint")}</p>
         </div>
       ) : (
         <div className="space-y-3">
           <div className="relative overflow-hidden rounded-lg border border-border bg-surface-raised">
             <Image
               src={preview}
-              alt="プレビュー"
+              alt={t("uploader.preview")}
               width={400}
               height={320}
               className="mx-auto max-h-80 object-contain"
@@ -133,7 +135,7 @@ export function ImageUploader({ onImageSelect, disabled }: ImageUploaderProps) {
           </div>
           <div className="flex justify-center">
             <Button variant="ghost" size="sm" onClick={handleClear} disabled={disabled}>
-              画像を変更
+              {t("uploader.changeImage")}
             </Button>
           </div>
         </div>

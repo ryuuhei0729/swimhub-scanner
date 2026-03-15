@@ -5,6 +5,7 @@ import { Feather } from "@expo/vector-icons";
 import type { MainStackParamList } from "./types";
 import { ScannerScreen } from "@/screens/ScannerScreen";
 import { AccountScreen } from "@/screens/AccountScreen";
+import { PaywallScreen } from "@/screens/PaywallScreen";
 import { GuestSignupScreen } from "@/screens/GuestSignupScreen";
 import { LoginMethodScreen } from "@/screens/LoginMethodScreen";
 import { EmailLoginScreen } from "@/screens/EmailLoginScreen";
@@ -48,6 +49,14 @@ export const MainStack: React.FC = () => {
           headerTitle: "アカウント",
           headerStyle: { backgroundColor: "#ffffff" },
           headerTitleStyle: { fontWeight: "600" },
+        }}
+      />
+      <Stack.Screen
+        name="Paywall"
+        component={PaywallScreen}
+        options={{
+          headerShown: false,
+          presentation: "modal",
         }}
       />
       <Stack.Screen

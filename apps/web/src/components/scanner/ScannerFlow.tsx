@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import type {
   ScanTimesheetResponse,
   UserStatusResponse,
@@ -24,6 +25,7 @@ type Step = "upload" | "scanning" | "result";
 export type { Step };
 
 export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => void }) {
+  const { t } = useTranslation();
   const { isGuest, isAuthenticated } = useAuth();
   const params = useParams();
   const locale = (params.locale as string) || "ja";
@@ -91,7 +93,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
     if (isGuest) {
       if (!canGuestUseToday("scanner")) {
         setError(
-          "今日の利用回数に達しました。アカウント登録（無料）すると機能制限なしで毎日使えます",
+          t("scanner.dailyLimitGuest"),
         );
         return;
       }
@@ -120,16 +122,16 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
           case "DAILY_LIMIT_EXCEEDED":
             setError(
               isGuest
-                ? "今日の利用回数に達しました。アカウント登録（無料）すると機能制限なしで毎日使えます"
-                : "今日の利用回数に達しました。Premiumなら無制限に利用可能です",
+                ? t("scanner.dailyLimitGuest")
+                : t("scanner.dailyLimitFree"),
             );
             break;
           case "SWIMMER_LIMIT_EXCEEDED":
-            setError("無料プランでは6名まで解析可能です");
+            setError(t("scanner.swimmerLimitExceeded"));
             break;
           case "PARSE_ERROR":
             setError(
-              "画像からタイム情報を読み取れませんでした。鮮明なタイム記録表の画像を使用してください",
+              t("scanner.parseError"),
             );
             break;
           default:
@@ -151,10 +153,10 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
       // Refresh user status after scan
       await fetchStatus();
     } catch {
-      setError("ネットワークエラーです。接続を確認してください。");
+      setError(t("scanner.networkError"));
       setStep("upload");
     }
-  }, [image, isGuest, fetchStatus]);
+  }, [image, isGuest, fetchStatus, t]);
 
   const handleReset = useCallback(() => {
     setStep("upload");
@@ -184,7 +186,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
           <div className="flex flex-col items-center gap-1 text-center">
             <Image src="/icon.png" alt="SwimHub Scanner" width={100} height={100} />
             <h1 className="text-3xl font-bold tracking-tight">SwimHub Scanner</h1>
-            <p className="text-sm text-muted-foreground">手書きの記録表をAIで解析</p>
+            <p className="text-sm text-muted-foreground">{t("scanner.heroSubtitle")}</p>
           </div>
         )}
 
@@ -195,28 +197,28 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
               {isGuest && (
                 <div className="flex flex-col gap-0.5">
                   <span>
-                    今日の残り: <span className="font-bold text-foreground">{guestRemaining}</span>{" "}
-                    / 1回
+                    {t("scanner.todayRemaining")} <span className="font-bold text-foreground">{guestRemaining}</span>{" "}
+                    {t("scanner.perDay")}
                   </span>
                   <span className="text-xs text-muted-foreground/70">
-                    アカウント登録すると毎日無料で使えます
+                    {t("scanner.registerForDaily")}
                   </span>
                 </div>
               )}
               {!isGuest && userStatus?.plan === "premium" && (
-                <span className="font-medium text-foreground">回数無制限</span>
+                <span className="font-medium text-foreground">{t("scanner.unlimited")}</span>
               )}
               {!isGuest && userStatus?.plan === "free" && (
                 <div className="flex flex-col gap-0.5">
                   <span>
-                    今日の残り:{" "}
+                    {t("scanner.todayRemaining")}{" "}
                     <span className="font-bold text-foreground">
                       {userStatus.remainingScans ?? 0}
                     </span>{" "}
-                    / 1回
+                    {t("scanner.perDay")}
                   </span>
                   <span className="text-xs text-muted-foreground/70">
-                    毎日0:00にリセットされます
+                    {t("scanner.dailyReset")}
                   </span>
                 </div>
               )}
@@ -224,7 +226,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
             {isGuest && (
               <Link href={`/${locale}/login`}>
                 <Button variant="ghost" size="sm" className="text-blue-600">
-                  アカウント登録
+                  {t("scanner.registerAccount")}
                 </Button>
               </Link>
             )}
@@ -234,7 +236,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
         {/* Step 1: Upload */}
         {step === "upload" && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-foreground">Step 1: 画像アップロード</h2>
+            <h2 className="text-lg font-semibold text-foreground">{t("scanner.step1Title")}</h2>
 
             {!canScan && !statusLoading && (
               <div
@@ -244,14 +246,14 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
                 {isGuest ? (
                   <div className="flex flex-col items-center gap-2">
                     <span>
-                      今日の利用回数に達しました。アカウント登録（無料）すると機能制限なしで毎日使えます
+                      {t("scanner.dailyLimitGuest")}
                     </span>
                     <Link href={`/${locale}/login`}>
-                      <Button size="sm">無料アカウントを作成</Button>
+                      <Button size="sm">{t("scanner.createFreeAccount")}</Button>
                     </Link>
                   </div>
                 ) : (
-                  "今日の利用回数に達しました。Premiumなら無制限に利用可能です"
+                  t("scanner.dailyLimitFree")
                 )}
               </div>
             )}
@@ -269,7 +271,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
 
             <div className="flex items-center justify-center gap-3">
               <Button size="lg" onClick={handleScan} disabled={!image || !canScan}>
-                解析する
+                {t("scanner.scan")}
               </Button>
               <Button variant="outline" size="lg" onClick={openTimesheetPrintWindow}>
                 <svg
@@ -285,7 +287,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
                     d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18.25 7.034l-.008.001"
                   />
                 </svg>
-                記録表テンプレートを印刷
+                {t("scanner.printTemplate")}
               </Button>
             </div>
           </div>
@@ -295,9 +297,9 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
         {step === "scanning" && (
           <div className="flex flex-col items-center justify-center space-y-4 py-16">
             <LoadingSpinner className="h-12 w-12" />
-            <p className="text-lg font-medium text-foreground">画像を解析しています...</p>
+            <p className="text-lg font-medium text-foreground">{t("scanner.scanning")}</p>
             <p className="text-sm text-muted-foreground">
-              AI が手書きのタイム記録表を読み取っています
+              {t("scanner.scanningDesc")}
             </p>
           </div>
         )}
@@ -306,16 +308,16 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
         {step === "result" && result && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-foreground">Step 3: 結果確認・修正</h2>
+              <h2 className="text-lg font-semibold text-foreground">{t("scanner.step3Title")}</h2>
               <Button variant="ghost" size="sm" onClick={handleReset}>
-                新しいスキャン
+                {t("scanner.newScan")}
               </Button>
             </div>
 
             <ResultTable data={result} onDataChange={setResult} />
 
             <div className="border-t border-border pt-4">
-              <h3 className="mb-3 text-sm font-medium text-muted-foreground">出力</h3>
+              <h3 className="mb-3 text-sm font-medium text-muted-foreground">{t("scanner.output")}</h3>
               <ExportButtons data={result} />
             </div>
 
@@ -323,7 +325,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-center">
                 <Link href={`/${locale}/login`}>
                   <Button size="sm" variant="outline" className="text-blue-600 border-blue-300">
-                    アカウント登録してもっと使う
+                    {t("scanner.registerForMore")}
                   </Button>
                 </Link>
               </div>

@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 
 export function UserMenu() {
+  const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const params = useParams();
   const locale = (params.locale as string) || "ja";
@@ -26,7 +28,7 @@ export function UserMenu() {
   const handleDeleteAccount = async () => {
     if (
       !confirm(
-        "アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消せません。\n\n本当に削除しますか？",
+        t("auth.deleteConfirm"),
       )
     ) {
       return;
@@ -36,11 +38,11 @@ export function UserMenu() {
       const res = await fetch("/api/user/delete", { method: "DELETE" });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        throw new Error(body?.error ?? "アカウントの削除に失敗しました");
+        throw new Error(body?.error ?? t("auth.deleteFailed"));
       }
       await signOut();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "アカウントの削除に失敗しました");
+      alert(err instanceof Error ? err.message : t("auth.deleteFailed"));
     } finally {
       setDeleting(false);
     }
@@ -52,7 +54,7 @@ export function UserMenu() {
         href={`/${locale}/login`}
         className="rounded-lg px-3 py-2 text-sm font-medium text-primary hover:bg-muted transition-colors duration-200"
       >
-        ログイン
+        {t("common.login")}
       </Link>
     );
   }
@@ -128,7 +130,7 @@ export function UserMenu() {
                   d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                 />
               </svg>
-              設定
+              {t("common.settings")}
             </Link>
             <button
               role="menuitem"
@@ -151,7 +153,7 @@ export function UserMenu() {
                   d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"
                 />
               </svg>
-              ログアウト
+              {t("common.logout")}
             </button>
             <button
               role="menuitem"
@@ -175,7 +177,7 @@ export function UserMenu() {
                   d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
                 />
               </svg>
-              {deleting ? "削除中..." : "アカウントを削除"}
+              {deleting ? t("auth.deleting") : t("auth.deleteAccount")}
             </button>
           </div>
         </div>

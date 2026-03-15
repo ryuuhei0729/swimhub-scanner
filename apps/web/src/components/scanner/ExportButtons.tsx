@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import type { ScanTimesheetResponse } from "@swimhub-scanner/shared";
 import {
   averageTime,
@@ -10,6 +11,7 @@ import {
   formatCircleTime,
 } from "@swimhub-scanner/shared";
 import { Button } from "@/components/ui/Button";
+import type { TFunction } from "i18next";
 
 interface ExportButtonsProps {
   data: ScanTimesheetResponse;
@@ -23,16 +25,16 @@ function getDateString() {
   return `${y}${m}${d}`;
 }
 
-function buildRows(data: ScanTimesheetResponse) {
+function buildRows(data: ScanTimesheetResponse, t: TFunction) {
   const totalReps = data.menu.repCount * data.menu.setCount;
   const headers = [
     "No",
-    "名前",
-    "種目",
-    ...Array.from({ length: totalReps }, (_, i) => `${(i % data.menu.repCount) + 1}本目`),
-    "平均",
-    "最速",
-    "最遅",
+    t("result.name"),
+    t("result.style"),
+    ...Array.from({ length: totalReps }, (_, i) => `${(i % data.menu.repCount) + 1}`),
+    t("result.average"),
+    t("result.fastest"),
+    t("result.slowest"),
   ];
 
   const rows = data.swimmers.map((s) => {
@@ -54,10 +56,11 @@ function buildRows(data: ScanTimesheetResponse) {
 }
 
 export function ExportButtons({ data }: ExportButtonsProps) {
+  const { t } = useTranslation();
   const tableRef = useRef<HTMLDivElement>(null);
 
   const exportCSV = useCallback(() => {
-    const { headers, rows } = buildRows(data);
+    const { headers, rows } = buildRows(data, t);
     const bom = "\uFEFF"; // UTF-8 BOM for Excel compatibility
     const csvContent =
       bom +
@@ -67,14 +70,14 @@ export function ExportButtons({ data }: ExportButtonsProps) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `タイム記録_${getDateString()}.csv`;
+    a.download = `${t("export.timeRecord")}_${getDateString()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [data]);
+  }, [data, t]);
 
   const exportExcel = useCallback(async () => {
     const XLSX = await import("xlsx");
-    const { headers, rows } = buildRows(data);
+    const { headers, rows } = buildRows(data, t);
 
     const wsData = [headers, ...rows];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
@@ -94,24 +97,24 @@ export function ExportButtons({ data }: ExportButtonsProps) {
 
     // Add menu info as first row
     const infoSheet = XLSX.utils.aoa_to_sheet([
-      ["メニュー", data.menu.description],
+      [t("export.menu"), data.menu.description],
       [
-        "距離",
+        t("result.distance"),
         `${data.menu.distance}m`,
-        "本数",
+        t("result.repCount"),
         `${data.menu.repCount}`,
-        "セット数",
+        t("result.setCount"),
         `${data.menu.setCount}`,
       ],
-      ...(data.menu.circle ? [["サークル", formatCircleTime(data.menu.circle)]] : []),
+      ...(data.menu.circle ? [[t("result.circle"), formatCircleTime(data.menu.circle)]] : []),
       [],
       ...wsData,
     ]);
     infoSheet["!cols"] = ws["!cols"];
 
-    XLSX.utils.book_append_sheet(wb, infoSheet, "タイム記録");
-    XLSX.writeFile(wb, `タイム記録_${getDateString()}.xlsx`);
-  }, [data]);
+    XLSX.utils.book_append_sheet(wb, infoSheet, t("export.timeRecord"));
+    XLSX.writeFile(wb, `${t("export.timeRecord")}_${getDateString()}.xlsx`);
+  }, [data, t]);
 
   const exportImage = useCallback(async () => {
     if (!tableRef.current) return;
@@ -157,12 +160,12 @@ export function ExportButtons({ data }: ExportButtonsProps) {
     ctx.fillStyle = "#1f2937";
     ctx.font = "bold 14px sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText("タイム記録表", startX, y + 16);
+    ctx.fillText(t("export.timeRecordSheet"), startX, y + 16);
     ctx.font = "12px sans-serif";
     ctx.fillStyle = "#6b7280";
     const menuText =
       `${data.menu.description || `${data.menu.setCount}s x ${data.menu.repCount} x ${data.menu.distance}m`}` +
-      (data.menu.circle ? ` / サークル ${formatCircleTime(data.menu.circle)}` : "");
+      (data.menu.circle ? ` / ${t("result.circle")} ${formatCircleTime(data.menu.circle)}` : "");
     ctx.fillText(menuText, startX, y + 36);
     y += menuHeight;
 
@@ -181,7 +184,7 @@ export function ExportButtons({ data }: ExportButtonsProps) {
     for (let s = 0; s < data.menu.setCount; s++) {
       const setX = timeStartX + s * data.menu.repCount * colWidths.time;
       const setWidth = data.menu.repCount * colWidths.time;
-      ctx.fillText(`${s + 1}セット目`, setX + setWidth / 2, y + 14);
+      ctx.fillText(`${s + 1} ${t("result.set")}`, setX + setWidth / 2, y + 14);
     }
 
     ctx.fillStyle = "#374151";
@@ -192,10 +195,10 @@ export function ExportButtons({ data }: ExportButtonsProps) {
     ctx.fillText("No", x + colWidths.no / 2, y + headerHeight / 2 + 18);
     x += colWidths.no;
     ctx.textAlign = "left";
-    ctx.fillText("名前", x + 4, y + headerHeight / 2 + 18);
+    ctx.fillText(t("result.name"), x + 4, y + headerHeight / 2 + 18);
     x += colWidths.name;
     ctx.textAlign = "center";
-    ctx.fillText("種目", x + colWidths.style / 2, y + headerHeight / 2 + 18);
+    ctx.fillText(t("result.style"), x + colWidths.style / 2, y + headerHeight / 2 + 18);
     x += colWidths.style;
 
     for (let i = 0; i < totalReps; i++) {
@@ -206,11 +209,11 @@ export function ExportButtons({ data }: ExportButtonsProps) {
       );
       x += colWidths.time;
     }
-    ctx.fillText("平均", x + colWidths.stat / 2, y + headerHeight / 2 + 18);
+    ctx.fillText(t("result.average"), x + colWidths.stat / 2, y + headerHeight / 2 + 18);
     x += colWidths.stat;
-    ctx.fillText("最速", x + colWidths.stat / 2, y + headerHeight / 2 + 18);
+    ctx.fillText(t("result.fastest"), x + colWidths.stat / 2, y + headerHeight / 2 + 18);
     x += colWidths.stat;
-    ctx.fillText("最遅", x + colWidths.stat / 2, y + headerHeight / 2 + 18);
+    ctx.fillText(t("result.slowest"), x + colWidths.stat / 2, y + headerHeight / 2 + 18);
 
     // Draw thick set separator lines in header
     ctx.strokeStyle = "#9ca3af";
@@ -317,22 +320,22 @@ export function ExportButtons({ data }: ExportButtonsProps) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `タイム記録_${getDateString()}.png`;
+      a.download = `${t("export.timeRecord")}_${getDateString()}.png`;
       a.click();
       URL.revokeObjectURL(url);
     }, "image/png");
-  }, [data]);
+  }, [data, t]);
 
   return (
     <div ref={tableRef} className="flex flex-wrap gap-3">
       <Button variant="outline" onClick={exportImage}>
-        画像で出力
+        {t("export.image")}
       </Button>
       <Button variant="outline" onClick={exportCSV}>
-        CSVで出力
+        {t("export.csv")}
       </Button>
       <Button variant="outline" onClick={exportExcel}>
-        Excelで出力
+        {t("export.excel")}
       </Button>
     </div>
   );

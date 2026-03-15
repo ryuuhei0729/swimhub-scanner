@@ -11,6 +11,7 @@ const baseConfig = require("./app.json");
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 const webApiUrl = process.env.EXPO_PUBLIC_WEB_API_URL;
+const revenuecatIosApiKey = process.env.EXPO_PUBLIC_REVENUCAT_IOS_API_KEY;
 
 if (process.env.NODE_ENV === "development") {
   console.log("app.config.js - 環境変数の確認:");
@@ -35,6 +36,7 @@ module.exports = {
     supabaseUrl: supabaseUrl,
     supabaseAnonKey: supabaseAnonKey,
     webApiUrl: webApiUrl || "https://scanner.swim-hub.app",
+    revenuecatIosApiKey: revenuecatIosApiKey || "",
     environment: process.env.EXPO_PUBLIC_ENVIRONMENT || "development",
     eas: {
       projectId: baseConfig.expo.extra?.eas?.projectId || "",
