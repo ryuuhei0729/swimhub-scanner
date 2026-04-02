@@ -167,7 +167,6 @@ export const PaywallScreen: React.FC = () => {
           {[
             t("paywall.benefit1"),
             t("paywall.benefit2"),
-            t("paywall.benefit3"),
           ].map((benefit, i) => (
             <View key={i} style={styles.benefitRow}>
               <Feather name="check-circle" size={18} color="#059669" />

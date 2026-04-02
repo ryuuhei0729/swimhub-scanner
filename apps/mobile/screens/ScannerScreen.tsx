@@ -3,6 +3,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Pressable,
   Image,
   Alert,
   ActionSheetIOS,
@@ -14,7 +15,7 @@ import {
   Modal,
   Dimensions,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { useNavigation } from "@react-navigation/native";
@@ -125,12 +126,8 @@ export const ScannerScreen: React.FC = () => {
     };
   }, [imageBase64]);
 
-  // If ad loads AFTER scan was triggered, show it automatically
-  useEffect(() => {
-    if (scanTriggeredRef.current && adState === "loaded" && !adUnavailable) {
-      adControllerRef.current?.show().catch(() => setAdUnavailable(true));
-    }
-  }, [adState, adUnavailable]);
+  // 広告は解析成功後に startScan 内で表示するため、
+  // 自動表示の useEffect は不要
 
   const pickImage = async (useCamera: boolean) => {
     setError(null);
@@ -195,18 +192,7 @@ export const ScannerScreen: React.FC = () => {
     setError(null);
     scanTriggeredRef.current = true;
 
-    // --- Show ad (parallel with scanning) ---
-    const controller = adControllerRef.current;
-    if (controller) {
-      const currentState = controller.getState();
-      if (currentState === "loaded") {
-        controller.show().catch(() => setAdUnavailable(true));
-      } else if (currentState !== "loading") {
-        setAdUnavailable(true);
-      }
-    }
-
-    // --- Start API scan ---
+    // --- Start API scan (広告は解析成功後に表示) ---
     try {
       const request = {
         image: imageBase64,
@@ -217,6 +203,20 @@ export const ScannerScreen: React.FC = () => {
       if (isGuest) {
         await recordGuestScan();
       }
+
+      // --- 解析成功: 結果表示前に広告を表示 ---
+      const controller = adControllerRef.current;
+      if (controller && !adUnavailable) {
+        const currentState = controller.getState();
+        if (currentState === "loaded") {
+          try {
+            await controller.show();
+          } catch {
+            // 広告表示失敗は無視して結果表示へ
+          }
+        }
+      }
+
       setResult(response);
       setStep("result");
       // 利用状況を再取得
@@ -228,7 +228,7 @@ export const ScannerScreen: React.FC = () => {
         switch (err.code) {
           case "DAILY_LIMIT_EXCEEDED":
           case "TOKEN_EXHAUSTED":
-            setError("本日の利用回数上限に達しました。明日また利用できます。");
+            setError("本日の利用回数上限に達しました。毎日0時（日本時間）にリセットされます。");
             break;
           case "SWIMMER_LIMIT_EXCEEDED":
             setError("1回のスキャンで解析できるのは8名までです");
@@ -261,16 +261,29 @@ export const ScannerScreen: React.FC = () => {
   };
 
   const handleReset = () => {
-    setStep("idle");
-    setImageUri(null);
-    setImageBase64(null);
-    setError(null);
-    resetResult();
-    scanTriggeredRef.current = false;
-    setAdState("idle");
-    setAdUnavailable(false);
-    adControllerRef.current?.dispose();
-    adControllerRef.current = null;
+    Alert.alert(
+      "解析結果の破棄",
+      "現在の解析結果は破棄されます。よろしいですか？",
+      [
+        { text: "キャンセル", style: "cancel" },
+        {
+          text: "破棄して解析",
+          style: "destructive",
+          onPress: () => {
+            setStep("idle");
+            setImageUri(null);
+            setImageBase64(null);
+            setError(null);
+            resetResult();
+            scanTriggeredRef.current = false;
+            setAdState("idle");
+            setAdUnavailable(false);
+            adControllerRef.current?.dispose();
+            adControllerRef.current = null;
+          },
+        },
+      ],
+    );
   };
 
   const showImagePickerOptions = () => {
@@ -385,158 +398,182 @@ export const ScannerScreen: React.FC = () => {
     );
   }
 
+  const steps = ["スキャン", "解析", "確認"];
+
   // Step 1: 画像選択
   return (
-    <SafeAreaView style={styles.container} edges={["bottom"]}>
-      <ScrollView
-        style={styles.idleContainer}
-        contentContainerStyle={styles.idleContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-      >
-        {/* 利用状況バッジ */}
-        {!statusLoading && (
-          <View style={styles.statusBar}>
-            {isPremium ? (
-              <View style={styles.premiumBadge}>
-                <Feather name="zap" size={14} color="#F59E0B" />
-                <Text style={styles.premiumBadgeText}>Premium</Text>
-              </View>
-            ) : isGuest ? (
-              <Text style={styles.statusText}>残り {guestRemaining}回（今日）</Text>
-            ) : userStatus && displayTokens !== null ? (
-              <Text style={styles.statusText}>残り {displayTokens}回</Text>
-            ) : null}
-          </View>
-        )}
+    <SafeAreaView style={styles.container}>
+      <View style={styles.idleContainer}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Image source={require("../assets/icon.png")} style={styles.appIcon} />
+          <Text style={styles.title}>SwimHub</Text>
+          <Text style={styles.subtitle}>タイム記録表をAIで瞬時にデータ化</Text>
 
-        {/* エラー表示 */}
-        {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        )}
-
-        {/* 画像選択エリア */}
-        <View style={styles.imagePickerSection}>
-          {imageUri ? (
-            <TouchableOpacity
-              style={styles.previewContainer}
-              onPress={showImagePickerOptions}
-              activeOpacity={0.8}
+          {/* Auth action bar */}
+          {isAuthenticated ? (
+            <Pressable
+              style={styles.accountChip}
+              onPress={() => navigation.navigate("Account")}
             >
-              <Image source={{ uri: imageUri }} style={styles.previewImage} resizeMode="contain" />
-              <TouchableOpacity
-                style={styles.removeImageButton}
-                onPress={() => {
-                  setImageUri(null);
-                  setImageBase64(null);
-                }}
-              >
-                <Feather name="x" size={16} color="#ffffff" />
-              </TouchableOpacity>
-              <View style={styles.changeImageHint}>
-                <Feather name="refresh-cw" size={14} color="#ffffff" />
-                <Text style={styles.changeImageHintText}>タップで変更</Text>
-              </View>
-            </TouchableOpacity>
+              <Ionicons name="person-circle" size={18} color="#2563EB" />
+              <Text style={styles.accountChipText}>アカウント</Text>
+            </Pressable>
           ) : (
-            <TouchableOpacity
-              style={styles.placeholderContainer}
-              onPress={showImagePickerOptions}
-              activeOpacity={0.7}
-            >
-              <Feather name="camera" size={48} color="#9CA3AF" />
-              <Text style={styles.placeholderText}>タップして画像を選択</Text>
-              <Text style={styles.placeholderSubtext}>写真を撮る / ライブラリから選ぶ</Text>
-            </TouchableOpacity>
+            <View style={styles.guestBar}>
+              <Text style={styles.guestLabel}>ゲスト利用中</Text>
+              <Pressable
+                style={styles.loginChip}
+                onPress={() => navigation.navigate("LoginMethod")}
+              >
+                <Text style={styles.loginChipText}>ログイン</Text>
+                <Ionicons name="arrow-forward" size={14} color="#ffffff" />
+              </Pressable>
+            </View>
           )}
         </View>
 
-        {/* 解析ボタン */}
-        <TouchableOpacity
-          style={[styles.scanButton, (!imageBase64 || !canScan) && styles.scanButtonDisabled]}
-          onPress={startScan}
-          disabled={!imageBase64 || !canScan}
-        >
-          <Text
-            style={[
-              styles.scanButtonText,
-              (!imageBase64 || !canScan) && styles.scanButtonTextDisabled,
-            ]}
-          >
-            解析する
-          </Text>
-        </TouchableOpacity>
+        {/* Main card */}
+        <View style={styles.card}>
+          {/* Status badge */}
+          {!statusLoading && (
+            <View style={styles.statusBar}>
+              {isPremium ? (
+                <View style={styles.premiumBadge}>
+                  <Feather name="zap" size={14} color="#F59E0B" />
+                  <Text style={styles.premiumBadgeText}>Premium</Text>
+                </View>
+              ) : isGuest ? (
+                <Text style={styles.statusText}>残り {guestRemaining}回（今日）</Text>
+              ) : userStatus && displayTokens !== null ? (
+                <Text style={styles.statusText}>残り {displayTokens}回</Text>
+              ) : null}
+            </View>
+          )}
 
-        {/* 記録表テンプレートボタン */}
-        <Text style={styles.templateLabel}>記録表テンプレートをダウンロード</Text>
-        <View style={styles.templateButtonRow}>
-          <TouchableOpacity
-            style={styles.templateButton}
-            onPress={shareTimesheetPdf}
-            activeOpacity={0.7}
-          >
-            <Feather name="file-text" size={18} color="#2563EB" />
-            <Text style={styles.templateButtonText}>PDF</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.templateButton}
-            onPress={() => setTemplatePreviewVisible(true)}
-            activeOpacity={0.7}
-          >
-            <Feather name="image" size={18} color="#2563EB" />
-            <Text style={styles.templateButtonText}>画像</Text>
-          </TouchableOpacity>
+          {imageUri ? (
+            <>
+              <TouchableOpacity
+                style={styles.previewContainer}
+                onPress={showImagePickerOptions}
+                activeOpacity={0.8}
+              >
+                <Image source={{ uri: imageUri }} style={styles.previewImage} resizeMode="contain" />
+                <TouchableOpacity
+                  style={styles.removeImageButton}
+                  onPress={() => {
+                    setImageUri(null);
+                    setImageBase64(null);
+                  }}
+                >
+                  <Feather name="x" size={16} color="#ffffff" />
+                </TouchableOpacity>
+                <View style={styles.changeImageHint}>
+                  <Feather name="refresh-cw" size={14} color="#ffffff" />
+                  <Text style={styles.changeImageHintText}>タップで変更</Text>
+                </View>
+              </TouchableOpacity>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  pressed && styles.buttonPressed,
+                  !canScan && styles.buttonDisabled,
+                ]}
+                onPress={startScan}
+                disabled={!canScan}
+              >
+                <Text style={styles.primaryButtonText}>解析する</Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <View style={styles.iconCircle}>
+                <Feather name="camera" size={26} color="#6B7280" />
+              </View>
+              <Text style={styles.cardTitle}>画像を選択</Text>
+              <Text style={styles.cardDescription}>
+                タイム記録表の写真を撮影、{"\n"}またはライブラリから選択してください
+              </Text>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  pressed && styles.buttonPressed,
+                ]}
+                onPress={showImagePickerOptions}
+              >
+                <Text style={styles.primaryButtonText}>画像を選択</Text>
+              </Pressable>
+            </>
+          )}
+
+          {/* Error */}
+          {error && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
+
+          {/* Limit warning */}
+          {!canScan && (
+            <Pressable
+              style={styles.limitBanner}
+              onPress={() => {
+                if (isGuest) {
+                  navigation.navigate("GuestSignup");
+                } else {
+                  navigation.navigate("Paywall");
+                }
+              }}
+            >
+              <Text style={styles.limitBannerText}>
+                {isGuest
+                  ? "本日の利用回数上限に達しました。毎日0時（日本時間）にリセットされます。"
+                  : "本日の利用回数上限に達しました。毎日0時（日本時間）にリセットされます。"}
+              </Text>
+              <Text style={styles.limitBannerLink}>
+                {isGuest ? "アカウント登録してもっと使う →" : "Premium にアップグレード →"}
+              </Text>
+            </Pressable>
+          )}
         </View>
 
-        {/* ゲスト: 今日の回数を使い切った場合の案内 */}
-        {isGuest && !guestCanScan && (
-          <View style={styles.guestInfoBanner}>
-            <Text style={styles.guestInfoText}>
-              本日の利用回数上限に達しました。{"\n"}
-              明日また利用できます。
-            </Text>
+        {/* Step guide */}
+        <View style={styles.steps}>
+          {steps.map((label, i) => (
+            <View key={label} style={styles.stepRow}>
+              <View style={[styles.stepDot, i === 0 && styles.stepDotActive]}>
+                <Text style={[styles.stepNumber, i === 0 && styles.stepNumberActive]}>{i + 1}</Text>
+              </View>
+              <Text style={[styles.stepLabel, i === 0 && styles.stepLabelActive]}>{label}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Template buttons */}
+        <View style={styles.templateSection}>
+          <Text style={styles.templateLabel}>記録表テンプレート</Text>
+          <View style={styles.templateButtonRow}>
             <TouchableOpacity
-              style={styles.softSignupButton}
-              onPress={() => navigation.navigate("GuestSignup")}
+              style={styles.templateButton}
+              onPress={shareTimesheetPdf}
+              activeOpacity={0.7}
             >
-              <Text style={styles.softSignupText}>アカウント登録でもっと便利に</Text>
+              <Feather name="file-text" size={16} color="#2563EB" />
+              <Text style={styles.templateButtonText}>PDF</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.templateButton}
+              onPress={() => setTemplatePreviewVisible(true)}
+              activeOpacity={0.7}
+            >
+              <Feather name="image" size={16} color="#2563EB" />
+              <Text style={styles.templateButtonText}>画像</Text>
             </TouchableOpacity>
           </View>
-        )}
-
-        {/* トークン切れの案内 */}
-        {!canScan && (
-          <View style={styles.limitWarning}>
-            {isGuest ? (
-              <>
-                <Text style={styles.limitWarningText}>
-                  本日の利用回数上限に達しました。{"\n"}
-                  明日また利用できます。
-                </Text>
-                <TouchableOpacity
-                  style={styles.signupButton}
-                  onPress={() => navigation.navigate("GuestSignup")}
-                >
-                  <Text style={styles.signupButtonText}>アカウント登録してもっと使う</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <Text style={styles.limitWarningText}>
-                  本日の利用回数上限に達しました。
-                </Text>
-                <TouchableOpacity
-                  style={styles.signupButton}
-                  onPress={() => navigation.navigate("Paywall")}
-                >
-                  <Text style={styles.signupButtonText}>Premium にアップグレード</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        )}
-      </ScrollView>
+        </View>
+      </View>
 
       {/* テンプレート画像プレビューモーダル */}
       <Modal
@@ -561,16 +598,16 @@ export const ScannerScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
             <View style={styles.modalFooter}>
-              <TouchableOpacity style={styles.modalShareButton} onPress={shareTimesheetImage}>
-                <Feather name="download" size={22} color="#ffffff" />
-                <Text style={styles.modalShareText}>保存</Text>
-              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.modalCloseButton}
                 onPress={() => setTemplatePreviewVisible(false)}
               >
-                <Feather name="x" size={22} color="#ffffff" />
+                <Feather name="x" size={44} color="#ffffff" />
                 <Text style={styles.modalCloseText}>閉じる</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalShareButton} onPress={shareTimesheetImage}>
+                <Feather name="download" size={44} color="#ffffff" />
+                <Text style={styles.modalShareText}>保存</Text>
               </TouchableOpacity>
             </View>
           </SafeAreaView>
@@ -583,23 +620,138 @@ export const ScannerScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#EFF6FF",
   },
   // Step 1: Idle
   idleContainer: {
     flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
   },
-  idleContent: {
-    padding: 16,
+  header: {
+    alignItems: "center",
+    marginBottom: 48,
+    width: "100%",
+  },
+  appIcon: {
+    width: 180,
+    height: 180,
+    marginBottom: 12,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#111827",
+    letterSpacing: -0.5,
+  },
+  accountChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#EFF6FF",
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+  },
+  accountChipText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#2563EB",
+  },
+  guestBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 16,
+  },
+  guestLabel: {
+    fontSize: 13,
+    color: "#9CA3AF",
+    fontWeight: "500",
+  },
+  loginChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#2563EB",
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  loginChipText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#ffffff",
+  },
+  subtitle: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginTop: 8,
+    textAlign: "center",
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 24,
+    width: "100%",
+    alignItems: "center",
+    gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  iconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  cardDescription: {
+    fontSize: 12,
+    color: "#6B7280",
+    textAlign: "center",
+    lineHeight: 18,
+  },
+  primaryButton: {
+    backgroundColor: "#2563EB",
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    width: "100%",
+    alignItems: "center",
+  },
+  buttonPressed: {
+    opacity: 0.85,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  primaryButtonText: {
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "600",
   },
   statusBar: {
     backgroundColor: "#EFF6FF",
     borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
   },
   statusText: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#1E40AF",
     textAlign: "center",
     fontWeight: "500",
@@ -611,34 +763,31 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   premiumBadgeText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "bold",
     color: "#92400E",
   },
   errorContainer: {
     backgroundColor: "#FEF2F2",
     borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
+    padding: 10,
+    width: "100%",
   },
   errorText: {
     color: "#DC2626",
-    fontSize: 14,
+    fontSize: 12,
     textAlign: "center",
-  },
-  imagePickerSection: {
-    marginBottom: 16,
   },
   previewContainer: {
     position: "relative",
     backgroundColor: "#F3F4F6",
     borderRadius: 12,
     overflow: "hidden",
-    marginBottom: 12,
+    width: "100%",
   },
   previewImage: {
     width: "100%",
-    height: 240,
+    height: 200,
   },
   removeImageButton: {
     position: "absolute",
@@ -650,27 +799,6 @@ const styles = StyleSheet.create({
     height: 28,
     justifyContent: "center",
     alignItems: "center",
-  },
-  placeholderContainer: {
-    backgroundColor: "#F3F4F6",
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: "#D1D5DB",
-    borderStyle: "dashed",
-    paddingVertical: 48,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    gap: 8,
-  },
-  placeholderText: {
-    fontSize: 16,
-    color: "#374151",
-    fontWeight: "600",
-    marginTop: 8,
-  },
-  placeholderSubtext: {
-    fontSize: 13,
-    color: "#9CA3AF",
   },
   changeImageHint: {
     position: "absolute",
@@ -689,102 +817,97 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "500",
   },
-  scanButton: {
-    backgroundColor: "#2563EB",
-    height: 52,
-    borderRadius: 12,
-    justifyContent: "center",
+  limitBanner: {
+    backgroundColor: "#FEF3C7",
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+    borderRadius: 6,
+    padding: 8,
+    width: "100%",
+  },
+  limitBannerText: {
+    fontSize: 10,
+    color: "#92400E",
+    lineHeight: 16,
+  },
+  limitBannerLink: {
+    fontSize: 10,
+    color: "#D97706",
+    fontWeight: "600",
+    lineHeight: 16,
+    marginTop: 4,
+    textDecorationLine: "underline",
+  },
+  steps: {
+    marginTop: 40,
+    gap: 16,
+  },
+  stepRow: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: 12,
   },
-  scanButtonDisabled: {
-    backgroundColor: "#D1D5DB",
+  stepDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#F3F4F6",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  scanButtonText: {
-    color: "#ffffff",
-    fontSize: 17,
-    fontWeight: "bold",
+  stepDotActive: {
+    backgroundColor: "rgba(37,99,235,0.1)",
+    borderColor: "rgba(37,99,235,0.2)",
   },
-  scanButtonTextDisabled: {
-    color: "#9CA3AF",
+  stepNumber: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#6B7280",
+  },
+  stepNumberActive: {
+    color: "#2563EB",
+  },
+  stepLabel: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  stepLabelActive: {
+    color: "#111827",
+    fontWeight: "600",
+  },
+  templateSection: {
+    marginTop: 24,
+    alignItems: "center",
+    width: "100%",
   },
   templateLabel: {
-    fontSize: 13,
+    fontSize: 10,
     color: "#6B7280",
     fontWeight: "500",
-    marginTop: 16,
     marginBottom: 4,
   },
   templateButtonRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: 8,
   },
   templateButton: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    height: 44,
-    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: "#D1D5DB",
     backgroundColor: "#ffffff",
-    gap: 6,
+    gap: 4,
   },
   templateButtonText: {
     color: "#2563EB",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
-  },
-  limitWarning: {
-    marginTop: 16,
-    backgroundColor: "#FEF3C7",
-    borderRadius: 8,
-    padding: 12,
-    alignItems: "center",
-  },
-  limitWarningText: {
-    color: "#92400E",
-    fontSize: 13,
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  signupButton: {
-    marginTop: 8,
-    backgroundColor: "#2563EB",
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-  },
-  signupButtonText: {
-    color: "#ffffff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  guestInfoBanner: {
-    marginTop: 16,
-    backgroundColor: "#EFF6FF",
-    borderRadius: 8,
-    padding: 12,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
-  },
-  guestInfoText: {
-    color: "#1E40AF",
-    fontSize: 13,
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  softSignupButton: {
-    marginTop: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  softSignupText: {
-    color: "#2563EB",
-    fontSize: 13,
-    fontWeight: "600",
-    textDecorationLine: "underline",
   },
   signupPromptButton: {
     marginTop: 12,
@@ -887,27 +1010,27 @@ const styles = StyleSheet.create({
   },
   modalFooter: {
     flexDirection: "row",
-    justifyContent: "center",
-    gap: 32,
+    justifyContent: "space-between",
+    paddingHorizontal: 64,
     paddingBottom: 24,
     paddingTop: 12,
   },
   modalShareButton: {
     alignItems: "center",
-    gap: 4,
+    gap: 6,
   },
   modalShareText: {
     color: "#ffffff",
-    fontSize: 12,
-    fontWeight: "500",
+    fontSize: 14,
+    fontWeight: "600",
   },
   modalCloseButton: {
     alignItems: "center",
-    gap: 4,
+    gap: 6,
   },
   modalCloseText: {
     color: "#ffffff",
-    fontSize: 12,
-    fontWeight: "500",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

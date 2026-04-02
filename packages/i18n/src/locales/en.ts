@@ -158,7 +158,6 @@ const en: TranslationShape = {
     benefitsTitle: "Premium Benefits",
     benefit1: "Unlimited scans",
     benefit2: "No ads",
-    benefit3: "Priority support",
     annual: "Annual Plan",
     monthly: "Monthly Plan",
     year: "year",

@@ -33,22 +33,25 @@ const SupabaseErrorScreen: React.FC = () => {
  *   スキャン機能はアカウント不要のため、常にゲストモードで開始
  */
 const AppNavigator: React.FC = () => {
-  const { isAuthenticated, isGuest, loading, enterGuestMode } = useAuth();
+  const { isAuthenticated, isGuest, loading, transitioning, enterGuestMode } = useAuth();
   const autoGuestDone = useRef(false);
 
   // 未ログイン・非ゲストの場合は自動的にゲストモードに入る
   useEffect(() => {
-    if (!loading && !isAuthenticated && !isGuest && !autoGuestDone.current) {
+    if (!loading && !transitioning && !isAuthenticated && !isGuest && !autoGuestDone.current) {
       autoGuestDone.current = true;
       enterGuestMode();
     }
-  }, [loading, isAuthenticated, isGuest, enterGuestMode]);
+  }, [loading, transitioning, isAuthenticated, isGuest, enterGuestMode]);
 
   if (!supabase) {
     return <SupabaseErrorScreen />;
   }
 
-  if (loading) {
+  // 初回ロード中 or 認証状態の遷移中はローディング画面を表示
+  // transitioning 中に NavigationContainer をアンマウントすることで
+  // ナビゲーションスタックがリセットされる
+  if (loading || transitioning) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#2563EB" />

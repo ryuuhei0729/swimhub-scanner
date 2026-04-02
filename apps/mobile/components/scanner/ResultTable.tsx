@@ -204,7 +204,7 @@ export const ResultTable: React.FC = () => {
                   </View>
                 );
               })}
-              <View style={styles.statCol}>
+              <View style={[styles.statCol, styles.avgCol]}>
                 <Text style={styles.headerText}>平均</Text>
               </View>
               <View style={styles.statCol}>
@@ -291,8 +291,8 @@ export const ResultTable: React.FC = () => {
                   })}
 
                   {/* 統計 */}
-                  <View style={styles.statCol}>
-                    <Text style={styles.cellText}>{avg !== null ? formatTime(avg) : "—"}</Text>
+                  <View style={[styles.statCol, styles.avgCol]}>
+                    <Text style={[styles.cellText, styles.avgText]}>{avg !== null ? formatTime(avg) : "—"}</Text>
                   </View>
                   <View style={styles.statCol}>
                     <Text style={[styles.cellText, styles.fastestText]}>
@@ -459,6 +459,15 @@ const styles = StyleSheet.create({
     textAlign: "center",
     padding: 4,
     marginHorizontal: 2,
+  },
+
+  // Average column highlight
+  avgCol: {
+    backgroundColor: "#FFFBEB",
+  },
+  avgText: {
+    fontWeight: "bold",
+    color: "#92400E",
   },
 
   // Highlights

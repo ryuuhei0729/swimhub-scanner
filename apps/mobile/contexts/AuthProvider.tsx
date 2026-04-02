@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { getGuestTodayCount, clearGuestUsage } from "@/lib/guest-daily-limit";
 import {
@@ -9,14 +9,16 @@ import {
 } from "@/lib/revenucat";
 import type { ScannerMobileAuthContextType, SubscriptionInfo } from "@swimhub-scanner/shared/types/auth";
 import { useAuthState } from "@swimhub-scanner/shared/hooks";
-import Constants from "expo-constants";
+import { env } from "@/lib/env";
 
-const API_BASE_URL = Constants.expoConfig?.extra?.webApiUrl || "https://scanner.swim-hub.app";
+const API_BASE_URL = env.webApiUrl;
 
 /** サブスクリプション情報付きの認証コンテキスト型 */
 export type AuthContextType = ScannerMobileAuthContextType & {
   subscription: SubscriptionInfo | null;
   refreshSubscription: () => Promise<void>;
+  /** 認証状態の遷移中（ログイン/ログアウト直後）に true になる */
+  transitioning: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -70,6 +72,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isGuest, setIsGuest] = useState(false);
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const wasGuestRef = useRef(false);
+  const [transitioning, setTransitioning] = useState(false);
+  const prevUserRef = useRef<typeof user>(undefined);
+
+  // 認証状態の遷移を検知してローディング画面を表示する
+  // （初回ロード完了後、user の有無が変わった場合にのみ発火）
+  useEffect(() => {
+    if (loading) return;
+
+    const prevUser = prevUserRef.current;
+    if (prevUser === undefined) {
+      // 初回ロード完了時は遷移とみなさない
+      prevUserRef.current = user;
+      return;
+    }
+
+    const wasLoggedIn = !!prevUser;
+    const isLoggedIn = !!user;
+
+    if (wasLoggedIn !== isLoggedIn) {
+      setTransitioning(true);
+    }
+
+    prevUserRef.current = user;
+  }, [user, loading]);
+
+  // transitioning を一定時間後に自動リセット
+  useEffect(() => {
+    if (!transitioning) return;
+    const timer = setTimeout(() => setTransitioning(false), 400);
+    return () => clearTimeout(timer);
+  }, [transitioning]);
 
   // RevenueCat SDK の初期化
   useEffect(() => {
@@ -160,6 +193,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { error: new Error("Supabaseクライアントが初期化されていません") };
     }
     try {
+      // 即座にローディング画面を表示
+      setTransitioning(true);
+
       // RevenueCat からログアウト
       await logoutRevenueCat();
 
@@ -195,20 +231,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsGuest(false);
   }, []);
 
-  const value: AuthContextType = {
+  const value: AuthContextType = useMemo(() => ({
     user,
     session,
     loading,
     isAuthenticated: !!user,
     isGuest,
     subscription,
+    transitioning,
     signIn,
     signUp,
     signOut,
     enterGuestMode,
     exitGuestMode,
     refreshSubscription,
-  };
+  }), [user, session, loading, isGuest, subscription, transitioning, signIn, signUp, signOut, enterGuestMode, exitGuestMode, refreshSubscription]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

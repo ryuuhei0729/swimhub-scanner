@@ -8,10 +8,10 @@ import type {
   UserStatusResponse,
   ApiErrorResponse,
 } from "@swimhub-scanner/shared";
-import Constants from "expo-constants";
+import { env } from "@/lib/env";
 import { supabase } from "./supabase";
 
-const API_BASE_URL = Constants.expoConfig?.extra?.webApiUrl || "https://scanner.swim-hub.app";
+const API_BASE_URL = env.webApiUrl;
 
 export class ApiError extends Error {
   code: string;

@@ -156,7 +156,6 @@ const ja = {
     benefitsTitle: "Premium のメリット",
     benefit1: "スキャン回数 無制限",
     benefit2: "広告なし",
-    benefit3: "優先サポート",
     annual: "年額プラン",
     monthly: "月額プラン",
     year: "年",
