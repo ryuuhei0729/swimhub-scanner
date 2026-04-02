@@ -31,9 +31,17 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "サブスクリプションが見つかりません" }, { status: 400 });
       }
       const sub = await stripe.subscriptions.retrieve(subId);
+      // Session 所有者の検証
+      if (sub.metadata?.supabase_user_id !== uid) {
+        return NextResponse.json({ error: "不正なセッションです" }, { status: 403 });
+      }
       return await updateSubscription(supabase, uid, sub);
     }
 
+    // Session 所有者の検証
+    if (subscription.metadata?.supabase_user_id !== uid) {
+      return NextResponse.json({ error: "不正なセッションです" }, { status: 403 });
+    }
     return await updateSubscription(supabase, uid, subscription);
   } catch (error) {
     console.error("Stripe Session 検証エラー:", error);

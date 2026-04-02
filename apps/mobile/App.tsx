@@ -1,3 +1,4 @@
+import "./lib/i18n";
 import React, { useEffect, useRef } from "react";
 import { enableScreens } from "react-native-screens";
 import { NavigationContainer } from "@react-navigation/native";

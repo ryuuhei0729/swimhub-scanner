@@ -1,7 +1,7 @@
 import React from "react";
 import { TouchableOpacity } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import type { MainStackParamList } from "./types";
 import { ScannerScreen } from "@/screens/ScannerScreen";
 import { AccountScreen } from "@/screens/AccountScreen";
@@ -37,7 +37,7 @@ export const MainStack: React.FC = () => {
               }}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Feather name={isAuthenticated ? "user" : "log-in"} size={22} color="#374151" />
+              <Ionicons name={isAuthenticated ? "person-circle-outline" : "log-in-outline"} size={28} color="#6B7280" />
             </TouchableOpacity>
           ),
         })}

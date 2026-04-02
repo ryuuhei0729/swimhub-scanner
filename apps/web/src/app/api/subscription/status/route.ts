@@ -81,15 +81,22 @@ export async function GET(request: NextRequest) {
     );
 
     // 4. レスポンス
-    return NextResponse.json({
-      plan,
-      status,
-      cancelAtPeriodEnd,
-      premiumExpiresAt,
-      trialEnd,
-      tokensUsedToday,
-      tokensRemaining: plan === "premium" ? null : 1 - tokensUsedToday,
-    });
+    return NextResponse.json(
+      {
+        plan,
+        status,
+        cancelAtPeriodEnd,
+        premiumExpiresAt,
+        trialEnd,
+        tokensUsedToday,
+        tokensRemaining: plan === "premium" ? null : 1 - tokensUsedToday,
+      },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=60",
+        },
+      },
+    );
   } catch (error) {
     console.error("サブスクリプションステータスエラー:", error);
     return NextResponse.json({ error: "予期しないエラーが発生しました" }, { status: 500 });

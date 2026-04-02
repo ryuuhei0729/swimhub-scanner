@@ -28,17 +28,20 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_STRIPE_YEARLY_PRICE_ID,
     ].filter(Boolean);
 
-    if (allowedPriceIds.length > 0 && !allowedPriceIds.includes(priceId)) {
+    if (allowedPriceIds.length === 0) {
+      return NextResponse.json({ error: "サーバー設定エラーが発生しました" }, { status: 500 });
+    }
+    if (!allowedPriceIds.includes(priceId)) {
       return NextResponse.json({ error: "無効な priceId です" }, { status: 400 });
     }
 
     // 3. user_subscriptions テーブルから現在のプラン・trial_start を確認
     const { data: subscription } = (await supabase
       .from("user_subscriptions")
-      .select("plan, status, trial_start")
+      .select("plan, status, trial_start, stripe_customer_id")
       .eq("id", uid)
       .single()) as {
-      data: { plan: string; status: string | null; trial_start: string | null } | null;
+      data: { plan: string; status: string | null; trial_start: string | null; stripe_customer_id: string | null } | null;
       error: unknown;
     };
 
@@ -57,36 +60,48 @@ export async function POST(request: NextRequest) {
 
     const hasUsedTrial = subscription?.trial_start != null;
 
-    // 4. Stripe Customer を検索または作成
+    // 4. Stripe Customer を取得または作成（DB キャッシュ優先で Search API の遅延を回避）
     const stripe = getStripe();
-
-    const existingCustomers = await stripe.customers.search({
-      query: `metadata["supabase_user_id"]:"${uid}"`,
-    });
 
     let customerId: string;
 
-    if (existingCustomers.data.length > 0 && existingCustomers.data[0]) {
-      customerId = existingCustomers.data[0].id;
+    if (subscription?.stripe_customer_id) {
+      customerId = subscription.stripe_customer_id;
     } else {
-      const newCustomer = await stripe.customers.create({
-        email,
-        metadata: {
-          supabase_user_id: uid,
-        },
+      const existingCustomers = await stripe.customers.search({
+        query: `metadata["supabase_user_id"]:"${uid}"`,
       });
-      customerId = newCustomer.id;
+
+      if (existingCustomers.data.length > 0 && existingCustomers.data[0]) {
+        customerId = existingCustomers.data[0].id;
+      } else {
+        const newCustomer = await stripe.customers.create({
+          email,
+          metadata: {
+            supabase_user_id: uid,
+          },
+        });
+        customerId = newCustomer.id;
+      }
+
+      await supabase
+        .from("user_subscriptions")
+        .update({ stripe_customer_id: customerId })
+        .eq("id", uid);
     }
 
     // 5. Checkout Session 作成
     const origin = new URL(request.url).origin;
+    const referer = request.headers.get("referer") ?? "";
+    const localeMatch = referer.match(/\/(ja|en)\//);
+    const locale = localeMatch ? localeMatch[1] : "ja";
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${origin}/ja/settings?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/ja/settings`,
+      success_url: `${origin}/${locale}/settings?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/${locale}/settings`,
       subscription_data: {
         trial_period_days: hasUsedTrial ? undefined : 7,
         metadata: {

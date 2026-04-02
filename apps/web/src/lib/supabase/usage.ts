@@ -63,10 +63,15 @@ export async function canUserScan(
   uid: string,
   plan: PlanType,
   subscriptionStatus: SubscriptionStatus,
+  premiumExpiresAt?: Date | null,
 ): Promise<boolean> {
-  // Premium users with active subscription can always scan
-  if (subscriptionStatus === "active" || subscriptionStatus === "trialing") {
-    return true;
+  // Premium users with active subscription can always scan (unless expired)
+  if (plan === "premium" && (subscriptionStatus === "active" || subscriptionStatus === "trialing")) {
+    if (premiumExpiresAt && premiumExpiresAt <= new Date()) {
+      // Premium has expired, fall through to free plan check
+    } else {
+      return true;
+    }
   }
 
   const limits = PLAN_LIMITS[plan];

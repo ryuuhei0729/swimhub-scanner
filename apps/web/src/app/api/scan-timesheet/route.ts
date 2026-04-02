@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
 
   // 日次制限チェック
   const planLimits = PLAN_LIMITS[userDoc.plan];
-  const canScan = await canUserScan(supabase, uid, userDoc.plan, subscriptionStatus);
+  const canScan = await canUserScan(supabase, uid, userDoc.plan, subscriptionStatus, userDoc.premiumExpiresAt);
   if (!canScan) {
     return NextResponse.json<ApiErrorResponse>(
       { error: "今日の利用回数に達しました", code: "DAILY_LIMIT_EXCEEDED" },

@@ -85,7 +85,47 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">6. データの保管と削除</h2>
+          <h2 className="text-lg font-semibold text-gray-900">6. 決済情報の取り扱い</h2>
+          <p className="mt-2">
+            本サービスの有料プラン（プレミアムプラン）をご利用いただく際、決済処理は以下の外部サービスに委託しており、本サービスがクレジットカード番号等の決済情報を直接保存することはありません。
+          </p>
+          <ul className="mt-2 list-inside list-disc space-y-1">
+            <li>
+              <strong>Stripe, Inc.:</strong>{" "}
+              Web経由でのサブスクリプション決済処理を委託しています。StripeはPCI DSS
+              に準拠した決済基盤を提供しており、お客様の決済情報はStripeが安全に管理します。詳細は
+              <a
+                href="https://stripe.com/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
+                Stripeのプライバシーポリシー
+              </a>
+              をご確認ください。
+            </li>
+            <li>
+              <strong>RevenueCat, Inc.:</strong>{" "}
+              モバイルアプリでのサブスクリプション管理を委託しています。Apple App Store / Google
+              Play経由の課金処理はRevenueCatを通じて行われます。詳細は
+              <a
+                href="https://www.revenuecat.com/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
+                RevenueCatのプライバシーポリシー
+              </a>
+              をご確認ください。
+            </li>
+          </ul>
+          <p className="mt-2">
+            本サービスは、サブスクリプションの状態（有効/無効、プラン種別、有効期限等）のみを管理し、決済情報そのものは上記の委託先が管理します。
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold text-gray-900">7. データの保管と削除</h2>
           <ul className="mt-2 list-inside list-disc space-y-1">
             <li>アップロードされた画像データは、処理完了後に速やかに削除されます。</li>
             <li>アカウント情報は、ユーザーがアカウントを削除するまで保管されます。</li>
@@ -94,7 +134,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">7. Cookie について</h2>
+          <h2 className="text-lg font-semibold text-gray-900">8. Cookie について</h2>
           <p className="mt-2">
             本サービスでは、認証状態の維持のために Cookie を使用しています。ブラウザの設定により
             Cookie
@@ -103,14 +143,14 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">8. ポリシーの変更</h2>
+          <h2 className="text-lg font-semibold text-gray-900">9. ポリシーの変更</h2>
           <p className="mt-2">
             本ポリシーは、必要に応じて変更されることがあります。重要な変更がある場合は、本サービス上で通知します。
           </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">9. お問い合わせ</h2>
+          <h2 className="text-lg font-semibold text-gray-900">10. お問い合わせ</h2>
           <p className="mt-2">
             本ポリシーに関するお問い合わせは、本サービス内のお問い合わせ機能よりご連絡ください。
           </p>

@@ -1,11 +1,10 @@
 {
   "cli": {
     "version": ">= 5.0.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "production": {
-      "autoIncrement": true,
       "ios": {
         "simulator": false,
         "buildConfiguration": "Release",

@@ -1,5 +1,5 @@
 export interface UserDocument {
-  plan: "free" | "premium";
+  plan: "guest" | "free" | "premium";
   premiumExpiresAt: Date | null;
   createdAt: Date;
   updatedAt: Date;

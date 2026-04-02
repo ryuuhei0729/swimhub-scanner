@@ -1,0 +1,5 @@
+project_id = "swimhub-scanner"
+
+# Edge Functions
+[functions.stripe-webhook]
+verify_jwt = false

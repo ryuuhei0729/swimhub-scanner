@@ -191,11 +191,6 @@ export const ScannerScreen: React.FC = () => {
       return;
     }
 
-    // ゲスト: 日次利用を記録
-    if (isGuest) {
-      await recordGuestScan();
-    }
-
     setStep("scanning");
     setError(null);
     scanTriggeredRef.current = true;
@@ -218,6 +213,10 @@ export const ScannerScreen: React.FC = () => {
         mimeType: imageMimeType as "image/jpeg" | "image/png",
       };
       const response = isGuest ? await guestScanTimesheet(request) : await scanTimesheet(request);
+      // ゲスト: 解析成功時のみ日次利用を記録
+      if (isGuest) {
+        await recordGuestScan();
+      }
       setResult(response);
       setStep("result");
       // 利用状況を再取得

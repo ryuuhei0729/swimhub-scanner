@@ -54,26 +54,39 @@ export const AccountScreen: React.FC = () => {
   const handleDeleteAccount = () => {
     Alert.alert(
       "アカウント削除",
-      "アカウントを削除すると、すべてのデータが完全に削除されます。この操作は取り消せません。",
+      "SwimHub、Scanner、Timer のアカウントが全て削除されます。よろしいですか？",
       [
         { text: "キャンセル", style: "cancel" },
         {
-          text: "削除する",
+          text: "次へ",
           style: "destructive",
-          onPress: async () => {
-            setDeleting(true);
-            try {
-              await deleteAccount();
-              await signOut();
-            } catch (err) {
-              const message =
-                err instanceof ApiError
-                  ? err.message
-                  : "アカウントの削除に失敗しました。再度お試しください。";
-              Alert.alert("エラー", message);
-            } finally {
-              setDeleting(false);
-            }
+          onPress: () => {
+            Alert.alert(
+              "最終確認",
+              "SwimHub で蓄積したタイム、動画、画像等のデータも全て削除されます。本当に削除しますか？",
+              [
+                { text: "キャンセル", style: "cancel" },
+                {
+                  text: "削除する",
+                  style: "destructive",
+                  onPress: async () => {
+                    setDeleting(true);
+                    try {
+                      await deleteAccount();
+                      await signOut();
+                    } catch (err) {
+                      const message =
+                        err instanceof ApiError
+                          ? err.message
+                          : "アカウントの削除に失敗しました。再度お試しください。";
+                      Alert.alert("エラー", message);
+                    } finally {
+                      setDeleting(false);
+                    }
+                  },
+                },
+              ],
+            );
           },
         },
       ],

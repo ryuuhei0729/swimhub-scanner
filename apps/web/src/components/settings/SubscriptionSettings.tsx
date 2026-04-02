@@ -8,11 +8,15 @@ import PricingCard from "@/components/settings/PricingCard";
 const MONTHLY_PRICE_ID = process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID ?? "";
 const YEARLY_PRICE_ID = process.env.NEXT_PUBLIC_STRIPE_YEARLY_PRICE_ID ?? "";
 
-function formatDate(dateStr: string | null | undefined): string {
+function formatDate(dateStr: string | null | undefined, locale: string = "ja"): string {
   if (!dateStr) return "-";
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return "-";
-  return `${d.getFullYear()}年${String(d.getMonth() + 1).padStart(2, "0")}月${String(d.getDate()).padStart(2, "0")}日`;
+  return new Intl.DateTimeFormat(locale === "ja" ? "ja-JP" : "en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(d);
 }
 
 function getTrialDaysRemaining(trialEnd: string | null | undefined): number | null {
@@ -26,8 +30,9 @@ function getTrialDaysRemaining(trialEnd: string | null | undefined): number | nu
 }
 
 export default function SubscriptionSettings() {
-  const { t } = useTranslation();
-  const { subscription } = useAuth();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language || "ja";
+  const { subscription, loading } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState<"monthly" | "yearly" | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +52,7 @@ export default function SubscriptionSettings() {
   const isPremium = plan === "premium";
   const isTrialing = status === "trialing";
   const isActive = status === "active";
+  const isPastDue = status === "past_due";
 
   const handleCheckout = useCallback(async (priceId: string, interval: "monthly" | "yearly") => {
     setLoadingPlan(interval);
@@ -104,11 +110,45 @@ export default function SubscriptionSettings() {
 
   const trialDaysRemaining = getTrialDaysRemaining(trialEnd);
 
+  if (loading || subscription === null) {
+    return (
+      <div className="rounded-lg border border-border bg-card p-4 sm:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 pb-2 mb-4 border-b border-border">
+          <h2 className="text-lg sm:text-xl font-semibold text-foreground">{t("subscription.title")}</h2>
+        </div>
+        <div className="animate-pulse space-y-3">
+          <div className="h-5 bg-muted rounded w-48" />
+          <div className="h-4 bg-muted/60 rounded w-64" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-lg border border-border bg-card p-4 sm:p-6 shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 pb-2 mb-4 border-b border-border">
         <h2 className="text-lg sm:text-xl font-semibold text-foreground">{t("subscription.title")}</h2>
       </div>
+
+      {/* 支払い失敗バナー */}
+      {isPastDue && (
+        <div className="rounded-md bg-red-50 border border-red-200 p-4 mb-4">
+          <p className="text-sm text-red-800 font-medium">
+            {t("subscription.paymentFailedTitle")}
+          </p>
+          <p className="text-sm text-red-700 mt-1">
+            {t("subscription.paymentFailedDescription")}
+          </p>
+          <button
+            type="button"
+            onClick={handleManagePlan}
+            disabled={portalLoading}
+            className="mt-2 inline-block text-sm text-red-700 underline hover:text-red-900"
+          >
+            {t("subscription.updatePaymentMethod")}
+          </button>
+        </div>
+      )}
 
       {/* 現在のプラン表示 */}
       <div className="mb-4">
@@ -122,8 +162,20 @@ export default function SubscriptionSettings() {
             </div>
             {trialDaysRemaining !== null && (
               <p className="text-sm text-muted-foreground">
-                {t("subscription.trialRemaining", { days: trialDaysRemaining, date: formatDate(trialEnd) })}
+                {t("subscription.trialRemaining", { days: trialDaysRemaining, date: formatDate(trialEnd, locale) })}
               </p>
+            )}
+          </div>
+        ) : isPastDue ? (
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm font-medium text-muted-foreground">{t("subscription.currentPlan")}</span>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                {t("subscription.pastDueBadge")}
+              </span>
+            </div>
+            {premiumExpiresAt && (
+              <p className="text-sm text-muted-foreground">{t("subscription.expiresAt", { date: formatDate(premiumExpiresAt, locale) })}</p>
             )}
           </div>
         ) : isPremium && isActive ? (
@@ -135,7 +187,7 @@ export default function SubscriptionSettings() {
               </span>
             </div>
             {premiumExpiresAt && (
-              <p className="text-sm text-muted-foreground">{t("subscription.nextRenewal", { date: formatDate(premiumExpiresAt) })}</p>
+              <p className="text-sm text-muted-foreground">{t("subscription.nextRenewal", { date: formatDate(premiumExpiresAt, locale) })}</p>
             )}
             {cancelAtPeriodEnd && (
               <p className="text-sm text-amber-600 mt-1">
@@ -185,8 +237,8 @@ export default function SubscriptionSettings() {
         </div>
       )}
 
-      {/* Premium / Trialing ユーザー: 管理ボタン */}
-      {(isPremium || isTrialing) && (
+      {/* Premium / Trialing / PastDue ユーザー: 管理ボタン */}
+      {(isPremium || isTrialing || isPastDue) && (
         <button
           type="button"
           onClick={handleManagePlan}

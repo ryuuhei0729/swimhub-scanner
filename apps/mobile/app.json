@@ -6,7 +6,7 @@
   "expo": {
     "name": "SH Scanner",
     "slug": "swimhub-scanner-mobile",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "description": "手書きタイム記録表をAIで読み取りデジタル化するアプリ",
     "scheme": "swimhub-scanner",
     "orientation": "portrait",
@@ -46,6 +46,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.swim-hub.scanner",
+      "buildNumber": "16",
       "usesAppleSignIn": true,
       "infoPlist": {
         "NSCameraUsageDescription": "タイム記録表を撮影するためにカメラを使用します",
@@ -59,6 +60,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "app.swimhub.scanner",
+      "versionCode": 16,
       "permissions": ["android.permission.CAMERA"]
     },
     "extra": {

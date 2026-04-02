@@ -2,6 +2,7 @@ node_modules/
 .next/
 dist/
 .turbo/
+package-lock.json
 # env files
 .env
 .env.local

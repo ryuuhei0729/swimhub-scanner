@@ -13,12 +13,18 @@ import Constants from "expo-constants";
 const IOS_API_KEY =
   Constants.expoConfig?.extra?.revenuecatIosApiKey || "appl_PLACEHOLDER_KEY";
 
+const isValidApiKey = IOS_API_KEY !== "appl_PLACEHOLDER_KEY" && IOS_API_KEY.startsWith("appl_");
+
 let isInitialized = false;
 
-/** SDK を初期化する（iOS のみ） */
+/** SDK を初期化する（iOS のみ、有効なAPIキーがある場合のみ） */
 export async function initRevenueCat(): Promise<void> {
   if (Platform.OS !== "ios") return;
   if (isInitialized) return;
+  if (!isValidApiKey) {
+    console.log("RevenueCat: APIキー未設定のため初期化をスキップします");
+    return;
+  }
 
   try {
     Purchases.configure({ apiKey: IOS_API_KEY });

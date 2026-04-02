@@ -64,7 +64,38 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">第6条（免責事項）</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            第6条（有料プラン（サブスクリプション））
+          </h2>
+          <p className="mt-2">
+            本サービスでは、追加機能を利用できる有料プラン（以下「プレミアムプラン」）を提供しています。
+          </p>
+          <ul className="mt-2 list-inside list-disc space-y-1">
+            <li>
+              プレミアムプランの料金は、月額プラン（¥500/月）および年額プラン（¥5,000/年）です。料金は変更される場合があり、変更時は事前に通知いたします。
+            </li>
+            <li>
+              サブスクリプションは、現在の期間が終了する少なくとも24時間前にキャンセルしない限り、同じ条件で自動的に更新されます。
+            </li>
+            <li>
+              初回登録時には7日間の無料トライアル期間が設けられます。トライアル期間中にキャンセルしない場合、トライアル終了後に自動的に課金が開始されます。
+            </li>
+            <li>
+              Web経由でのお支払いにはStripeを使用し、モバイルアプリでのお支払いにはApple App Store
+              / Google Playのアプリ内課金（RevenueCat経由）を使用します。
+            </li>
+            <li>
+              解約はいつでも可能です。Web経由の場合はStripeカスタマーポータルから、モバイルの場合は各ストアのサブスクリプション管理画面から行えます。解約後も、現在の課金期間が終了するまでプレミアム機能をご利用いただけます。
+            </li>
+            <li>
+              返金については、各決済プラットフォーム（Stripe、Apple App Store、Google
+              Play）のポリシーに準じます。
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold text-gray-900">第7条（免責事項）</h2>
           <ol className="mt-2 list-inside list-decimal space-y-1">
             <li>
               AI
@@ -76,21 +107,21 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">第7条（知的財産権）</h2>
+          <h2 className="text-lg font-semibold text-gray-900">第8条（知的財産権）</h2>
           <p className="mt-2">
             本サービスに関する知的財産権は運営者に帰属します。ユーザーがアップロードしたデータの権利はユーザーに帰属します。
           </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">第8条（規約の変更）</h2>
+          <h2 className="text-lg font-semibold text-gray-900">第9条（規約の変更）</h2>
           <p className="mt-2">
             運営者は、必要に応じて本規約を変更できるものとします。変更後の規約は、本サービス上に掲示した時点で効力を生じます。
           </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">第9条（準拠法・管轄裁判所）</h2>
+          <h2 className="text-lg font-semibold text-gray-900">第10条（準拠法・管轄裁判所）</h2>
           <p className="mt-2">
             本規約は日本法に準拠し、本サービスに関する紛争は東京地方裁判所を第一審の専属的合意管轄裁判所とします。
           </p>

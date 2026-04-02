@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 
 interface UpgradeBannerProps {
@@ -7,10 +9,10 @@ interface UpgradeBannerProps {
   tokensUsedToday: number;
 }
 
-const SWIMHUB_URL = process.env.NEXT_PUBLIC_SWIMHUB_URL ?? "https://swim-hub.app";
-
 export function UpgradeBanner({ tokensRemaining, tokensUsedToday }: UpgradeBannerProps) {
   const { t } = useTranslation();
+  const params = useParams();
+  const locale = (params.locale as string) || "ja";
 
   // Premium users (unlimited) or users with remaining tokens don't see the banner
   if (tokensRemaining === null || tokensRemaining > 0) {
@@ -26,14 +28,12 @@ export function UpgradeBanner({ tokensRemaining, tokensUsedToday }: UpgradeBanne
             {t("upgrade.upgradeMessage")}
           </p>
         </div>
-        <a
-          href={`${SWIMHUB_URL}/settings`}
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href={`/${locale}/settings`}
           className="shrink-0 rounded-md bg-amber-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600"
         >
           {t("upgrade.upgradeButton")}
-        </a>
+        </Link>
       </div>
     </div>
   );

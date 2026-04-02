@@ -12,6 +12,9 @@ interface PricingCardProps {
   onSelect: () => void;
   isLoading: boolean;
   isCurrentPlan: boolean;
+  labelSelect?: string;
+  labelCurrentPlan?: string;
+  labelProcessing?: string;
 }
 
 export default function PricingCard({
@@ -23,8 +26,14 @@ export default function PricingCard({
   onSelect,
   isLoading,
   isCurrentPlan,
+  labelSelect,
+  labelCurrentPlan,
+  labelProcessing,
 }: PricingCardProps) {
   const { t } = useTranslation();
+  const resolvedLabelSelect = labelSelect ?? t("subscription.selectPlan");
+  const resolvedLabelCurrentPlan = labelCurrentPlan ?? t("subscription.currentPlanBadge");
+  const resolvedLabelProcessing = labelProcessing ?? t("common.processing");
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -73,7 +82,7 @@ export default function PricingCard({
         onClick={onSelect}
         onKeyDown={handleKeyDown}
         disabled={isCurrentPlan || isLoading}
-        aria-label={isCurrentPlan ? t("subscription.currentPlanBadge") : `${title}`}
+        aria-label={isCurrentPlan ? resolvedLabelCurrentPlan : `${title}`}
         className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {isLoading ? (
@@ -98,12 +107,12 @@ export default function PricingCard({
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
-            {t("common.processing")}
+            {resolvedLabelProcessing}
           </>
         ) : isCurrentPlan ? (
-          t("subscription.currentPlanBadge")
+          resolvedLabelCurrentPlan
         ) : (
-          t("subscription.selectPlan")
+          resolvedLabelSelect
         )}
       </button>
     </div>

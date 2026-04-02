@@ -11,6 +11,12 @@ const config = getDefaultConfig(projectRoot);
 // pnpmのシンボリンクを辿れるようにする
 config.watchFolders = [monorepoRoot];
 
+// React の重複インスタンス防止: 常に monorepo root の react に強制解決
+const forceResolveModules = {
+  react: path.resolve(monorepoRoot, "node_modules/react/index.js"),
+  "react-native": path.resolve(monorepoRoot, "node_modules/react-native/index.js"),
+};
+
 config.resolver = {
   ...config.resolver,
   // pnpmシンボリンク対応
@@ -20,18 +26,8 @@ config.resolver = {
     path.resolve(monorepoRoot, "node_modules"),
   ],
   resolveRequest: (context, moduleName, platform) => {
-    // pnpmシンボリンクを明示的に解決する（react, react-dom, その他ネイティブモジュール）
-    const forceLocalResolve = ["react", "react-dom", "react-native-view-shot"];
-    if (forceLocalResolve.includes(moduleName)) {
-      try {
-        const modPath = path.resolve(projectRoot, "node_modules", moduleName);
-        return {
-          filePath: require.resolve(modPath),
-          type: "sourceFile",
-        };
-      } catch (e) {
-        // フォールバック: デフォルトの解決を使用
-      }
+    if (forceResolveModules[moduleName]) {
+      return { filePath: forceResolveModules[moduleName], type: "sourceFile" };
     }
     return context.resolveRequest(context, moduleName, platform);
   },
