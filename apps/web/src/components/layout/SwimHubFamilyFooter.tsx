@@ -15,21 +15,21 @@ export function SwimHubFamilyFooter() {
   const familyServices = [
     {
       name: "SwimHub",
-      description: t("footer.swimhubDescription"),
+      description: t("footer.swimhubDesc"),
       href: "https://swim-hub.app",
       iconSrc: "/swimhub-icon.png",
       current: false,
     },
     {
       name: "SwimHub Timer",
-      description: t("footer.timerDescription"),
+      description: t("footer.timerDesc"),
       href: "https://timer.swim-hub.app",
       iconSrc: "/timer-icon.png",
       current: false,
     },
     {
       name: "SwimHub Scanner",
-      description: t("footer.scannerDescription"),
+      description: t("footer.scannerDesc"),
       href: "https://scanner.swim-hub.app",
       iconSrc: "/icon.png",
       current: true,
@@ -44,7 +44,7 @@ export function SwimHubFamilyFooter() {
       external: false,
     },
     {
-      name: t("footer.terms"),
+      name: t("footer.termsOfService"),
       href: "/terms",
       icon: FileText,
       external: false,
@@ -62,7 +62,7 @@ export function SwimHubFamilyFooter() {
       external: true,
     },
     {
-      name: t("footer.commercialTransaction"),
+      name: t("footer.commercialLaw"),
       href: "https://swim-hub.app/tokushoho",
       icon: FileText,
       external: true,
