@@ -1,17 +1,18 @@
 import React, { useState } from "react";
 import { View, Text, Pressable, StyleSheet, ActivityIndicator, Linking, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { useAppleAuth } from "@/hooks/useAppleAuth";
 import { AppleLoginButton } from "@/components/auth/AppleLoginButton";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
-import type { AuthStackParamList } from "@/navigation/types";
+import { colors, spacing, radius, fontSize } from "@/theme";
 
-export const GetStartedScreen: React.FC = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+export default function GetStartedScreen() {
+  const { t } = useTranslation();
+  const router = useRouter();
   const {
     signInWithGoogle,
     loading: googleLoading,
@@ -50,19 +51,19 @@ export const GetStartedScreen: React.FC = () => {
       <View style={styles.header}>
         <Pressable
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => router.back()}
           accessibilityRole="button"
-          accessibilityLabel="戻る"
+          accessibilityLabel={t("common.back")}
         >
-          <Feather name="arrow-left" size={24} color="#111827" />
+          <Feather name="arrow-left" size={24} color={colors.text} />
         </Pressable>
       </View>
 
       <View style={styles.content}>
         <View style={styles.titleContainer}>
           <Image source={require("@/assets/icon.png")} style={styles.appIcon} />
-          <Text style={styles.title}>アカウント作成</Text>
-          <Text style={styles.subtitle}>SwimHub Scannerを始めましょう</Text>
+          <Text style={styles.title}>{t("auth.getStarted.title")}</Text>
+          <Text style={styles.subtitle}>{t("auth.getStarted.subtitle")}</Text>
         </View>
 
         {displayError && (
@@ -77,7 +78,7 @@ export const GetStartedScreen: React.FC = () => {
               onPress={handleAppleSignup}
               loading={appleLoading}
               disabled={isLoading}
-              label="Appleで作成"
+              label={t("auth.getStarted.withApple")}
             />
           )}
 
@@ -85,7 +86,7 @@ export const GetStartedScreen: React.FC = () => {
             onPress={handleGoogleSignup}
             loading={googleLoading}
             disabled={isLoading}
-            label="Googleで作成"
+            label={t("auth.getStarted.withGoogle")}
           />
 
           <Pressable
@@ -94,17 +95,17 @@ export const GetStartedScreen: React.FC = () => {
               isLoading && styles.buttonDisabled,
               pressed && !isLoading && styles.emailButtonPressed,
             ]}
-            onPress={() => navigation.navigate("EmailSignup")}
+            onPress={() => router.push("/(auth)/email-signup")}
             disabled={isLoading}
             accessibilityRole="button"
-            accessibilityLabel="Emailで作成"
+            accessibilityLabel={t("auth.getStarted.withEmail")}
           >
             {isLoading ? (
-              <ActivityIndicator color="#374151" size="small" />
+              <ActivityIndicator color={colors.textSecondary} size="small" />
             ) : (
               <View style={styles.emailButtonContent}>
-                <Feather name="mail" size={20} color="#374151" />
-                <Text style={styles.emailButtonText}>Emailで作成</Text>
+                <Feather name="mail" size={20} color={colors.textSecondary} />
+                <Text style={styles.emailButtonText}>{t("auth.getStarted.withEmail")}</Text>
               </View>
             )}
           </Pressable>
@@ -113,94 +114,94 @@ export const GetStartedScreen: React.FC = () => {
 
       <View style={styles.legalContainer}>
         <Text style={styles.legalText}>
-          続行することで、
+          {t("auth.termsAgreement")}
           <Text
             style={styles.legalLink}
             onPress={() => Linking.openURL("https://scanner.swim-hub.app/terms")}
           >
-            利用規約
+            {t("auth.terms")}
           </Text>
-          と
+          {t("auth.and")}
           <Text
             style={styles.legalLink}
             onPress={() => Linking.openURL("https://scanner.swim-hub.app/privacy")}
           >
-            プライバシーポリシー
+            {t("auth.privacy")}
           </Text>
-          に同意したものとみなされます。
+          {t("auth.termsAgreementEnd")}
         </Text>
       </View>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#EFF6FF",
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
   backButton: {
-    padding: 8,
+    padding: spacing.sm,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing.xl,
     justifyContent: "center",
   },
   titleContainer: {
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: spacing.xxl,
   },
   appIcon: {
     width: 180,
     height: 180,
   },
   title: {
-    fontSize: 28,
+    fontSize: fontSize["4xl"],
     fontWeight: "bold",
-    color: "#111827",
-    marginBottom: 8,
+    color: colors.text,
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    fontSize: 15,
-    color: "#6B7280",
+    fontSize: fontSize.base,
+    color: colors.muted,
   },
   errorContainer: {
-    backgroundColor: "#FEF2F2",
-    borderColor: "#FECACA",
+    backgroundColor: colors.errorBackground,
+    borderColor: colors.errorBorder,
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
   },
   errorText: {
-    color: "#DC2626",
-    fontSize: 14,
+    color: colors.destructive,
+    fontSize: fontSize.md,
     lineHeight: 20,
   },
   buttonGroup: {
-    gap: 12,
+    gap: spacing.md,
   },
   emailButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
     paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: colors.borderLight,
     minHeight: 48,
   },
   emailButtonPressed: {
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.surfaceRaised,
   },
   buttonDisabled: {
     opacity: 0.5,
@@ -208,26 +209,26 @@ const styles = StyleSheet.create({
   emailButtonContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: spacing.md,
   },
   emailButtonText: {
-    fontSize: 16,
+    fontSize: fontSize.lg,
     fontWeight: "500",
-    color: "#374151",
+    color: colors.textSecondary,
   },
   legalContainer: {
-    paddingHorizontal: 32,
-    paddingBottom: 16,
+    paddingHorizontal: spacing.xxl,
+    paddingBottom: spacing.lg,
     alignItems: "center",
   },
   legalText: {
-    fontSize: 12,
-    color: "#9CA3AF",
+    fontSize: fontSize.sm,
+    color: colors.mutedLight,
     textAlign: "center",
     lineHeight: 18,
   },
   legalLink: {
-    color: "#2563EB",
+    color: colors.primary,
     fontWeight: "500",
   },
 });

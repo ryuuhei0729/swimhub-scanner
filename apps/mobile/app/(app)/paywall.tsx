@@ -14,19 +14,17 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useRouter } from "expo-router";
 import type { PurchasesPackage } from "react-native-purchases";
 import { useTranslation } from "react-i18next";
 import { getOfferings, purchasePackage, restorePurchases } from "@/lib/revenucat";
 import { useAuth } from "@/contexts/AuthProvider";
-import type { MainStackParamList } from "@/navigation/types";
 
 type BillingPeriod = "monthly" | "annual";
 
-export const PaywallScreen: React.FC = () => {
+export default function PaywallScreen() {
   const { t } = useTranslation();
-  const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+  const router = useRouter();
   const { subscription, refreshSubscription } = useAuth();
 
   const [loadingOfferings, setLoadingOfferings] = useState(true);
@@ -98,7 +96,7 @@ export const PaywallScreen: React.FC = () => {
         // 購入成功 → サブスクリプション情報を更新して戻る
         await refreshSubscription();
         Alert.alert(t("paywall.purchaseSuccess"), t("paywall.purchaseSuccessMessage"), [
-          { text: "OK", onPress: () => navigation.goBack() },
+          { text: "OK", onPress: () => router.back() },
         ]);
       }
       // info が null の場合はユーザーキャンセル → 何もしない
@@ -117,7 +115,7 @@ export const PaywallScreen: React.FC = () => {
       await restorePurchases();
       await refreshSubscription();
       Alert.alert(t("paywall.restoreSuccess"), t("paywall.restoreSuccessMessage"), [
-        { text: "OK", onPress: () => navigation.goBack() },
+        { text: "OK", onPress: () => router.back() },
       ]);
     } catch (err) {
       Alert.alert(t("common.error"), t("paywall.restoreFailed"));
@@ -140,7 +138,7 @@ export const PaywallScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
       {/* 閉じるボタン */}
-      <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
+      <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
         <Feather name="x" size={24} color="#374151" />
       </TouchableOpacity>
 
@@ -290,7 +288,7 @@ export const PaywallScreen: React.FC = () => {
       </ScrollView>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {

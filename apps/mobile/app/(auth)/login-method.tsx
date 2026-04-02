@@ -1,17 +1,18 @@
 import React, { useState } from "react";
 import { View, Text, Pressable, StyleSheet, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { useAppleAuth } from "@/hooks/useAppleAuth";
 import { AppleLoginButton } from "@/components/auth/AppleLoginButton";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
-import type { MainStackParamList } from "@/navigation/types";
+import { colors, spacing, radius, fontSize } from "@/theme";
 
-export const LoginMethodScreen: React.FC = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+export default function LoginMethodScreen() {
+  const { t } = useTranslation();
+  const router = useRouter();
   const {
     signInWithGoogle,
     loading: googleLoading,
@@ -46,23 +47,12 @@ export const LoginMethodScreen: React.FC = () => {
   const displayError = error || googleError || appleError;
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "left", "right", "bottom"]}>
-      <View style={styles.header}>
-        <Pressable
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          accessibilityRole="button"
-          accessibilityLabel="戻る"
-        >
-          <Feather name="arrow-left" size={24} color="#111827" />
-        </Pressable>
-      </View>
-
+    <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
       <View style={styles.content}>
         <View style={styles.titleContainer}>
           <Image source={require("@/assets/icon.png")} style={styles.appIcon} />
-          <Text style={styles.title}>ログイン</Text>
-          <Text style={styles.subtitle}>SwimHub Scannerへようこそ</Text>
+          <Text style={styles.title}>{t("auth.loginMethod.title")}</Text>
+          <Text style={styles.subtitle}>{t("auth.loginMethod.subtitle")}</Text>
         </View>
 
         {displayError && (
@@ -77,7 +67,7 @@ export const LoginMethodScreen: React.FC = () => {
               onPress={handleAppleLogin}
               loading={appleLoading}
               disabled={isLoading}
-              label="Appleでログイン"
+              label={t("auth.loginMethod.withApple")}
             />
           )}
 
@@ -85,7 +75,7 @@ export const LoginMethodScreen: React.FC = () => {
             onPress={handleGoogleLogin}
             loading={googleLoading}
             disabled={isLoading}
-            label="Googleでログイン"
+            label={t("auth.loginMethod.withGoogle")}
           />
 
           <Pressable
@@ -94,100 +84,91 @@ export const LoginMethodScreen: React.FC = () => {
               isLoading && styles.buttonDisabled,
               pressed && !isLoading && styles.emailButtonPressed,
             ]}
-            onPress={() => navigation.navigate("EmailLogin")}
+            onPress={() => router.push("/(auth)/email-login")}
             disabled={isLoading}
             accessibilityRole="button"
-            accessibilityLabel="Emailでログイン"
+            accessibilityLabel={t("auth.loginMethod.withEmail")}
           >
             <View style={styles.emailButtonContent}>
-              <Feather name="mail" size={20} color="#374151" />
-              <Text style={styles.emailButtonText}>Emailでログイン</Text>
+              <Feather name="mail" size={20} color={colors.textSecondary} />
+              <Text style={styles.emailButtonText}>{t("auth.loginMethod.withEmail")}</Text>
             </View>
           </Pressable>
         </View>
 
         <Pressable
           style={styles.signupLink}
-          onPress={() => navigation.navigate("EmailSignup")}
+          onPress={() => router.push("/(auth)/email-signup")}
           accessibilityRole="button"
-          accessibilityLabel="アカウントを新規作成"
+          accessibilityLabel={t("auth.noAccountSignup")}
         >
           <Text style={styles.signupLinkText}>
-            アカウントをお持ちでない方は<Text style={styles.signupLinkBold}>新規登録</Text>
+            {t("auth.noAccount")}<Text style={styles.signupLinkBold}>{t("auth.noAccountSignup")}</Text>
           </Text>
         </Pressable>
       </View>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#EFF6FF",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  backButton: {
-    padding: 8,
+    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing.xl,
     justifyContent: "center",
   },
   titleContainer: {
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: spacing.xxl,
   },
   appIcon: {
     width: 180,
     height: 180,
   },
   title: {
-    fontSize: 28,
+    fontSize: fontSize["4xl"],
     fontWeight: "bold",
-    color: "#111827",
-    marginBottom: 8,
+    color: colors.text,
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    fontSize: 15,
-    color: "#6B7280",
+    fontSize: fontSize.base,
+    color: colors.muted,
   },
   errorContainer: {
-    backgroundColor: "#FEF2F2",
-    borderColor: "#FECACA",
+    backgroundColor: colors.errorBackground,
+    borderColor: colors.errorBorder,
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
   },
   errorText: {
-    color: "#DC2626",
-    fontSize: 14,
+    color: colors.destructive,
+    fontSize: fontSize.md,
     lineHeight: 20,
   },
   buttonGroup: {
-    gap: 12,
+    gap: spacing.md,
   },
   emailButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
     paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: colors.borderLight,
     minHeight: 48,
   },
   emailButtonPressed: {
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.surfaceRaised,
   },
   buttonDisabled: {
     opacity: 0.5,
@@ -195,23 +176,23 @@ const styles = StyleSheet.create({
   emailButtonContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: spacing.md,
   },
   emailButtonText: {
-    fontSize: 16,
+    fontSize: fontSize.lg,
     fontWeight: "500",
-    color: "#374151",
+    color: colors.textSecondary,
   },
   signupLink: {
-    marginTop: 24,
+    marginTop: spacing.xl,
     alignItems: "center",
   },
   signupLinkText: {
-    fontSize: 14,
-    color: "#6B7280",
+    fontSize: fontSize.md,
+    color: colors.muted,
   },
   signupLinkBold: {
-    color: "#2563EB",
+    color: colors.primary,
     fontWeight: "600",
   },
 });

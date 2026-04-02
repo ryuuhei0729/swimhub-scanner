@@ -11,18 +11,13 @@ import {
   StyleSheet,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useScanResultStore } from "@/stores/scanResultStore";
 import { formatTime, averageTime, fastestTime, slowestTime } from "@swimhub-scanner/shared";
 import type { SwimStroke } from "@swimhub-scanner/shared";
+import { colors, spacing, radius, fontSize } from "@/theme";
 
 const STROKES: SwimStroke[] = ["Fr", "Br", "Ba", "Fly", "IM"];
-const STROKE_LABELS: Record<SwimStroke, string> = {
-  Fr: "Fr (自由形)",
-  Br: "Br (平泳ぎ)",
-  Ba: "Ba (背泳ぎ)",
-  Fly: "Fly (バタフライ)",
-  IM: "IM (個人メドレー)",
-};
 
 interface EditingCell {
   swimmerNo: number;
@@ -31,6 +26,14 @@ interface EditingCell {
 }
 
 export const ResultTable: React.FC = () => {
+  const { t } = useTranslation();
+  const STROKE_LABELS: Record<SwimStroke, string> = {
+    Fr: t("strokes.Fr"),
+    Br: t("strokes.Br"),
+    Ba: t("strokes.Ba"),
+    Fly: t("strokes.Fly"),
+    IM: t("strokes.IM"),
+  };
   const {
     menu,
     swimmers,
@@ -74,7 +77,7 @@ export const ResultTable: React.FC = () => {
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: ["キャンセル", ...STROKES.map((s) => STROKE_LABELS[s])],
+          options: [t("common.cancel"), ...STROKES.map((s) => STROKE_LABELS[s])],
           cancelButtonIndex: 0,
         },
         (buttonIndex) => {
@@ -84,20 +87,20 @@ export const ResultTable: React.FC = () => {
         },
       );
     } else {
-      Alert.alert("種目を選択", "", [
+      Alert.alert(t("result.selectStyle"), "", [
         ...STROKES.map((s) => ({
           text: STROKE_LABELS[s],
           onPress: () => updateSwimmerStyle(swimmerNo, s),
         })),
-        { text: "キャンセル", style: "cancel" as const },
+        { text: t("common.cancel"), style: "cancel" as const },
       ]);
     }
   };
 
   const handleRemoveSwimmer = (no: number, name: string) => {
-    Alert.alert("選手を削除", `${name || "名前なし"} を削除しますか？`, [
-      { text: "キャンセル", style: "cancel" },
-      { text: "削除", style: "destructive", onPress: () => removeSwimmer(no) },
+    Alert.alert(t("result.deleteSwimmerTitle"), t("result.deleteSwimmerConfirm", { name: name || t("result.noName") }), [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: t("common.delete"), style: "destructive", onPress: () => removeSwimmer(no) },
     ]);
   };
 
@@ -112,7 +115,7 @@ export const ResultTable: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>解析結果</Text>
+      <Text style={styles.title}>{t("result.title")}</Text>
 
       <View style={styles.tableWrapper}>
         {/* Fixed left columns (名前) */}
@@ -121,7 +124,7 @@ export const ResultTable: React.FC = () => {
           {setCount > 1 && <View style={styles.fixedHeaderCell} />}
           {/* Header */}
           <View style={styles.fixedHeaderCell}>
-            <Text style={styles.headerText}>名前</Text>
+            <Text style={styles.headerText}>{t("result.name")}</Text>
           </View>
 
           {/* Data rows */}
@@ -152,7 +155,7 @@ export const ResultTable: React.FC = () => {
                 style={styles.deleteButton}
                 onPress={() => handleRemoveSwimmer(swimmer.no, swimmer.name)}
               >
-                <Feather name="x" size={12} color="#9CA3AF" />
+                <Feather name="x" size={12} color={colors.mutedLight} />
               </TouchableOpacity>
             </View>
           ))}
@@ -183,7 +186,7 @@ export const ResultTable: React.FC = () => {
                       s > 0 && styles.setBorder,
                     ]}
                   >
-                    <Text style={styles.setHeaderText}>{s + 1}セット目</Text>
+                    <Text style={styles.setHeaderText}>{s + 1}{t("result.set")}</Text>
                   </View>
                 ))}
                 <View style={styles.statCol} />
@@ -194,24 +197,24 @@ export const ResultTable: React.FC = () => {
             {/* Column header */}
             <View style={styles.scrollHeaderRow}>
               <View style={styles.styleCol}>
-                <Text style={styles.headerText}>種目</Text>
+                <Text style={styles.headerText}>{t("result.style")}</Text>
               </View>
               {Array.from({ length: maxTimes }, (_, i) => {
                 const isSetStart = i > 0 && i % repCount === 0;
                 return (
                   <View key={i} style={[styles.timeCol, isSetStart && styles.setBorder]}>
-                    <Text style={styles.headerText}>{(i % repCount) + 1}本</Text>
+                    <Text style={styles.headerText}>{(i % repCount) + 1}{t("result.repShort")}</Text>
                   </View>
                 );
               })}
               <View style={[styles.statCol, styles.avgCol]}>
-                <Text style={styles.headerText}>平均</Text>
+                <Text style={styles.headerText}>{t("result.average")}</Text>
               </View>
               <View style={styles.statCol}>
-                <Text style={styles.headerText}>最速</Text>
+                <Text style={styles.headerText}>{t("result.fastest")}</Text>
               </View>
               <View style={styles.statCol}>
-                <Text style={styles.headerText}>最遅</Text>
+                <Text style={styles.headerText}>{t("result.slowest")}</Text>
               </View>
             </View>
 
@@ -313,7 +316,7 @@ export const ResultTable: React.FC = () => {
 
       {/* Add swimmer */}
       <TouchableOpacity style={styles.addButton} onPress={addSwimmer}>
-        <Text style={styles.addButtonText}>+ 選手を追加</Text>
+        <Text style={styles.addButtonText}>{t("result.addSwimmer")}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -324,62 +327,62 @@ const FIXED_WIDTH = 80;
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   title: {
-    fontSize: 16,
+    fontSize: fontSize.lg,
     fontWeight: "bold",
-    color: "#374151",
-    marginBottom: 8,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
   },
   tableWrapper: {
     flexDirection: "row",
-    borderRadius: 8,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     overflow: "hidden",
   },
 
   // Fixed left
   fixedLeft: {
     width: FIXED_WIDTH,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.surface,
     borderRightWidth: 1,
-    borderRightColor: "#E5E7EB",
+    borderRightColor: colors.border,
     zIndex: 1,
   },
   fixedHeaderCell: {
     height: ROW_HEIGHT,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.surfaceRaised,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: colors.border,
   },
   fixedDataRow: {
     flexDirection: "row",
     height: ROW_HEIGHT,
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: colors.border,
   },
   nameCell: {
     flex: 1,
     height: ROW_HEIGHT,
     justifyContent: "center",
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.sm,
   },
   nameCellText: {
     fontSize: 13,
-    color: "#374151",
+    color: colors.textSecondary,
   },
   nameEditInput: {
     flex: 1,
     height: ROW_HEIGHT - 4,
-    backgroundColor: "#EFF6FF",
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: "#2563EB",
-    borderRadius: 4,
+    borderColor: colors.primary,
+    borderRadius: radius.xs,
     fontSize: 13,
     paddingHorizontal: 6,
     marginHorizontal: 2,
@@ -398,27 +401,27 @@ const styles = StyleSheet.create({
   scrollHeaderRow: {
     flexDirection: "row",
     height: ROW_HEIGHT,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.surfaceRaised,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: colors.border,
     alignItems: "center",
   },
   scrollDataRow: {
     flexDirection: "row",
     height: ROW_HEIGHT,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: colors.border,
     alignItems: "center",
   },
   headerText: {
-    fontSize: 12,
+    fontSize: fontSize.sm,
     fontWeight: "600",
-    color: "#6B7280",
+    color: colors.muted,
     textAlign: "center",
   },
   cellText: {
     fontSize: 13,
-    color: "#374151",
+    color: colors.textSecondary,
     textAlign: "center",
   },
 
@@ -432,11 +435,11 @@ const styles = StyleSheet.create({
   styleText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#2563EB",
+    color: colors.primary,
   },
   styleChevron: {
     fontSize: 8,
-    color: "#9CA3AF",
+    color: colors.mutedLight,
   },
   timeCol: {
     width: 36,
@@ -451,67 +454,67 @@ const styles = StyleSheet.create({
     height: ROW_HEIGHT,
   },
   timeEditInput: {
-    backgroundColor: "#EFF6FF",
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: "#2563EB",
-    borderRadius: 4,
+    borderColor: colors.primary,
+    borderRadius: radius.xs,
     fontSize: 13,
     textAlign: "center",
-    padding: 4,
+    padding: spacing.xs,
     marginHorizontal: 2,
   },
 
   // Average column highlight
   avgCol: {
-    backgroundColor: "#FFFBEB",
+    backgroundColor: colors.warningLight,
   },
   avgText: {
     fontWeight: "bold",
-    color: "#92400E",
+    color: colors.amber,
   },
 
   // Highlights
   nullCell: {
-    backgroundColor: "#FEF9C3",
+    backgroundColor: colors.warningMuted,
   },
   nullText: {
-    color: "#92400E",
+    color: colors.amber,
   },
   fastestText: {
-    color: "#2563EB",
+    color: colors.primary,
     fontWeight: "bold",
   },
   slowestText: {
-    color: "#DC2626",
+    color: colors.destructive,
     fontWeight: "bold",
   },
 
   // Set separators
   setBorder: {
     borderLeftWidth: 2,
-    borderLeftColor: "#9CA3AF",
+    borderLeftColor: colors.mutedLight,
   },
   setHeaderText: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: "600",
-    color: "#9CA3AF",
+    color: colors.mutedLight,
     textAlign: "center",
   },
 
   // Add button
   addButton: {
-    backgroundColor: "#F3F4F6",
-    borderRadius: 8,
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radius.md,
     padding: 10,
     alignItems: "center",
-    marginTop: 8,
+    marginTop: spacing.sm,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: colors.borderLight,
     borderStyle: "dashed",
   },
   addButtonText: {
-    color: "#6B7280",
-    fontSize: 14,
+    color: colors.muted,
+    fontSize: fontSize.md,
     fontWeight: "500",
   },
 });

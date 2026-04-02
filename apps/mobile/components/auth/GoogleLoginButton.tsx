@@ -1,6 +1,7 @@
 import React from "react";
 import { Pressable, Text, StyleSheet, ActivityIndicator, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
+import { colors, spacing, radius, fontSize } from "@/theme";
 
 interface GoogleLoginButtonProps {
   onPress: () => void;
@@ -52,7 +53,7 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
       accessibilityState={{ disabled: isDisabled }}
     >
       {loading ? (
-        <ActivityIndicator color="#374151" size="small" />
+        <ActivityIndicator color={colors.textSecondary} size="small" />
       ) : (
         <View style={styles.content}>
           <GoogleLogo />
@@ -68,28 +69,28 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
     paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: colors.borderLight,
     minHeight: 48,
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   buttonPressed: {
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.surfaceRaised,
   },
   content: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: spacing.md,
   },
   buttonText: {
-    fontSize: 16,
+    fontSize: fontSize.lg,
     fontWeight: "500",
-    color: "#374151",
+    color: colors.textSecondary,
   },
 });

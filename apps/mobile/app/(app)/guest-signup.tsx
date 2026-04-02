@@ -1,17 +1,17 @@
 import React, { useState } from "react";
 import { View, Text, Pressable, StyleSheet, Linking, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { useAppleAuth } from "@/hooks/useAppleAuth";
 import { AppleLoginButton } from "@/components/auth/AppleLoginButton";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
-import type { MainStackParamList } from "@/navigation/types";
 
-export const GuestSignupScreen: React.FC = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+export default function GuestSignupScreen() {
+  const { t } = useTranslation();
+  const router = useRouter();
   const {
     signInWithGoogle,
     loading: googleLoading,
@@ -48,9 +48,9 @@ export const GuestSignupScreen: React.FC = () => {
       <View style={styles.header}>
         <Pressable
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => router.back()}
           accessibilityRole="button"
-          accessibilityLabel="戻る"
+          accessibilityLabel={t("common.back")}
         >
           <Feather name="arrow-left" size={24} color="#111827" />
         </Pressable>
@@ -59,9 +59,9 @@ export const GuestSignupScreen: React.FC = () => {
       <View style={styles.content}>
         <View style={styles.titleContainer}>
           <Image source={require("@/assets/icon.png")} style={styles.appIcon} />
-          <Text style={styles.title}>アカウント登録</Text>
+          <Text style={styles.title}>{t("auth.guestSignup.title")}</Text>
           <Text style={styles.subtitle}>
-            登録するとスキャン履歴の保存や{"\n"}便利な機能が使えます
+            {t("auth.guestSignup.subtitle")}
           </Text>
         </View>
 
@@ -77,7 +77,7 @@ export const GuestSignupScreen: React.FC = () => {
               onPress={handleAppleSignup}
               loading={appleLoading}
               disabled={isLoading}
-              label="Appleで登録"
+              label={t("auth.guestSignup.withApple")}
             />
           )}
 
@@ -85,33 +85,33 @@ export const GuestSignupScreen: React.FC = () => {
             onPress={handleGoogleSignup}
             loading={googleLoading}
             disabled={isLoading}
-            label="Googleで登録"
+            label={t("auth.guestSignup.withGoogle")}
           />
         </View>
       </View>
 
       <View style={styles.legalContainer}>
         <Text style={styles.legalText}>
-          続行することで、
+          {t("auth.termsAgreement")}
           <Text
             style={styles.legalLink}
             onPress={() => Linking.openURL("https://scanner.swim-hub.app/terms")}
           >
-            利用規約
+            {t("auth.terms")}
           </Text>
-          と
+          {t("auth.and")}
           <Text
             style={styles.legalLink}
             onPress={() => Linking.openURL("https://scanner.swim-hub.app/privacy")}
           >
-            プライバシーポリシー
+            {t("auth.privacy")}
           </Text>
-          に同意したものとみなされます。
+          {t("auth.termsAgreementEnd")}
         </Text>
       </View>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {

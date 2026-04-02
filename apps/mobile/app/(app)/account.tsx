@@ -1,17 +1,18 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useRouter } from "expo-router";
 import Constants from "expo-constants";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthProvider";
 import { deleteAccount, ApiError } from "@/lib/api-client";
 import { restorePurchases } from "@/lib/revenucat";
-import type { MainStackParamList } from "@/navigation/types";
+import { colors, spacing, radius, fontSize } from "@/theme";
 
-export const AccountScreen: React.FC = () => {
+export default function AccountScreen() {
+  const { t } = useTranslation();
   const { user, signOut, subscription, refreshSubscription } = useAuth();
-  const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+  const router = useRouter();
   const [deleting, setDeleting] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
@@ -41,24 +42,24 @@ export const AccountScreen: React.FC = () => {
     try {
       await restorePurchases();
       await refreshSubscription();
-      Alert.alert("リストア完了", "購入情報を復元しました。");
+      Alert.alert(t("accountScreen.restoreSuccess"), t("accountScreen.restoreSuccessMessage"));
     } catch {
-      Alert.alert("リストアエラー", "購入情報の復元に失敗しました。");
+      Alert.alert(t("accountScreen.restoreError"), t("accountScreen.restoreErrorMessage"));
     } finally {
       setRestoring(false);
     }
   };
 
   const handleSignOut = () => {
-    Alert.alert("ログアウト", "ログアウトしますか？", [
-      { text: "キャンセル", style: "cancel" },
+    Alert.alert(t("accountScreen.logoutTitle"), t("accountScreen.logoutConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "ログアウト",
+        text: t("common.logout"),
         style: "destructive",
         onPress: async () => {
           const { error } = await signOut();
           if (error) {
-            Alert.alert("エラー", "ログアウトに失敗しました");
+            Alert.alert(t("common.error"), t("accountScreen.logoutFailed"));
           }
         },
       },
@@ -67,21 +68,21 @@ export const AccountScreen: React.FC = () => {
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      "アカウント削除",
-      "SwimHub、Scanner、Timer のアカウントが全て削除されます。よろしいですか？",
+      t("auth.deleteAccountTitle"),
+      t("auth.deleteAccountStep1"),
       [
-        { text: "キャンセル", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "次へ",
+          text: t("common.next"),
           style: "destructive",
           onPress: () => {
             Alert.alert(
-              "最終確認",
-              "SwimHub で蓄積したタイム、動画、画像等のデータも全て削除されます。本当に削除しますか？",
+              t("auth.deleteAccountFinalTitle"),
+              t("auth.deleteAccountStep2"),
               [
-                { text: "キャンセル", style: "cancel" },
+                { text: t("common.cancel"), style: "cancel" },
                 {
-                  text: "削除する",
+                  text: t("auth.deleteAccountButton"),
                   style: "destructive",
                   onPress: async () => {
                     setDeleting(true);
@@ -92,8 +93,8 @@ export const AccountScreen: React.FC = () => {
                       const message =
                         err instanceof ApiError
                           ? err.message
-                          : "アカウントの削除に失敗しました。再度お試しください。";
-                      Alert.alert("エラー", message);
+                          : t("auth.deleteAccountFailed");
+                      Alert.alert(t("common.error"), message);
                     } finally {
                       setDeleting(false);
                     }
@@ -114,15 +115,15 @@ export const AccountScreen: React.FC = () => {
       <View style={styles.content}>
         {/* アカウント情報（メール + プラン） */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>アカウント情報</Text>
+          <Text style={styles.sectionTitle}>{t("accountScreen.accountInfo")}</Text>
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>メールアドレス</Text>
+              <Text style={styles.infoLabel}>{t("accountScreen.email")}</Text>
               <Text style={styles.infoValue}>{user?.email || "—"}</Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>プラン</Text>
+              <Text style={styles.infoLabel}>{t("accountScreen.plan")}</Text>
               <View style={[styles.badge, isPremium ? styles.premiumBadge : styles.freeBadge]}>
                 <Text
                   style={[
@@ -139,15 +140,15 @@ export const AccountScreen: React.FC = () => {
 
         {/* サブスクリプション詳細 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>サブスクリプション</Text>
+          <Text style={styles.sectionTitle}>{t("accountScreen.subscription")}</Text>
           <View style={styles.infoCard}>
             {isPremium ? (
               <>
                 {/* トライアル中 */}
                 {subscription?.status === "trialing" && trialDaysRemaining && (
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>トライアル残り</Text>
-                    <Text style={styles.trialText}>{trialDaysRemaining}日</Text>
+                    <Text style={styles.infoLabel}>{t("accountScreen.trialRemaining")}</Text>
+                    <Text style={styles.trialText}>{t("accountScreen.trialDays", { days: trialDaysRemaining })}</Text>
                   </View>
                 )}
 
@@ -159,7 +160,7 @@ export const AccountScreen: React.FC = () => {
                     )}
                     <View style={styles.infoRow}>
                       <Text style={styles.infoLabel}>
-                        {subscription?.cancelAtPeriodEnd ? "有効期限" : "次回更新日"}
+                        {subscription?.cancelAtPeriodEnd ? t("accountScreen.expiresAt") : t("accountScreen.renewsAt")}
                       </Text>
                       <Text style={styles.infoValue}>{renewalDateFormatted}</Text>
                     </View>
@@ -171,7 +172,7 @@ export const AccountScreen: React.FC = () => {
                   <>
                     <View style={styles.divider} />
                     <Text style={styles.canceledNote}>
-                      期間終了後にFreeプランに戻ります
+                      {t("accountScreen.canceledNote")}
                     </Text>
                   </>
                 )}
@@ -179,13 +180,13 @@ export const AccountScreen: React.FC = () => {
             ) : (
               <>
                 <Text style={styles.upgradePrompt}>
-                  Premium にアップグレードして、無制限にスキャンしましょう
+                  {t("accountScreen.upgradePrompt")}
                 </Text>
                 <TouchableOpacity
                   style={styles.upgradeButton}
-                  onPress={() => navigation.navigate("Paywall")}
+                  onPress={() => router.push("/(app)/paywall")}
                 >
-                  <Text style={styles.upgradeButtonText}>Premium にアップグレード</Text>
+                  <Text style={styles.upgradeButtonText}>{t("accountScreen.upgradeToPremium")}</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -198,9 +199,9 @@ export const AccountScreen: React.FC = () => {
               disabled={restoring}
             >
               {restoring ? (
-                <ActivityIndicator color="#2563EB" size="small" />
+                <ActivityIndicator color={colors.primary} size="small" />
               ) : (
-                <Text style={styles.restoreText}>購入を復元する</Text>
+                <Text style={styles.restoreText}>{t("accountScreen.restorePurchases")}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -209,7 +210,7 @@ export const AccountScreen: React.FC = () => {
         {/* ログアウト */}
         <View style={styles.section}>
           <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-            <Text style={styles.signOutButtonText}>ログアウト</Text>
+            <Text style={styles.signOutButtonText}>{t("common.logout")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -221,12 +222,12 @@ export const AccountScreen: React.FC = () => {
             disabled={deleting}
           >
             {deleting ? (
-              <ActivityIndicator color="#DC2626" />
+              <ActivityIndicator color={colors.destructive} />
             ) : (
-              <Text style={styles.deleteButtonText}>アカウントを削除</Text>
+              <Text style={styles.deleteButtonText}>{t("auth.deleteAccount")}</Text>
             )}
           </TouchableOpacity>
-          <Text style={styles.deleteWarning}>すべてのデータが完全に削除されます</Text>
+          <Text style={styles.deleteWarning}>{t("auth.deleteAccountWarning")}</Text>
         </View>
 
         {/* アプリ情報 */}
@@ -236,150 +237,150 @@ export const AccountScreen: React.FC = () => {
       </View>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: colors.surfaceSecondary,
   },
   content: {
     flex: 1,
-    padding: 16,
+    padding: spacing.lg,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   sectionTitle: {
-    fontSize: 12,
+    fontSize: fontSize.sm,
     fontWeight: "600",
-    color: "#6B7280",
-    marginBottom: 8,
+    color: colors.muted,
+    marginBottom: spacing.sm,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   infoCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
   },
   infoRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
   },
   infoLabel: {
-    fontSize: 15,
-    color: "#6B7280",
+    fontSize: fontSize.base,
+    color: colors.muted,
   },
   infoValue: {
-    fontSize: 15,
-    color: "#374151",
+    fontSize: fontSize.base,
+    color: colors.textSecondary,
     fontWeight: "500",
   },
   divider: {
     height: 1,
-    backgroundColor: "#E5E7EB",
-    marginVertical: 12,
+    backgroundColor: colors.border,
+    marginVertical: spacing.md,
   },
   badge: {
-    borderRadius: 12,
+    borderRadius: radius.lg,
     paddingHorizontal: 10,
     paddingVertical: 3,
   },
   freeBadge: {
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.surfaceRaised,
   },
   premiumBadge: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: colors.warningBackground,
   },
   badgeText: {
     fontSize: 13,
     fontWeight: "600",
   },
   freeBadgeText: {
-    color: "#6B7280",
+    color: colors.muted,
   },
   premiumBadgeText: {
-    color: "#92400E",
+    color: colors.amber,
   },
   trialText: {
-    fontSize: 15,
-    color: "#2563EB",
+    fontSize: fontSize.base,
+    color: colors.primary,
     fontWeight: "600",
   },
   canceledNote: {
-    fontSize: 14,
-    color: "#DC2626",
+    fontSize: fontSize.md,
+    color: colors.destructive,
     textAlign: "center",
   },
   upgradePrompt: {
-    fontSize: 15,
-    color: "#374151",
-    marginBottom: 12,
+    fontSize: fontSize.base,
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
   },
   upgradeButton: {
-    backgroundColor: "#2563EB",
-    borderRadius: 12,
+    backgroundColor: colors.primary,
+    borderRadius: radius.lg,
     padding: 14,
     alignItems: "center",
   },
   upgradeButtonText: {
-    color: "#ffffff",
-    fontSize: 15,
+    color: colors.white,
+    fontSize: fontSize.base,
     fontWeight: "700",
   },
   restoreRow: {
     alignItems: "center",
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
   },
   restoreText: {
-    color: "#2563EB",
-    fontSize: 15,
+    color: colors.primary,
+    fontSize: fontSize.base,
     fontWeight: "500",
   },
   signOutButton: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
     padding: 14,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#FCA5A5",
+    borderColor: colors.destructiveLight,
   },
   signOutButtonText: {
-    color: "#DC2626",
-    fontSize: 15,
+    color: colors.destructive,
+    fontSize: fontSize.base,
     fontWeight: "600",
   },
   deleteButton: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
     padding: 14,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#DC2626",
+    borderColor: colors.destructive,
   },
   deleteButtonText: {
-    color: "#DC2626",
-    fontSize: 15,
+    color: colors.destructive,
+    fontSize: fontSize.base,
     fontWeight: "600",
   },
   deleteWarning: {
-    fontSize: 12,
-    color: "#9CA3AF",
+    fontSize: fontSize.sm,
+    color: colors.mutedLight,
     textAlign: "center",
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   footer: {
     alignItems: "center",
     marginTop: "auto",
-    paddingBottom: 16,
+    paddingBottom: spacing.lg,
   },
   footerText: {
-    fontSize: 12,
-    color: "#9CA3AF",
+    fontSize: fontSize.sm,
+    color: colors.mutedLight,
   },
 });

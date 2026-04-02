@@ -1,3 +1,5 @@
+import type { SubscriptionStatus } from "./auth";
+
 // === Scan Timesheet API ===
 
 export interface ScanTimesheetRequest {
@@ -49,7 +51,7 @@ export interface UserStatusResponse {
   maxSwimmers: number | null; // null = unlimited
   canScan: boolean;
   remainingScans: number | null; // null = unlimited
-  subscriptionStatus: SubscriptionStatus;
+  subscriptionStatus: SubscriptionStatus | null;
   tokensUsedToday: number;
   tokensRemaining: number | null; // null = unlimited
 }
@@ -70,5 +72,3 @@ export interface ApiErrorResponse {
 }
 
 export type PlanType = "guest" | "free" | "premium";
-
-export type SubscriptionStatus = "trialing" | "active" | "canceled" | "expired" | "past_due" | null;

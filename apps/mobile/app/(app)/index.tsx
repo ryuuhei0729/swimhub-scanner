@@ -17,9 +17,9 @@ import {
 } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import * as ImagePicker from "expo-image-picker";
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useRouter } from "expo-router";
 import { getUserStatus, scanTimesheet, guestScanTimesheet, ApiError } from "@/lib/api-client";
 import { canGuestScanToday, recordGuestScan, getGuestTodayCount } from "@/lib/guest-daily-limit";
 import { PLAN_LIMITS } from "@swimhub-scanner/shared";
@@ -39,13 +39,14 @@ import {
   type AdState,
   type RewardedAdController,
 } from "@/lib/ads/rewarded-ad";
-import type { MainStackParamList } from "@/navigation/types";
+import { colors, spacing, radius, fontSize } from "@/theme";
 
 type Step = "idle" | "scanning" | "result";
 
-export const ScannerScreen: React.FC = () => {
+export default function ScannerScreen() {
+  const { t } = useTranslation();
   const { isGuest, isAuthenticated, subscription } = useAuth();
-  const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+  const router = useRouter();
 
   const [step, setStep] = useState<Step>("idle");
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -61,7 +62,7 @@ export const ScannerScreen: React.FC = () => {
 
   // --- Ad state ---
   const adControllerRef = useRef<RewardedAdController | null>(null);
-  const [adState, setAdState] = useState<AdState>("idle");
+  const [_adState, setAdState] = useState<AdState>("idle");
   const [adUnavailable, setAdUnavailable] = useState(false);
   const scanTriggeredRef = useRef(false);
 
@@ -126,9 +127,6 @@ export const ScannerScreen: React.FC = () => {
     };
   }, [imageBase64]);
 
-  // 広告は解析成功後に startScan 内で表示するため、
-  // 自動表示の useEffect は不要
-
   const pickImage = async (useCamera: boolean) => {
     setError(null);
 
@@ -143,7 +141,7 @@ export const ScannerScreen: React.FC = () => {
     if (useCamera) {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert("権限エラー", "カメラへのアクセスが許可されていません");
+        Alert.alert(t("scanner.cameraPermissionTitle"), t("scanner.cameraPermissionError"));
         return;
       }
       result = await ImagePicker.launchCameraAsync(options);
@@ -158,14 +156,14 @@ export const ScannerScreen: React.FC = () => {
 
     // バリデーション
     if (!validateImageMimeType(mimeType)) {
-      setError("JPEG または PNG 形式の画像を使用してください");
+      setError(t("uploader.invalidFormat"));
       return;
     }
 
     if (asset.base64) {
       const size = estimateBase64Size(asset.base64);
       if (!validateImageSize(size)) {
-        setError("画像サイズは10MB以下にしてください");
+        setError(t("uploader.tooLarge"));
         return;
       }
     }
@@ -181,9 +179,9 @@ export const ScannerScreen: React.FC = () => {
     // 権限チェック: トークン不足の場合はペイウォールに遷移
     if (!canScan) {
       if (isGuest) {
-        navigation.navigate("GuestSignup");
+        router.push("/(app)/guest-signup");
       } else if (isAuthenticated) {
-        navigation.navigate("Paywall");
+        router.push("/(app)/paywall");
       }
       return;
     }
@@ -228,33 +226,29 @@ export const ScannerScreen: React.FC = () => {
         switch (err.code) {
           case "DAILY_LIMIT_EXCEEDED":
           case "TOKEN_EXHAUSTED":
-            setError("本日の利用回数上限に達しました。毎日0時（日本時間）にリセットされます。");
+            setError(t("scanner.dailyLimitReached"));
             break;
           case "SWIMMER_LIMIT_EXCEEDED":
-            setError("1回のスキャンで解析できるのは8名までです");
+            setError(t("scanner.swimmerLimitScan"));
             break;
           case "PARSE_ERROR":
-            setError(
-              "画像からタイム情報を読み取れませんでした。鮮明なタイム記録表の画像を使用してください",
-            );
+            setError(t("scanner.parseError"));
             break;
           case "API_ERROR":
-            setError(
-              "画像の解析に失敗しました。タイム記録表の画像であることを確認し、再度お試しください",
-            );
+            setError(t("scanner.apiError"));
             break;
           case "IMAGE_ERROR":
             setError(err.message);
             break;
           default:
-            setError("解析中にエラーが発生しました。再度お試しください");
+            setError(t("scanner.scanError"));
         }
       } else {
         const isNetworkError = err instanceof TypeError && err.message?.includes("Network");
         setError(
           isNetworkError
-            ? "通信エラーが発生しました。ネットワーク接続を確認してください"
-            : "解析に失敗しました。再度お試しください",
+            ? t("scanner.networkError")
+            : t("scanner.scanFailed"),
         );
       }
     }
@@ -262,12 +256,12 @@ export const ScannerScreen: React.FC = () => {
 
   const handleReset = () => {
     Alert.alert(
-      "解析結果の破棄",
-      "現在の解析結果は破棄されます。よろしいですか？",
+      t("scanner.discardTitle"),
+      t("scanner.discardMessage"),
       [
-        { text: "キャンセル", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "破棄して解析",
+          text: t("scanner.discardConfirm"),
           style: "destructive",
           onPress: () => {
             setStep("idle");
@@ -290,7 +284,7 @@ export const ScannerScreen: React.FC = () => {
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: ["キャンセル", "写真を撮る", "ライブラリから選ぶ"],
+          options: [t("common.cancel"), t("scanner.takePhoto"), t("scanner.chooseFromLibrary")],
           cancelButtonIndex: 0,
         },
         (buttonIndex) => {
@@ -299,10 +293,10 @@ export const ScannerScreen: React.FC = () => {
         },
       );
     } else {
-      Alert.alert("画像を選択", "", [
-        { text: "写真を撮る", onPress: () => pickImage(true) },
-        { text: "ライブラリから選ぶ", onPress: () => pickImage(false) },
-        { text: "キャンセル", style: "cancel" },
+      Alert.alert(t("scanner.selectImage"), "", [
+        { text: t("scanner.takePhoto"), onPress: () => pickImage(true) },
+        { text: t("scanner.chooseFromLibrary"), onPress: () => pickImage(false) },
+        { text: t("common.cancel"), style: "cancel" },
       ]);
     }
   };
@@ -339,11 +333,14 @@ export const ScannerScreen: React.FC = () => {
   // Step 2: 解析中
   if (step === "scanning") {
     return (
-      <SafeAreaView style={styles.container} edges={["bottom"]}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.resultHeader}>
+          <Text style={styles.resultHeaderTitle}>{t("scanner.scanningHeader")}</Text>
+        </View>
         <View style={styles.scanningContainer}>
-          <ActivityIndicator size="large" color="#2563EB" />
-          <Text style={styles.scanningText}>画像を解析しています...</Text>
-          <Text style={styles.scanningSubtext}>しばらくお待ちください</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.scanningText}>{t("scanner.scanning")}</Text>
+          <Text style={styles.scanningSubtext}>{t("scanner.scanningWait")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -352,24 +349,27 @@ export const ScannerScreen: React.FC = () => {
   // Step 3: 結果確認
   if (step === "result" && menu && swimmers.length > 0) {
     return (
-      <SafeAreaView style={styles.container} edges={["bottom"]}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.resultHeader}>
+          <Text style={styles.resultHeaderTitle}>{t("scanner.resultHeader")}</Text>
+        </View>
         <ScrollView
           style={styles.resultContainer}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         >
           <View style={styles.menuInfo}>
-            <Text style={styles.menuTitle}>メニュー情報</Text>
+            <Text style={styles.menuTitle}>{t("scanner.menuInfo")}</Text>
             <Text style={styles.menuDescription}>{menu.description}</Text>
             <View style={styles.menuDetails}>
-              <Text style={styles.menuDetail}>距離: {menu.distance}m</Text>
-              <Text style={styles.menuDetail}>本数: {menu.repCount}本</Text>
-              <Text style={styles.menuDetail}>セット: {menu.setCount}セット</Text>
+              <Text style={styles.menuDetail}>{t("result.distance")}: {menu.distance}m</Text>
+              <Text style={styles.menuDetail}>{t("result.repCount")}: {menu.repCount}{t("result.repShort")}</Text>
+              <Text style={styles.menuDetail}>{t("result.setCount")}: {menu.setCount}{t("result.set")}</Text>
               {menu.circle && (
                 <Text style={styles.menuDetail}>
-                  サークル:{" "}
+                  {t("result.circle")}:{" "}
                   {menu.circle >= 60
-                    ? `${Math.floor(menu.circle / 60)}分${menu.circle % 60 > 0 ? `${menu.circle % 60}秒` : ""}`
-                    : `${menu.circle}秒`}
+                    ? t("result.circleMinutesSeconds", { minutes: Math.floor(menu.circle / 60), seconds: menu.circle % 60 > 0 ? menu.circle % 60 : undefined }).replace(/ $/, "")
+                    : t("result.circleSeconds", { seconds: menu.circle })}
                 </Text>
               )}
             </View>
@@ -380,25 +380,25 @@ export const ScannerScreen: React.FC = () => {
           <ExportSheet />
 
           <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-            <Text style={styles.resetButtonText}>新しい画像を解析する</Text>
+            <Text style={styles.resetButtonText}>{t("scanner.newScanReset")}</Text>
           </TouchableOpacity>
 
           {isGuest && (
             <TouchableOpacity
               style={styles.signupPromptButton}
-              onPress={() => navigation.navigate("GuestSignup")}
+              onPress={() => router.push("/(app)/guest-signup")}
             >
-              <Text style={styles.signupPromptText}>アカウント登録してもっと使う</Text>
+              <Text style={styles.signupPromptText}>{t("scanner.registerForMore")}</Text>
             </TouchableOpacity>
           )}
 
-          <View style={{ height: 32 }} />
+          <View style={{ height: spacing.xxl }} />
         </ScrollView>
       </SafeAreaView>
     );
   }
 
-  const steps = ["スキャン", "解析", "確認"];
+  const steps = [t("scanner.step1"), t("scanner.step2"), t("scanner.step3")];
 
   // Step 1: 画像選択
   return (
@@ -406,28 +406,27 @@ export const ScannerScreen: React.FC = () => {
       <View style={styles.idleContainer}>
         {/* Header */}
         <View style={styles.header}>
-          <Image source={require("../assets/icon.png")} style={styles.appIcon} />
-          <Text style={styles.title}>SwimHub</Text>
-          <Text style={styles.subtitle}>タイム記録表をAIで瞬時にデータ化</Text>
+          <Text style={styles.title}>{t("scanner.heroTitle")}</Text>
+          <Text style={styles.subtitle}>{t("scanner.subtitle")}</Text>
 
           {/* Auth action bar */}
           {isAuthenticated ? (
             <Pressable
               style={styles.accountChip}
-              onPress={() => navigation.navigate("Account")}
+              onPress={() => router.push("/(app)/account")}
             >
-              <Ionicons name="person-circle" size={18} color="#2563EB" />
-              <Text style={styles.accountChipText}>アカウント</Text>
+              <Ionicons name="person-circle" size={18} color={colors.primary} />
+              <Text style={styles.accountChipText}>{t("scanner.account")}</Text>
             </Pressable>
           ) : (
             <View style={styles.guestBar}>
-              <Text style={styles.guestLabel}>ゲスト利用中</Text>
+              <Text style={styles.guestLabel}>{t("scanner.guestMode")}</Text>
               <Pressable
                 style={styles.loginChip}
-                onPress={() => navigation.navigate("LoginMethod")}
+                onPress={() => router.push("/(app)/login-method")}
               >
-                <Text style={styles.loginChipText}>ログイン</Text>
-                <Ionicons name="arrow-forward" size={14} color="#ffffff" />
+                <Text style={styles.loginChipText}>{t("common.login")}</Text>
+                <Ionicons name="arrow-forward" size={14} color={colors.white} />
               </Pressable>
             </View>
           )}
@@ -440,13 +439,13 @@ export const ScannerScreen: React.FC = () => {
             <View style={styles.statusBar}>
               {isPremium ? (
                 <View style={styles.premiumBadge}>
-                  <Feather name="zap" size={14} color="#F59E0B" />
+                  <Feather name="zap" size={14} color={colors.warningIcon} />
                   <Text style={styles.premiumBadgeText}>Premium</Text>
                 </View>
               ) : isGuest ? (
-                <Text style={styles.statusText}>残り {guestRemaining}回（今日）</Text>
+                <Text style={styles.statusText}>{t("scanner.remainingCount", { count: guestRemaining })}</Text>
               ) : userStatus && displayTokens !== null ? (
-                <Text style={styles.statusText}>残り {displayTokens}回</Text>
+                <Text style={styles.statusText}>{t("scanner.remainingCountShort", { count: displayTokens })}</Text>
               ) : null}
             </View>
           )}
@@ -466,11 +465,11 @@ export const ScannerScreen: React.FC = () => {
                     setImageBase64(null);
                   }}
                 >
-                  <Feather name="x" size={16} color="#ffffff" />
+                  <Feather name="x" size={16} color={colors.white} />
                 </TouchableOpacity>
                 <View style={styles.changeImageHint}>
-                  <Feather name="refresh-cw" size={14} color="#ffffff" />
-                  <Text style={styles.changeImageHintText}>タップで変更</Text>
+                  <Feather name="refresh-cw" size={14} color={colors.white} />
+                  <Text style={styles.changeImageHintText}>{t("scanner.changeImageHint")}</Text>
                 </View>
               </TouchableOpacity>
 
@@ -483,17 +482,17 @@ export const ScannerScreen: React.FC = () => {
                 onPress={startScan}
                 disabled={!canScan}
               >
-                <Text style={styles.primaryButtonText}>解析する</Text>
+                <Text style={styles.primaryButtonText}>{t("scanner.scan")}</Text>
               </Pressable>
             </>
           ) : (
             <>
               <View style={styles.iconCircle}>
-                <Feather name="camera" size={26} color="#6B7280" />
+                <Feather name="camera" size={26} color={colors.muted} />
               </View>
-              <Text style={styles.cardTitle}>画像を選択</Text>
+              <Text style={styles.cardTitle}>{t("scanner.selectImage")}</Text>
               <Text style={styles.cardDescription}>
-                タイム記録表の写真を撮影、{"\n"}またはライブラリから選択してください
+                {t("scanner.selectImageDesc")}
               </Text>
 
               <Pressable
@@ -503,7 +502,7 @@ export const ScannerScreen: React.FC = () => {
                 ]}
                 onPress={showImagePickerOptions}
               >
-                <Text style={styles.primaryButtonText}>画像を選択</Text>
+                <Text style={styles.primaryButtonText}>{t("scanner.selectImage")}</Text>
               </Pressable>
             </>
           )}
@@ -521,19 +520,17 @@ export const ScannerScreen: React.FC = () => {
               style={styles.limitBanner}
               onPress={() => {
                 if (isGuest) {
-                  navigation.navigate("GuestSignup");
+                  router.push("/(app)/guest-signup");
                 } else {
-                  navigation.navigate("Paywall");
+                  router.push("/(app)/paywall");
                 }
               }}
             >
               <Text style={styles.limitBannerText}>
-                {isGuest
-                  ? "本日の利用回数上限に達しました。毎日0時（日本時間）にリセットされます。"
-                  : "本日の利用回数上限に達しました。毎日0時（日本時間）にリセットされます。"}
+                {t("scanner.dailyLimitReached")}
               </Text>
               <Text style={styles.limitBannerLink}>
-                {isGuest ? "アカウント登録してもっと使う →" : "Premium にアップグレード →"}
+                {isGuest ? t("scanner.dailyLimitRegisterLink") : t("scanner.dailyLimitUpgradeLink")}
               </Text>
             </Pressable>
           )}
@@ -553,14 +550,14 @@ export const ScannerScreen: React.FC = () => {
 
         {/* Template buttons */}
         <View style={styles.templateSection}>
-          <Text style={styles.templateLabel}>記録表テンプレート</Text>
+          <Text style={styles.templateLabel}>{t("scanner.templateLabel")}</Text>
           <View style={styles.templateButtonRow}>
             <TouchableOpacity
               style={styles.templateButton}
               onPress={shareTimesheetPdf}
               activeOpacity={0.7}
             >
-              <Feather name="file-text" size={16} color="#2563EB" />
+              <Feather name="file-text" size={16} color={colors.primary} />
               <Text style={styles.templateButtonText}>PDF</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -568,7 +565,7 @@ export const ScannerScreen: React.FC = () => {
               onPress={() => setTemplatePreviewVisible(true)}
               activeOpacity={0.7}
             >
-              <Feather name="image" size={16} color="#2563EB" />
+              <Feather name="image" size={16} color={colors.primary} />
               <Text style={styles.templateButtonText}>画像</Text>
             </TouchableOpacity>
           </View>
@@ -591,7 +588,7 @@ export const ScannerScreen: React.FC = () => {
             <View style={styles.modalImageContainer}>
               <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
                 <Image
-                  source={require("../assets/timesheet-template.png")}
+                  source={require("../../assets/timesheet-template.png")}
                   style={styles.modalImage}
                   resizeMode="contain"
                 />
@@ -602,12 +599,12 @@ export const ScannerScreen: React.FC = () => {
                 style={styles.modalCloseButton}
                 onPress={() => setTemplatePreviewVisible(false)}
               >
-                <Feather name="x" size={44} color="#ffffff" />
-                <Text style={styles.modalCloseText}>閉じる</Text>
+                <Feather name="x" size={44} color={colors.white} />
+                <Text style={styles.modalCloseText}>{t("common.close")}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalShareButton} onPress={shareTimesheetImage}>
-                <Feather name="download" size={44} color="#ffffff" />
-                <Text style={styles.modalShareText}>保存</Text>
+                <Feather name="download" size={44} color={colors.white} />
+                <Text style={styles.modalShareText}>{t("common.save")}</Text>
               </TouchableOpacity>
             </View>
           </SafeAreaView>
@@ -615,92 +612,87 @@ export const ScannerScreen: React.FC = () => {
       </Modal>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#EFF6FF",
+    backgroundColor: colors.background,
   },
   // Step 1: Idle
   idleContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 24,
+    padding: spacing.xl,
   },
   header: {
     alignItems: "center",
     marginBottom: 48,
     width: "100%",
   },
-  appIcon: {
-    width: 180,
-    height: 180,
-    marginBottom: 12,
-  },
   title: {
-    fontSize: 32,
+    fontSize: fontSize["4xl"],
     fontWeight: "800",
-    color: "#111827",
+    color: colors.text,
     letterSpacing: -0.5,
   },
   accountChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#EFF6FF",
-    borderRadius: 20,
-    paddingVertical: 8,
+    backgroundColor: colors.background,
+    borderRadius: radius.xxl,
+    paddingVertical: spacing.sm,
     paddingHorizontal: 14,
-    marginTop: 16,
+    marginTop: spacing.lg,
     borderWidth: 1,
-    borderColor: "#BFDBFE",
+    borderColor: colors.primaryBorder,
   },
   accountChipText: {
-    fontSize: 14,
+    fontSize: fontSize.md,
     fontWeight: "600",
-    color: "#2563EB",
+    color: colors.primary,
   },
   guestBar: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    marginTop: 16,
+    marginTop: spacing.lg,
   },
   guestLabel: {
     fontSize: 13,
-    color: "#9CA3AF",
+    color: colors.mutedLight,
     fontWeight: "500",
   },
   loginChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    backgroundColor: "#2563EB",
-    borderRadius: 20,
-    paddingVertical: 8,
+    gap: spacing.xs,
+    backgroundColor: colors.primary,
+    borderRadius: radius.xxl,
+    paddingVertical: spacing.sm,
     paddingHorizontal: 14,
   },
   loginChipText: {
-    fontSize: 14,
+    fontSize: fontSize.md,
     fontWeight: "600",
-    color: "#ffffff",
+    color: colors.white,
   },
   subtitle: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginTop: 8,
+    fontSize: fontSize.sm,
+    color: colors.muted,
+    marginTop: spacing.sm,
     textAlign: "center",
   },
   card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 24,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xxl,
+    padding: spacing.xl,
     width: "100%",
     alignItems: "center",
-    gap: 12,
-    shadowColor: "#000",
+    gap: spacing.md,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -709,27 +701,27 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 56,
     height: 56,
-    borderRadius: 16,
-    backgroundColor: "#F3F4F6",
+    borderRadius: radius.xl,
+    backgroundColor: colors.surfaceRaised,
     alignItems: "center",
     justifyContent: "center",
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: fontSize.xxl,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
   },
   cardDescription: {
-    fontSize: 12,
-    color: "#6B7280",
+    fontSize: fontSize.sm,
+    color: colors.muted,
     textAlign: "center",
     lineHeight: 18,
   },
   primaryButton: {
-    backgroundColor: "#2563EB",
-    borderRadius: 10,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
     paddingVertical: 14,
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing.xl,
     width: "100%",
     alignItems: "center",
   },
@@ -740,19 +732,19 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   primaryButtonText: {
-    color: "#ffffff",
-    fontSize: 15,
+    color: colors.white,
+    fontSize: fontSize.base,
     fontWeight: "600",
   },
   statusBar: {
-    backgroundColor: "#EFF6FF",
-    borderRadius: 8,
+    backgroundColor: colors.background,
+    borderRadius: radius.md,
     paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.md,
   },
   statusText: {
-    fontSize: 12,
-    color: "#1E40AF",
+    fontSize: fontSize.sm,
+    color: colors.primaryDeep,
     textAlign: "center",
     fontWeight: "500",
   },
@@ -760,28 +752,28 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
+    gap: spacing.xs,
   },
   premiumBadgeText: {
-    fontSize: 12,
+    fontSize: fontSize.sm,
     fontWeight: "bold",
-    color: "#92400E",
+    color: colors.amber,
   },
   errorContainer: {
-    backgroundColor: "#FEF2F2",
-    borderRadius: 8,
+    backgroundColor: colors.errorBackground,
+    borderRadius: radius.md,
     padding: 10,
     width: "100%",
   },
   errorText: {
-    color: "#DC2626",
-    fontSize: 12,
+    color: colors.destructive,
+    fontSize: fontSize.sm,
     textAlign: "center",
   },
   previewContainer: {
     position: "relative",
-    backgroundColor: "#F3F4F6",
-    borderRadius: 12,
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radius.lg,
     overflow: "hidden",
     width: "100%",
   },
@@ -791,8 +783,8 @@ const styles = StyleSheet.create({
   },
   removeImageButton: {
     position: "absolute",
-    top: 8,
-    right: 8,
+    top: spacing.sm,
+    right: spacing.sm,
     backgroundColor: "rgba(0,0,0,0.5)",
     borderRadius: 14,
     width: 28,
@@ -802,126 +794,141 @@ const styles = StyleSheet.create({
   },
   changeImageHint: {
     position: "absolute",
-    bottom: 8,
-    right: 8,
+    bottom: spacing.sm,
+    right: spacing.sm,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "rgba(0,0,0,0.5)",
-    borderRadius: 12,
+    borderRadius: radius.lg,
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    gap: 4,
+    paddingVertical: spacing.xs,
+    gap: spacing.xs,
   },
   changeImageHintText: {
-    color: "#ffffff",
-    fontSize: 12,
+    color: colors.white,
+    fontSize: fontSize.sm,
     fontWeight: "500",
   },
   limitBanner: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: colors.warningBackground,
     borderWidth: 1,
-    borderColor: "#FDE68A",
-    borderRadius: 6,
-    padding: 8,
+    borderColor: colors.warningBorder,
+    borderRadius: radius.sm,
+    padding: spacing.sm,
     width: "100%",
   },
   limitBannerText: {
-    fontSize: 10,
-    color: "#92400E",
+    fontSize: fontSize.xs,
+    color: colors.amber,
     lineHeight: 16,
   },
   limitBannerLink: {
-    fontSize: 10,
-    color: "#D97706",
+    fontSize: fontSize.xs,
+    color: colors.warningText,
     fontWeight: "600",
     lineHeight: 16,
-    marginTop: 4,
+    marginTop: spacing.xs,
     textDecorationLine: "underline",
   },
   steps: {
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: 40,
-    gap: 16,
+    gap: spacing.xl,
   },
   stepRow: {
-    flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 6,
   },
   stepDot: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
   },
   stepDotActive: {
-    backgroundColor: "rgba(37,99,235,0.1)",
-    borderColor: "rgba(37,99,235,0.2)",
+    backgroundColor: colors.primaryMuted,
+    borderColor: colors.primaryMutedBorder,
   },
   stepNumber: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: "700",
-    color: "#6B7280",
+    color: colors.muted,
   },
   stepNumberActive: {
-    color: "#2563EB",
+    color: colors.primary,
   },
   stepLabel: {
-    fontSize: 12,
-    color: "#6B7280",
+    fontSize: fontSize.sm,
+    color: colors.muted,
   },
   stepLabelActive: {
-    color: "#111827",
+    color: colors.text,
     fontWeight: "600",
   },
   templateSection: {
-    marginTop: 24,
+    marginTop: spacing.xl,
     alignItems: "center",
     width: "100%",
   },
   templateLabel: {
-    fontSize: 10,
-    color: "#6B7280",
+    fontSize: fontSize.xs,
+    color: colors.muted,
     fontWeight: "500",
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   templateButtonRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: spacing.sm,
   },
   templateButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
-    backgroundColor: "#ffffff",
-    gap: 4,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.surface,
+    gap: spacing.xs,
   },
   templateButtonText: {
-    color: "#2563EB",
-    fontSize: 12,
+    color: colors.primary,
+    fontSize: fontSize.sm,
     fontWeight: "600",
   },
   signupPromptButton: {
-    marginTop: 12,
-    backgroundColor: "#EFF6FF",
-    borderRadius: 8,
-    paddingVertical: 12,
+    marginTop: spacing.md,
+    backgroundColor: colors.background,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#BFDBFE",
+    borderColor: colors.primaryBorder,
   },
   signupPromptText: {
-    color: "#2563EB",
-    fontSize: 14,
+    color: colors.primary,
+    fontSize: fontSize.md,
     fontWeight: "600",
+  },
+  // Result header
+  resultHeader: {
+    backgroundColor: colors.surface,
+    paddingVertical: 14,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    alignItems: "center",
+  },
+  resultHeaderTitle: {
+    fontSize: fontSize.xl,
+    fontWeight: "600",
+    color: colors.text,
   },
   // Step 2: Scanning
   scanningContainer: {
@@ -930,64 +937,64 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   scanningText: {
-    marginTop: 16,
-    fontSize: 18,
+    marginTop: spacing.lg,
+    fontSize: fontSize.xxl,
     fontWeight: "600",
-    color: "#374151",
+    color: colors.textSecondary,
   },
   scanningSubtext: {
-    marginTop: 8,
-    fontSize: 14,
-    color: "#6B7280",
+    marginTop: spacing.sm,
+    fontSize: fontSize.md,
+    color: colors.muted,
   },
   // Step 3: Result
   resultContainer: {
     flex: 1,
-    padding: 16,
+    padding: spacing.lg,
   },
   menuInfo: {
-    backgroundColor: "#EFF6FF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    backgroundColor: colors.background,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
   },
   menuTitle: {
-    fontSize: 16,
+    fontSize: fontSize.lg,
     fontWeight: "bold",
-    color: "#1E3A8A",
-    marginBottom: 4,
+    color: colors.primaryDarkest,
+    marginBottom: spacing.xs,
   },
   menuDescription: {
-    fontSize: 14,
-    color: "#374151",
-    marginBottom: 8,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
   },
   menuDetails: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: spacing.sm,
   },
   menuDetail: {
     fontSize: 13,
-    color: "#6B7280",
-    backgroundColor: "#DBEAFE",
-    borderRadius: 4,
-    paddingHorizontal: 8,
+    color: colors.muted,
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.xs,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 2,
   },
   resetButton: {
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.surfaceRaised,
     height: 48,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 16,
+    marginTop: spacing.lg,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: colors.borderLight,
   },
   resetButtonText: {
-    color: "#374151",
-    fontSize: 15,
+    color: colors.textSecondary,
+    fontSize: fontSize.base,
     fontWeight: "600",
   },
   // Modal
@@ -1002,26 +1009,26 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 16,
+    padding: spacing.lg,
   },
   modalImage: {
-    width: Dimensions.get("window").width - 32,
+    width: Dimensions.get("window").width - spacing.xxl,
     height: Dimensions.get("window").height * 0.7,
   },
   modalFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 64,
-    paddingBottom: 24,
-    paddingTop: 12,
+    paddingBottom: spacing.xl,
+    paddingTop: spacing.md,
   },
   modalShareButton: {
     alignItems: "center",
     gap: 6,
   },
   modalShareText: {
-    color: "#ffffff",
-    fontSize: 14,
+    color: colors.white,
+    fontSize: fontSize.md,
     fontWeight: "600",
   },
   modalCloseButton: {
@@ -1029,8 +1036,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   modalCloseText: {
-    color: "#ffffff",
-    fontSize: 14,
+    color: colors.white,
+    fontSize: fontSize.md,
     fontWeight: "600",
   },
 });

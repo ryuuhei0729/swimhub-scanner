@@ -10,14 +10,17 @@ import {
   Platform,
   ScrollView,
   Alert,
+  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
-import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthProvider";
+import { colors, spacing, radius, fontSize } from "@/theme";
 
-export const EmailSignupScreen: React.FC = () => {
-  const navigation = useNavigation();
+export default function EmailSignupScreen() {
+  const { t } = useTranslation();
+  const router = useRouter();
   const { signUp } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -27,20 +30,20 @@ export const EmailSignupScreen: React.FC = () => {
 
   const validateForm = (): boolean => {
     if (!email.trim()) {
-      setError("メールアドレスを入力してください");
+      setError(t("auth.emailSignupScreen.emailRequired"));
       return false;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError("有効なメールアドレスを入力してください");
+      setError(t("auth.emailSignupScreen.emailInvalid"));
       return false;
     }
     if (!password) {
-      setError("パスワードを入力してください");
+      setError(t("auth.emailSignupScreen.passwordRequired"));
       return false;
     }
     if (password.length < 6) {
-      setError("パスワードは6文字以上で入力してください");
+      setError(t("auth.emailSignupScreen.passwordTooShort"));
       return false;
     }
     return true;
@@ -51,15 +54,15 @@ export const EmailSignupScreen: React.FC = () => {
     const msg = typeof errorObj.message === "string" ? errorObj.message.toLowerCase() : "";
 
     if (msg.includes("user already registered")) {
-      return "このメールアドレスは既に登録されています";
+      return t("auth.emailSignupScreen.alreadyRegistered");
     }
     if (msg.includes("too many requests") || msg.includes("rate limit")) {
-      return "リクエスト制限に達しました。しばらく時間をおいてから再度お試しください";
+      return t("auth.emailSignupScreen.rateLimited");
     }
     if (msg.includes("network") || msg.includes("connection")) {
-      return "ネットワークエラーが発生しました。接続を確認してください";
+      return t("auth.emailSignupScreen.networkError");
     }
-    return "登録に失敗しました。入力内容を確認してください";
+    return t("auth.emailSignupScreen.signupFailed");
   };
 
   const handleSubmit = async () => {
@@ -74,31 +77,20 @@ export const EmailSignupScreen: React.FC = () => {
         setError(formatAuthError(authError));
       } else {
         Alert.alert(
-          "確認メール送信",
-          "ご登録のメールアドレスに確認メールを送信しました。メール内のリンクをクリックして登録を完了してください。",
-          [{ text: "OK", onPress: () => navigation.goBack() }],
+          t("auth.confirmEmailSent"),
+          t("auth.confirmEmailDesc"),
+          [{ text: t("common.ok"), onPress: () => router.back() }],
         );
       }
     } catch {
-      setError("予期しないエラーが発生しました");
+      setError(t("auth.emailSignupScreen.unexpectedError"));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Pressable
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          accessibilityRole="button"
-          accessibilityLabel="戻る"
-        >
-          <Feather name="arrow-left" size={24} color="#111827" />
-        </Pressable>
-      </View>
-
+    <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -109,7 +101,7 @@ export const EmailSignupScreen: React.FC = () => {
         >
           <View style={styles.formContainer}>
             <View style={styles.titleSection}>
-              <Text style={styles.title}>メールで登録</Text>
+              <Text style={styles.title}>{t("auth.emailSignupScreen.title")}</Text>
             </View>
 
             {error && (
@@ -120,11 +112,11 @@ export const EmailSignupScreen: React.FC = () => {
 
             <View style={styles.form}>
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>メールアドレス</Text>
+                <Text style={styles.label}>{t("auth.emailLabel")}</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="your@email.com"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.mutedLight}
                   value={email}
                   onChangeText={setEmail}
                   autoCapitalize="none"
@@ -136,11 +128,11 @@ export const EmailSignupScreen: React.FC = () => {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>パスワード</Text>
+                <Text style={styles.label}>{t("auth.passwordLabel")}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="6文字以上"
-                  placeholderTextColor="#9CA3AF"
+                  placeholder={t("auth.passwordPlaceholder")}
+                  placeholderTextColor={colors.mutedLight}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
@@ -161,32 +153,43 @@ export const EmailSignupScreen: React.FC = () => {
                 disabled={loading}
               >
                 {loading ? (
-                  <ActivityIndicator color="#ffffff" />
+                  <ActivityIndicator color={colors.white} />
                 ) : (
-                  <Text style={styles.submitButtonText}>登録する</Text>
+                  <Text style={styles.submitButtonText}>{t("auth.emailSignupScreen.submit")}</Text>
                 )}
               </Pressable>
             </View>
+          </View>
+
+          <View style={styles.legalContainer}>
+            <Text style={styles.legalText}>
+              {t("auth.termsAgreement")}
+              <Text
+                style={styles.legalLink}
+                onPress={() => Linking.openURL("https://scanner.swim-hub.app/terms")}
+              >
+                {t("auth.terms")}
+              </Text>
+              {t("auth.and")}
+              <Text
+                style={styles.legalLink}
+                onPress={() => Linking.openURL("https://scanner.swim-hub.app/privacy")}
+              >
+                {t("auth.privacy")}
+              </Text>
+              {t("auth.termsAgreementEnd")}
+            </Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#EFF6FF",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  backButton: {
-    padding: 8,
+    backgroundColor: colors.background,
   },
   keyboardView: {
     flex: 1,
@@ -200,12 +203,12 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 400,
     alignSelf: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 24,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
     ...Platform.select({
       ios: {
-        shadowColor: "#000",
+        shadowColor: colors.shadow,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 8,
@@ -216,64 +219,79 @@ const styles = StyleSheet.create({
     }),
   },
   titleSection: {
-    marginBottom: 24,
+    marginBottom: spacing.xl,
     alignItems: "center",
   },
   title: {
-    fontSize: 24,
+    fontSize: fontSize["3xl"],
     fontWeight: "bold",
-    color: "#111827",
+    color: colors.text,
   },
   errorContainer: {
-    backgroundColor: "#FEF2F2",
-    borderColor: "#FECACA",
+    backgroundColor: colors.errorBackground,
+    borderColor: colors.errorBorder,
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
   },
   errorText: {
-    color: "#DC2626",
-    fontSize: 14,
+    color: colors.destructive,
+    fontSize: fontSize.md,
     lineHeight: 20,
   },
   form: {
-    gap: 16,
+    gap: spacing.lg,
   },
   inputGroup: {
-    gap: 8,
+    gap: spacing.sm,
   },
   label: {
-    fontSize: 14,
+    fontSize: fontSize.md,
     fontWeight: "500",
-    color: "#374151",
+    color: colors.textSecondary,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: "#111827",
-    backgroundColor: "#ffffff",
+    borderColor: colors.borderLight,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    fontSize: fontSize.lg,
+    color: colors.text,
+    backgroundColor: colors.surface,
   },
   submitButton: {
-    backgroundColor: "#2563EB",
-    borderRadius: 8,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
     padding: 14,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   submitButtonDisabled: {
     opacity: 0.5,
   },
   submitButtonPressed: {
-    backgroundColor: "#1D4ED8",
+    backgroundColor: colors.primaryDark,
   },
   submitButtonText: {
-    color: "#ffffff",
-    fontSize: 16,
+    color: colors.white,
+    fontSize: fontSize.lg,
     fontWeight: "600",
+  },
+  legalContainer: {
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.sm,
+    alignItems: "center",
+  },
+  legalText: {
+    fontSize: fontSize.sm,
+    color: colors.mutedLight,
+    textAlign: "center",
+    lineHeight: 18,
+  },
+  legalLink: {
+    color: colors.primary,
+    fontWeight: "500",
   },
 });

@@ -1,14 +1,14 @@
 import React from "react";
 import { View, Text, Pressable, StyleSheet, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { AuthStackParamList } from "@/navigation/types";
-import { useAuth } from "@/contexts/AuthProvider";
+import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "../../contexts/AuthProvider";
 import { PLAN_LIMITS } from "@swimhub-scanner/shared";
 
-export const WelcomeScreen: React.FC = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+export default function WelcomeScreen() {
+  const { t } = useTranslation();
+  const router = useRouter();
   const { enterGuestMode } = useAuth();
 
   return (
@@ -16,19 +16,19 @@ export const WelcomeScreen: React.FC = () => {
       <View style={styles.content}>
         <View style={styles.logoContainer}>
           <Image source={require("@/assets/icon.png")} style={styles.appIcon} />
-          <Text style={styles.appName}>SwimHub Scanner</Text>
-          <Text style={styles.tagline}>手書きの記録表をAIで解析</Text>
+          <Text style={styles.appName}>{t("common.appName")}</Text>
+          <Text style={styles.tagline}>{t("auth.welcome.tagline")}</Text>
         </View>
       </View>
 
       <View style={styles.bottomContainer}>
         <Pressable
           style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed]}
-          onPress={() => navigation.navigate("GetStarted")}
+          onPress={() => router.push("/(auth)/get-started")}
           accessibilityRole="button"
-          accessibilityLabel="さっそく始める"
+          accessibilityLabel={t("auth.welcome.getStarted")}
         >
-          <Text style={styles.primaryButtonText}>さっそく始める</Text>
+          <Text style={styles.primaryButtonText}>{t("auth.welcome.getStarted")}</Text>
         </Pressable>
 
         <Pressable
@@ -36,27 +36,27 @@ export const WelcomeScreen: React.FC = () => {
             styles.secondaryButton,
             pressed && styles.secondaryButtonPressed,
           ]}
-          onPress={() => navigation.navigate("LoginMethod")}
+          onPress={() => router.push("/(auth)/login-method")}
           accessibilityRole="button"
-          accessibilityLabel="ログイン"
+          accessibilityLabel={t("auth.welcome.login")}
         >
-          <Text style={styles.secondaryButtonText}>ログイン</Text>
+          <Text style={styles.secondaryButtonText}>{t("auth.welcome.login")}</Text>
         </Pressable>
 
         <Pressable
           style={({ pressed }) => [styles.guestButton, pressed && styles.guestButtonPressed]}
           onPress={enterGuestMode}
           accessibilityRole="button"
-          accessibilityLabel="ログインせずに試す"
+          accessibilityLabel={t("auth.guestMode")}
         >
           <Text style={styles.guestButtonText}>
-            ログインせずに試す（1日{PLAN_LIMITS.guest.dailyScanLimit}回無料）
+            {t("auth.guestModeWithLimit", { limit: PLAN_LIMITS.guest.dailyScanLimit })}
           </Text>
         </Pressable>
       </View>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {

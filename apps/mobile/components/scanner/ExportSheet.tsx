@@ -4,8 +4,10 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { captureRef } from "react-native-view-shot";
 import XLSX from "xlsx";
+import { useTranslation } from "react-i18next";
 import { useScanResultStore } from "@/stores/scanResultStore";
 import { formatTime, averageTime, fastestTime, slowestTime } from "@swimhub-scanner/shared";
+import { colors, spacing, radius, fontSize } from "@/theme";
 
 const getDateString = () => {
   const now = new Date();
@@ -22,6 +24,7 @@ const TIME_WIDTH = 40;
 const STAT_WIDTH = 44;
 
 export const ExportSheet: React.FC = () => {
+  const { t } = useTranslation();
   const { menu, swimmers } = useScanResultStore();
   const [exporting, setExporting] = useState(false);
   const exportRef = useRef<View>(null);
@@ -34,13 +37,13 @@ export const ExportSheet: React.FC = () => {
 
   const buildRows = () => {
     const headers = [
-      "No",
-      "名前",
-      "種目",
-      ...Array.from({ length: maxTimes }, (_, i) => `${i + 1}本目`),
-      "平均",
-      "最速",
-      "最遅",
+      t("result.no"),
+      t("result.name"),
+      t("result.style"),
+      ...Array.from({ length: maxTimes }, (_, i) => `${i + 1}${t("result.rep")}`),
+      t("result.average"),
+      t("result.fastest"),
+      t("result.slowest"),
     ];
 
     const rows = swimmers.map((s) => {
@@ -80,7 +83,7 @@ export const ExportSheet: React.FC = () => {
 
       await Sharing.shareAsync(fileUri, { mimeType: "text/csv" });
     } catch (err) {
-      Alert.alert("エラー", "CSV出力に失敗しました");
+      Alert.alert(t("common.error"), t("export.csvError"));
       console.error("CSV export error:", err);
     } finally {
       setExporting(false);
@@ -97,7 +100,7 @@ export const ExportSheet: React.FC = () => {
       });
       await Sharing.shareAsync(uri, { mimeType: "image/png" });
     } catch (err) {
-      Alert.alert("エラー", "画像出力に失敗しました");
+      Alert.alert(t("common.error"), t("export.imageError"));
       console.error("Image export error:", err);
     } finally {
       setExporting(false);
@@ -113,20 +116,20 @@ export const ExportSheet: React.FC = () => {
 
       // メニュー情報シート
       const menuData = [
-        ["メニュー情報"],
-        ["説明", menu.description],
-        ["距離", `${menu.distance}m`],
-        ["本数", `${menu.repCount}本`],
-        ["セット数", `${menu.setCount}セット`],
-        ["サークル", menu.circle ? `${menu.circle}秒` : "—"],
+        [t("export.menuInfo")],
+        [t("export.description"), menu.description],
+        [t("export.distance"), `${menu.distance}m`],
+        [t("export.repCount"), `${menu.repCount}${t("result.repShort")}`],
+        [t("export.setCount"), `${menu.setCount}${t("result.set")}`],
+        [t("export.circle"), menu.circle ? `${menu.circle}${t("result.circleSeconds", { seconds: "" }).trim()}` : "—"],
       ];
       const menuWs = XLSX.utils.aoa_to_sheet(menuData);
-      XLSX.utils.book_append_sheet(wb, menuWs, "メニュー");
+      XLSX.utils.book_append_sheet(wb, menuWs, t("export.menuSheet"));
 
       // タイム記録シート
       const timeData = [headers, ...rows];
       const timeWs = XLSX.utils.aoa_to_sheet(timeData);
-      XLSX.utils.book_append_sheet(wb, timeWs, "タイム記録");
+      XLSX.utils.book_append_sheet(wb, timeWs, t("export.timeRecord"));
 
       const wbout = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
       const fileName = `タイム記録_${getDateString()}.xlsx`;
@@ -139,7 +142,7 @@ export const ExportSheet: React.FC = () => {
         mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
     } catch (err) {
-      Alert.alert("エラー", "Excel出力に失敗しました");
+      Alert.alert(t("common.error"), t("export.excelError"));
       console.error("Excel export error:", err);
     } finally {
       setExporting(false);
@@ -161,8 +164,8 @@ export const ExportSheet: React.FC = () => {
           <Text style={styles.exportMenuTitle}>{menu.description}</Text>
           <View style={styles.exportMenuRow}>
             <Text style={styles.exportMenuTag}>{menu.distance}m</Text>
-            <Text style={styles.exportMenuTag}>{menu.repCount}本</Text>
-            <Text style={styles.exportMenuTag}>{menu.setCount}セット</Text>
+            <Text style={styles.exportMenuTag}>{menu.repCount}{t("result.repShort")}</Text>
+            <Text style={styles.exportMenuTag}>{menu.setCount}{t("result.set")}</Text>
             {circleLabel && <Text style={styles.exportMenuTag}>{circleLabel}</Text>}
           </View>
 
@@ -180,7 +183,7 @@ export const ExportSheet: React.FC = () => {
                       s > 0 && styles.exportSetBorder,
                     ]}
                   >
-                    <Text style={styles.exportSetText}>{s + 1}セット目</Text>
+                    <Text style={styles.exportSetText}>{s + 1}{t("result.set")}</Text>
                   </View>
                 ))}
                 <View style={{ width: STAT_WIDTH * 3 }} />
@@ -189,10 +192,10 @@ export const ExportSheet: React.FC = () => {
             {/* Column headers */}
             <View style={[styles.exportRow, styles.exportHeaderRow]}>
               <View style={{ width: NAME_WIDTH, alignItems: "center" }}>
-                <Text style={styles.exportHeaderText}>名前</Text>
+                <Text style={styles.exportHeaderText}>{t("result.name")}</Text>
               </View>
               <View style={{ width: STYLE_WIDTH, alignItems: "center" }}>
-                <Text style={styles.exportHeaderText}>種目</Text>
+                <Text style={styles.exportHeaderText}>{t("result.style")}</Text>
               </View>
               {Array.from({ length: maxTimes }, (_, i) => {
                 const isSetStart = i > 0 && i % repCount === 0;
@@ -204,18 +207,18 @@ export const ExportSheet: React.FC = () => {
                       isSetStart && styles.exportSetBorder,
                     ]}
                   >
-                    <Text style={styles.exportHeaderText}>{(i % repCount) + 1}本</Text>
+                    <Text style={styles.exportHeaderText}>{(i % repCount) + 1}{t("result.repShort")}</Text>
                   </View>
                 );
               })}
               <View style={{ width: STAT_WIDTH, alignItems: "center" }}>
-                <Text style={styles.exportHeaderText}>平均</Text>
+                <Text style={styles.exportHeaderText}>{t("result.average")}</Text>
               </View>
               <View style={{ width: STAT_WIDTH, alignItems: "center" }}>
-                <Text style={styles.exportHeaderText}>最速</Text>
+                <Text style={styles.exportHeaderText}>{t("result.fastest")}</Text>
               </View>
               <View style={{ width: STAT_WIDTH, alignItems: "center" }}>
-                <Text style={styles.exportHeaderText}>最遅</Text>
+                <Text style={styles.exportHeaderText}>{t("result.slowest")}</Text>
               </View>
             </View>
 
@@ -228,7 +231,7 @@ export const ExportSheet: React.FC = () => {
 
               return (
                 <View key={swimmer.no} style={[styles.exportRow, styles.exportDataRow]}>
-                  <View style={{ width: NAME_WIDTH, paddingHorizontal: 4 }}>
+                  <View style={{ width: NAME_WIDTH, paddingHorizontal: spacing.xs }}>
                     <Text style={styles.exportCellText} numberOfLines={1}>
                       {swimmer.name || "—"}
                     </Text>
@@ -285,16 +288,16 @@ export const ExportSheet: React.FC = () => {
       </View>
 
       {/* Buttons */}
-      <Text style={styles.title}>エクスポート</Text>
+      <Text style={styles.title}>{t("export.title")}</Text>
       <TouchableOpacity
-        style={[styles.button, styles.imageButton, { marginBottom: 8 }]}
+        style={[styles.button, styles.imageButton, { marginBottom: spacing.sm }]}
         onPress={exportImage}
         disabled={exporting}
       >
         {exporting ? (
-          <ActivityIndicator size="small" color="#ffffff" />
+          <ActivityIndicator size="small" color={colors.white} />
         ) : (
-          <Text style={styles.buttonText}>画像として出力</Text>
+          <Text style={styles.buttonText}>{t("export.imageButton")}</Text>
         )}
       </TouchableOpacity>
       <View style={styles.buttonRow}>
@@ -304,7 +307,7 @@ export const ExportSheet: React.FC = () => {
           disabled={exporting}
         >
           {exporting ? (
-            <ActivityIndicator size="small" color="#ffffff" />
+            <ActivityIndicator size="small" color={colors.white} />
           ) : (
             <Text style={styles.buttonText}>CSV</Text>
           )}
@@ -315,7 +318,7 @@ export const ExportSheet: React.FC = () => {
           disabled={exporting}
         >
           {exporting ? (
-            <ActivityIndicator size="small" color="#ffffff" />
+            <ActivityIndicator size="small" color={colors.white} />
           ) : (
             <Text style={styles.buttonText}>Excel</Text>
           )}
@@ -327,37 +330,37 @@ export const ExportSheet: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 16,
+    marginTop: spacing.lg,
   },
   title: {
-    fontSize: 16,
+    fontSize: fontSize.lg,
     fontWeight: "bold",
-    color: "#374151",
-    marginBottom: 8,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
   },
   buttonRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: spacing.md,
   },
   button: {
     flex: 1,
     height: 44,
-    borderRadius: 8,
+    borderRadius: radius.md,
     justifyContent: "center",
     alignItems: "center",
   },
   imageButton: {
-    backgroundColor: "#7C3AED",
+    backgroundColor: colors.violet,
   },
   csvButton: {
-    backgroundColor: "#059669",
+    backgroundColor: colors.green,
   },
   excelButton: {
-    backgroundColor: "#2563EB",
+    backgroundColor: colors.primary,
   },
   buttonText: {
-    color: "#ffffff",
-    fontSize: 15,
+    color: colors.white,
+    fontSize: fontSize.base,
     fontWeight: "600",
   },
 
@@ -368,35 +371,35 @@ const styles = StyleSheet.create({
     top: 0,
   },
   exportRoot: {
-    backgroundColor: "#ffffff",
-    padding: 16,
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
   },
   exportMenuTitle: {
-    fontSize: 14,
+    fontSize: fontSize.md,
     fontWeight: "bold",
-    color: "#374151",
-    marginBottom: 4,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
   },
   exportMenuRow: {
     flexDirection: "row",
-    gap: 8,
-    marginBottom: 12,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
   exportMenuTag: {
     fontSize: 11,
-    color: "#6B7280",
-    backgroundColor: "#F3F4F6",
+    color: colors.muted,
+    backgroundColor: colors.surfaceRaised,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: radius.xs,
     overflow: "hidden",
   },
 
   // Export table
   exportTable: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 6,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
     overflow: "hidden",
   },
   exportRow: {
@@ -405,48 +408,48 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   exportHeaderRow: {
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.surfaceRaised,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: colors.border,
   },
   exportDataRow: {
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    borderBottomColor: colors.surfaceRaised,
   },
   exportHeaderText: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: "600",
-    color: "#6B7280",
+    color: colors.muted,
   },
   exportCellText: {
     fontSize: 11,
-    color: "#374151",
+    color: colors.textSecondary,
   },
   exportStyleText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#2563EB",
+    color: colors.primary,
   },
   exportFastest: {
-    color: "#2563EB",
+    color: colors.primary,
     fontWeight: "bold",
   },
   exportSlowest: {
-    color: "#DC2626",
+    color: colors.destructive,
     fontWeight: "bold",
   },
   exportSetBorder: {
     borderLeftWidth: 1,
-    borderLeftColor: "#D1D5DB",
+    borderLeftColor: colors.borderLight,
   },
   exportSetText: {
-    fontSize: 9,
-    color: "#9CA3AF",
+    fontSize: fontSize.xxs,
+    color: colors.mutedLight,
     fontWeight: "600",
   },
   exportWatermark: {
-    fontSize: 9,
-    color: "#D1D5DB",
+    fontSize: fontSize.xxs,
+    color: colors.borderLight,
     textAlign: "right",
     marginTop: 6,
   },
