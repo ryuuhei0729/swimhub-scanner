@@ -322,6 +322,9 @@ const ja = {
     restoreEmptyMessage: "復元可能な購入が見つかりませんでした。",
     restoreFailed: "購入情報の復元に失敗しました。",
     alreadyPremium: "すでに Premium プランです",
+    cancelNote: "サブスクリプションはいつでもキャンセルできます。\nApp Store の設定から管理できます。",
+    termsLink: "利用規約",
+    privacyLink: "プライバシーポリシー",
   },
   upgrade: {
     limitReached: "今日の利用回数に達しました（{{count}}回使用済み）",
@@ -355,6 +358,9 @@ const ja = {
     logoutTitle: "ログアウト",
     logoutConfirm: "ログアウトしますか？",
     logoutFailed: "ログアウトに失敗しました",
+    manageSubscription: "サブスクリプションを管理",
+    termsLink: "利用規約",
+    privacyLink: "プライバシーポリシー",
   },
   strokes: {
     Fr: "Fr (自由形)",

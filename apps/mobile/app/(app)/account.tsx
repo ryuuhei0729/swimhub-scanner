@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, StyleSheet, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
@@ -230,6 +230,31 @@ export default function AccountScreen() {
           <Text style={styles.deleteWarning}>{t("auth.deleteAccountWarning")}</Text>
         </View>
 
+        {/* サブスクリプション管理 */}
+        <TouchableOpacity
+          style={styles.manageSubButton}
+          onPress={() => Linking.openURL("https://apps.apple.com/account/subscriptions")}
+        >
+          <Text style={styles.manageSubText}>{t("accountScreen.manageSubscription")}</Text>
+        </TouchableOpacity>
+
+        {/* 利用規約・プライバシーポリシー */}
+        <View style={styles.legalLinks}>
+          <Text
+            style={styles.legalLink}
+            onPress={() => Linking.openURL("https://scanner.swim-hub.app/terms")}
+          >
+            {t("accountScreen.termsLink")}
+          </Text>
+          <Text style={styles.legalDivider}> | </Text>
+          <Text
+            style={styles.legalLink}
+            onPress={() => Linking.openURL("https://scanner.swim-hub.app/privacy")}
+          >
+            {t("accountScreen.privacyLink")}
+          </Text>
+        </View>
+
         {/* アプリ情報 */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>SwimHub Scanner v{appVersion}</Text>
@@ -373,6 +398,31 @@ const styles = StyleSheet.create({
     color: colors.mutedLight,
     textAlign: "center",
     marginTop: spacing.sm,
+  },
+  manageSubButton: {
+    alignItems: "center",
+    paddingVertical: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  manageSubText: {
+    color: colors.primary,
+    fontSize: fontSize.sm,
+    fontWeight: "500",
+  },
+  legalLinks: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: spacing.xl,
+  },
+  legalLink: {
+    fontSize: fontSize.sm,
+    color: colors.primary,
+    fontWeight: "500",
+  },
+  legalDivider: {
+    fontSize: fontSize.sm,
+    color: colors.muted,
   },
   footer: {
     alignItems: "center",

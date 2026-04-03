@@ -324,6 +324,9 @@ const en: TranslationShape = {
     restoreEmptyMessage: "No restorable purchases found.",
     restoreFailed: "Failed to restore purchases.",
     alreadyPremium: "You are already on the Premium plan",
+    cancelNote: "You can cancel your subscription anytime.\nManage it in your App Store settings.",
+    termsLink: "Terms of Use",
+    privacyLink: "Privacy Policy",
   },
   upgrade: {
     limitReached: "You've reached today's limit ({{count}} scans used)",
@@ -357,6 +360,9 @@ const en: TranslationShape = {
     logoutTitle: "Log Out",
     logoutConfirm: "Are you sure you want to log out?",
     logoutFailed: "Failed to log out",
+    manageSubscription: "Manage Subscription",
+    termsLink: "Terms of Use",
+    privacyLink: "Privacy Policy",
   },
   strokes: {
     Fr: "Fr (Freestyle)",
