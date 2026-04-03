@@ -68,6 +68,11 @@ export default function ScannerScreen() {
 
   const { menu, swimmers, setResult, reset: resetResult } = useScanResultStore();
 
+  // Premium ユーザーかどうか（広告制御で使うため早めに定義）
+  const isPremium =
+    subscription?.plan === "premium" &&
+    (subscription?.status === "active" || subscription?.status === "trialing");
+
   const fetchStatus = useCallback(async () => {
     setStatusLoading(true);
     try {
@@ -104,9 +109,9 @@ export default function ScannerScreen() {
     fetchStatus();
   }, [fetchStatus]);
 
-  // Preload ad when user selects an image
+  // Preload ad when user selects an image (premium users skip ads)
   useEffect(() => {
-    if (!imageBase64) return;
+    if (!imageBase64 || isPremium) return;
 
     const controller = createRewardedAdController();
     if (!controller) {
@@ -125,7 +130,7 @@ export default function ScannerScreen() {
       unsubscribe();
       controller.dispose();
     };
-  }, [imageBase64]);
+  }, [imageBase64, isPremium]);
 
   const pickImage = async (useCamera: boolean) => {
     setError(null);
@@ -202,15 +207,17 @@ export default function ScannerScreen() {
         await recordGuestScan();
       }
 
-      // --- 解析成功: 結果表示前に広告を表示 ---
-      const controller = adControllerRef.current;
-      if (controller && !adUnavailable) {
-        const currentState = controller.getState();
-        if (currentState === "loaded") {
-          try {
-            await controller.show();
-          } catch {
-            // 広告表示失敗は無視して結果表示へ
+      // --- 解析成功: 結果表示前に広告を表示（premium は広告なし） ---
+      if (!isPremium) {
+        const controller = adControllerRef.current;
+        if (controller && !adUnavailable) {
+          const currentState = controller.getState();
+          if (currentState === "loaded") {
+            try {
+              await controller.show();
+            } catch {
+              // 広告表示失敗は無視して結果表示へ
+            }
           }
         }
       }
@@ -300,11 +307,6 @@ export default function ScannerScreen() {
       ]);
     }
   };
-
-  // Premium ユーザーかどうか
-  const isPremium =
-    subscription?.plan === "premium" &&
-    (subscription?.status === "active" || subscription?.status === "trialing");
 
   // canScan の判定
   const canScan = (() => {

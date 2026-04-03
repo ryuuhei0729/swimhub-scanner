@@ -1,4 +1,5 @@
 import type { SubscriptionStatus } from "./auth";
+export type { SubscriptionStatus } from "./auth";
 
 // === Scan Timesheet API ===
 
