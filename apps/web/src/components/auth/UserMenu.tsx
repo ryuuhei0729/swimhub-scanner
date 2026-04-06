@@ -59,7 +59,7 @@ export function UserMenu() {
     );
   }
 
-  const displayName = user.user_metadata?.full_name ?? user.email;
+  const displayName = user.user_metadata?.name || user.user_metadata?.full_name || user.email;
 
   return (
     <div className="relative z-50" ref={menuRef}>

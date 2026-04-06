@@ -45,7 +45,7 @@ type Step = "idle" | "scanning" | "result";
 
 export default function ScannerScreen() {
   const { t } = useTranslation();
-  const { isGuest, isAuthenticated, subscription } = useAuth();
+  const { user, isGuest, isAuthenticated, subscription } = useAuth();
   const router = useRouter();
 
   const [step, setStep] = useState<Step>("idle");
@@ -418,7 +418,9 @@ export default function ScannerScreen() {
               onPress={() => router.push("/(app)/account")}
             >
               <Ionicons name="person-circle" size={18} color={colors.primary} />
-              <Text style={styles.accountChipText}>{t("scanner.account")}</Text>
+              <Text style={styles.accountChipText} numberOfLines={1}>
+                {user?.user_metadata?.name || user?.email || t("scanner.account")}
+              </Text>
             </Pressable>
           ) : (
             <View style={styles.guestBar}>
@@ -655,6 +657,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: "600",
     color: colors.primary,
+    flexShrink: 1,
   },
   guestBar: {
     flexDirection: "row",
