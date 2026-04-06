@@ -40,6 +40,7 @@ import {
   type RewardedAdController,
 } from "@/lib/ads/rewarded-ad";
 import { colors, spacing, radius, fontSize } from "@/theme";
+import { UsageIndicator } from "@/components/plan/UsageIndicator";
 
 type Step = "idle" | "scanning" | "result";
 
@@ -438,20 +439,20 @@ export default function ScannerScreen() {
 
         {/* Main card */}
         <View style={styles.card}>
-          {/* Status badge */}
+          {/* Usage indicator */}
           {!statusLoading && (
-            <View style={styles.statusBar}>
-              {isPremium ? (
-                <View style={styles.premiumBadge}>
-                  <Feather name="zap" size={14} color={colors.warningIcon} />
-                  <Text style={styles.premiumBadgeText}>Premium</Text>
-                </View>
-              ) : isGuest ? (
-                <Text style={styles.statusText}>{t("scanner.remainingCount", { count: guestRemaining })}</Text>
-              ) : userStatus && displayTokens !== null ? (
-                <Text style={styles.statusText}>{t("scanner.remainingCountShort", { count: displayTokens })}</Text>
-              ) : null}
-            </View>
+            <UsageIndicator
+              plan={isPremium ? "premium" : isGuest ? "guest" : "free"}
+              remaining={displayTokens}
+              dailyLimit={isPremium ? null : (PLAN_LIMITS[isGuest ? "guest" : "free"].dailyScanLimit ?? 1)}
+              onUpsellPress={() => {
+                if (isGuest) {
+                  router.push("/(app)/guest-signup");
+                } else {
+                  router.push("/(app)/paywall");
+                }
+              }}
+            />
           )}
 
           {imageUri ? (
@@ -740,29 +741,6 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: fontSize.base,
     fontWeight: "600",
-  },
-  statusBar: {
-    backgroundColor: colors.background,
-    borderRadius: radius.md,
-    paddingVertical: 6,
-    paddingHorizontal: spacing.md,
-  },
-  statusText: {
-    fontSize: fontSize.sm,
-    color: colors.primaryDeep,
-    textAlign: "center",
-    fontWeight: "500",
-  },
-  premiumBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.xs,
-  },
-  premiumBadgeText: {
-    fontSize: fontSize.sm,
-    fontWeight: "bold",
-    color: colors.amber,
   },
   errorContainer: {
     backgroundColor: colors.errorBackground,

@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthProvider";
 import { deleteAccount, ApiError } from "@/lib/api-client";
 import { restorePurchases } from "@/lib/revenucat";
 import { colors, spacing, radius, fontSize } from "@/theme";
+import { PlanFeatureList } from "@/components/plan/PlanFeatureList";
 
 export default function AccountScreen() {
   const { t } = useTranslation();
@@ -179,6 +180,8 @@ export default function AccountScreen() {
               </>
             ) : (
               <>
+                <PlanFeatureList currentPlan="free" />
+                <View style={styles.divider} />
                 <Text style={styles.upgradePrompt}>
                   {t("accountScreen.upgradePrompt")}
                 </Text>
