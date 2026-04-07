@@ -22,7 +22,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { getUserStatus, scanTimesheet, guestScanTimesheet, ApiError } from "@/lib/api-client";
 import { canGuestScanToday, recordGuestScan, getGuestTodayCount } from "@/lib/guest-daily-limit";
-import { PLAN_LIMITS } from "@swimhub-scanner/shared";
+import { PLAN_LIMITS, checkIsPremium } from "@swimhub-scanner/shared";
 import { useAuth } from "@/contexts/AuthProvider";
 import { useScanResultStore } from "@/stores/scanResultStore";
 import { shareTimesheetPdf, shareTimesheetImage } from "@/lib/timesheet-print";
@@ -70,9 +70,7 @@ export default function ScannerScreen() {
   const { menu, swimmers, setResult, reset: resetResult } = useScanResultStore();
 
   // Premium ユーザーかどうか（広告制御で使うため早めに定義）
-  const isPremium =
-    subscription?.plan === "premium" &&
-    (subscription?.status === "active" || subscription?.status === "trialing");
+  const isPremium = checkIsPremium(subscription);
 
   const fetchStatus = useCallback(async () => {
     setStatusLoading(true);

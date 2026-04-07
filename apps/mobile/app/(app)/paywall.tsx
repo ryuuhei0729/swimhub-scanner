@@ -20,6 +20,7 @@ import type { PurchasesPackage } from "react-native-purchases";
 import { useTranslation } from "react-i18next";
 import { getOfferings, purchasePackage, restorePurchases } from "@/lib/revenucat";
 import { useAuth } from "@/contexts/AuthProvider";
+import { checkIsPremium } from "@swimhub-scanner/shared";
 import { PlanComparisonTable } from "@/components/plan/PlanComparisonTable";
 
 type BillingPeriod = "monthly" | "annual";
@@ -132,6 +133,21 @@ export default function PaywallScreen() {
       <SafeAreaView style={styles.container} edges={["bottom"]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#2563EB" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // すでに Premium
+  const isPremium = checkIsPremium(subscription);
+  if (isPremium) {
+    return (
+      <SafeAreaView style={styles.container} edges={["bottom"]}>
+        <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
+          <Feather name="x" size={24} color="#374151" />
+        </TouchableOpacity>
+        <View style={styles.loadingContainer}>
+          <Text style={{ fontSize: 16, color: "#374151" }}>{t("paywall.alreadyPremium")}</Text>
         </View>
       </SafeAreaView>
     );

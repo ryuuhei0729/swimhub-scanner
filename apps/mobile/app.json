@@ -49,7 +49,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.swim-hub.scanner",
-      "buildNumber": "26",
+      "buildNumber": "28",
       "usesAppleSignIn": true,
       "infoPlist": {
         "NSCameraUsageDescription": "タイム記録表を撮影するためにカメラを使用します",
@@ -63,7 +63,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "app.swimhub.scanner",
-      "versionCode": 19,
+      "versionCode": 20,
       "permissions": ["android.permission.CAMERA"]
     },
     "extra": {

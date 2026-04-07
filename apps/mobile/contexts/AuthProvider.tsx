@@ -43,30 +43,6 @@ async function migrateGuestTokens(accessToken: string): Promise<void> {
   }
 }
 
-/**
- * Supabase の user_subscriptions テーブルからサブスクリプション情報を取得する
- */
-async function fetchSubscriptionFromDB(accessToken: string): Promise<SubscriptionInfo | null> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/user/status`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    // UserStatusResponse から SubscriptionInfo を構築
-    return {
-      plan: data.plan === "premium" ? "premium" : "free",
-      status: data.subscriptionStatus ?? null,
-      cancelAtPeriodEnd: false,
-      premiumExpiresAt: data.premiumExpiresAt ?? null,
-      trialEnd: null,
-    };
-  } catch (err) {
-    console.error("サブスクリプション情報の取得に失敗:", err);
-    return null;
-  }
-}
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, session, loading } = useAuthState(supabase);
   const [isGuest, setIsGuest] = useState(false);
@@ -109,40 +85,80 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initRevenueCat();
   }, []);
 
+  // Supabase の user_subscriptions テーブルからサブスクリプション情報を直接取得する
+  // API 経由だと Bearer token の有効期限切れで 401 になる問題があったため、
+  // Supabase クライアントを直接使う（token refresh が内蔵されている）
+  const fetchSubscription = useCallback(
+    async (userId: string): Promise<SubscriptionInfo | null> => {
+      if (!supabase) return null;
+      try {
+        const { data, error } = (await supabase
+          .from("user_subscriptions")
+          .select("plan, status, cancel_at_period_end, premium_expires_at, trial_end")
+          .eq("id", userId)
+          .single()) as {
+          data: {
+            plan: string;
+            status: string | null;
+            cancel_at_period_end: boolean | null;
+            premium_expires_at: string | null;
+            trial_end: string | null;
+          } | null;
+          error: unknown;
+        };
+        if (error || !data) return null;
+        return {
+          plan: data.plan as "free" | "premium",
+          status: data.status as SubscriptionInfo["status"],
+          cancelAtPeriodEnd: data.cancel_at_period_end ?? false,
+          premiumExpiresAt: data.premium_expires_at ?? null,
+          trialEnd: data.trial_end ?? null,
+        };
+      } catch {
+        return null;
+      }
+    },
+    [],
+  );
+
   // サブスクリプション情報を再取得する
   const refreshSubscription = useCallback(async () => {
-    if (!session?.access_token) {
+    if (!user?.id) {
       setSubscription(null);
       return;
     }
-    const sub = await fetchSubscriptionFromDB(session.access_token);
-    setSubscription(sub);
-  }, [session]);
+    const sub = await fetchSubscription(user.id);
+    if (sub !== null) setSubscription(sub);
+  }, [user, fetchSubscription]);
 
   // ユーザーログイン時: RevenueCat ログイン & サブスクリプション取得
   useEffect(() => {
-    if (user && session?.access_token) {
+    if (user) {
       loginRevenueCat(user.id);
-      fetchSubscriptionFromDB(session.access_token).then(setSubscription);
+      fetchSubscription(user.id).then((sub) => {
+        if (sub !== null) setSubscription(sub);
+      });
     } else {
       setSubscription(null);
     }
-  }, [user, session]);
+  }, [user, fetchSubscription]);
 
   // RevenueCat の顧客情報変更リスナー: 購入/更新時にサブスクリプションを再取得
   useEffect(() => {
-    if (!user || !session?.access_token) return;
+    if (!user) return;
 
     const removeListener = addCustomerInfoListener(() => {
       // RevenueCat 側で変更があった → Supabase からサブスクリプション情報を再取得
       // (RevenueCat Webhook が user_subscriptions を更新するため)
-      if (session?.access_token) {
-        fetchSubscriptionFromDB(session.access_token).then(setSubscription);
+      if (user?.id) {
+        fetchSubscription(user.id).then((sub) => {
+          if (sub !== null) setSubscription(sub);
+        });
       }
     });
 
     return removeListener;
-  }, [user, session]);
+  }, [user, fetchSubscription]);
 
   // ゲストからログインした場合、トークンを引き継ぎ＆ゲストモード解除
   useEffect(() => {
@@ -193,33 +209,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { error: new Error("Supabaseクライアントが初期化されていません") };
     }
     try {
-      // 即座にローディング画面を表示
       setTransitioning(true);
 
-      // RevenueCat からログアウト
       await logoutRevenueCat();
 
       const { error } = await supabase.auth.signOut();
       if (error) {
-        return { error };
+        await supabase.auth.signOut({ scope: "local" });
       }
-
-      // サブスクリプション情報をクリア
+    } catch {
+      try {
+        await supabase.auth.signOut({ scope: "local" });
+      } catch (localError) {
+        console.error("Sign out error:", localError);
+        return { error: localError as Error };
+      }
+    } finally {
       setSubscription(null);
 
-      // Zustand ストアをリセット
       try {
         const { useScanResultStore } = await import("@/stores/scanResultStore");
         useScanResultStore.getState().reset();
       } catch {
         // ストアがまだ読み込まれていない場合は無視
       }
-
-      return { error: null };
-    } catch (error) {
-      console.error("Sign out error:", error);
-      return { error: error as Error };
     }
+    return { error: null };
   }, []);
 
   const enterGuestMode = useCallback(() => {

@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthProvider";
+import { checkIsPremium } from "@swimhub-scanner/shared";
 import { deleteAccount, ApiError } from "@/lib/api-client";
 import { restorePurchases } from "@/lib/revenucat";
 import { colors, spacing, radius, fontSize } from "@/theme";
@@ -17,9 +18,7 @@ export default function AccountScreen() {
   const [deleting, setDeleting] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
-  const isPremium =
-    subscription?.plan === "premium" &&
-    (subscription?.status === "active" || subscription?.status === "trialing");
+  const isPremium = checkIsPremium(subscription);
 
   // トライアル残日数を計算
   const trialDaysRemaining = (() => {
