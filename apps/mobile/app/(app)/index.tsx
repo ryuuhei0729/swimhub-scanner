@@ -433,6 +433,8 @@ export default function ScannerScreen() {
                 <Text style={styles.loginChipText}>{t("common.login")}</Text>
                 <Ionicons name="arrow-forward" size={14} color={colors.white} />
               </Pressable>
+              <Text style={styles.guestHint}>{t("scanner.guestLimitHint")}</Text>
+              <Text style={styles.guestHintSub}>{t("scanner.registerUnlockHint")}</Text>
             </View>
           )}
         </View>
@@ -661,14 +663,23 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   guestBar: {
-    flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: spacing.sm,
     marginTop: spacing.lg,
   },
   guestLabel: {
     fontSize: 13,
     color: colors.mutedLight,
+    fontWeight: "500",
+  },
+  guestHint: {
+    fontSize: 12,
+    color: colors.muted,
+    marginTop: spacing.xs,
+  },
+  guestHintSub: {
+    fontSize: 12,
+    color: colors.primary,
     fontWeight: "500",
   },
   loginChip: {

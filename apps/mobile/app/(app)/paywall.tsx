@@ -27,7 +27,7 @@ type BillingPeriod = "monthly" | "annual";
 export default function PaywallScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { subscription, refreshSubscription, isGuest } = useAuth();
+  const { subscription, refreshSubscription, isGuest, isAuthenticated } = useAuth();
 
   const [loadingOfferings, setLoadingOfferings] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
@@ -165,7 +165,7 @@ export default function PaywallScreen() {
         {/* プラン比較表 */}
         <View style={styles.comparisonSection}>
           <PlanComparisonTable
-            currentPlan={isGuest ? "guest" : (subscription?.plan ?? "free") as "guest" | "free" | "premium"}
+            currentPlan={isGuest || !isAuthenticated ? "guest" : (subscription?.plan ?? "free") as "guest" | "free" | "premium"}
           />
         </View>
 

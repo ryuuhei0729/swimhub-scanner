@@ -49,7 +49,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.swim-hub.scanner",
-      "buildNumber": "25",
+      "buildNumber": "26",
       "usesAppleSignIn": true,
       "infoPlist": {
         "NSCameraUsageDescription": "タイム記録表を撮影するためにカメラを使用します",

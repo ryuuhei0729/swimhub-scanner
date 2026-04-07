@@ -32,12 +32,6 @@ const FEATURE_ROWS: FeatureRow[] = [
     premium: "planComparison.swimmerCountPremium",
   },
   {
-    labelKey: "planComparison.featureHistory",
-    guest: false,
-    free: true,
-    premium: true,
-  },
-  {
     labelKey: "planComparison.featureAds",
     guest: true,
     free: true,

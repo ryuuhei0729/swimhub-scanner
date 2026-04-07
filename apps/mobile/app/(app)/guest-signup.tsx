@@ -1,8 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet, Linking, Image } from "react-native";
+import { View, Text, StyleSheet, Linking, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { useAppleAuth } from "@/hooks/useAppleAuth";
@@ -11,7 +9,6 @@ import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 
 export default function GuestSignupScreen() {
   const { t } = useTranslation();
-  const router = useRouter();
   const {
     signInWithGoogle,
     loading: googleLoading,
@@ -45,17 +42,6 @@ export default function GuestSignupScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "left", "right", "bottom"]}>
-      <View style={styles.header}>
-        <Pressable
-          style={styles.backButton}
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel={t("common.back")}
-        >
-          <Feather name="arrow-left" size={24} color="#111827" />
-        </Pressable>
-      </View>
-
       <View style={styles.content}>
         <View style={styles.titleContainer}>
           <Image source={require("@/assets/icon.png")} style={styles.appIcon} />
@@ -117,15 +103,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#EFF6FF",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  backButton: {
-    padding: 8,
   },
   content: {
     flex: 1,

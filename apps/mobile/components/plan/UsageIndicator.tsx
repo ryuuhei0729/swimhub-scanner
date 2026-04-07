@@ -70,7 +70,6 @@ export function UsageIndicator({
 
       <TouchableOpacity style={styles.upsellButton} onPress={onUpsellPress}>
         <Text style={styles.upsellText}>{upsellLabel}</Text>
-        <Feather name="arrow-right" size={12} color={colors.primary} />
       </TouchableOpacity>
     </View>
   );
