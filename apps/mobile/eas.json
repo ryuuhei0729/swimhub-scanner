@@ -8,7 +8,7 @@
       "ios": {
         "simulator": false,
         "buildConfiguration": "Release",
-        "image": "sdk-54"
+        "image": "sdk-55"
       },
       "android": {
         "buildType": "app-bundle"
