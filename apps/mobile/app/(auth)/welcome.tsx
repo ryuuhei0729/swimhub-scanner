@@ -47,7 +47,7 @@ export default function WelcomeScreen() {
           style={({ pressed }) => [styles.guestButton, pressed && styles.guestButtonPressed]}
           onPress={enterGuestMode}
           accessibilityRole="button"
-          accessibilityLabel={t("auth.guestMode")}
+          accessibilityLabel={t("auth.guestModeWithLimit", { limit: PLAN_LIMITS.guest.dailyScanLimit })}
         >
           <Text style={styles.guestButtonText}>
             {t("auth.guestModeWithLimit", { limit: PLAN_LIMITS.guest.dailyScanLimit })}

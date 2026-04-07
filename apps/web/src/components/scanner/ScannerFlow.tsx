@@ -180,7 +180,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
 
   return (
     <PullToRefresh onRefresh={handleRefresh} disabled={step === "scanning"}>
-      <div className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
+      <div className={`mx-auto w-full space-y-6 p-4 sm:p-6 ${step === "result" ? "max-w-6xl" : "max-w-xl"}`}>
         {/* Hero */}
         {step === "upload" && (
           <div className="flex flex-col items-center gap-1 text-center">

@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
+import { PLAN_LIMITS } from "@swimhub-scanner/shared";
 
 export function LoginForm() {
   const { signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail, enterGuestMode } =
@@ -297,7 +298,7 @@ export function LoginForm() {
             }}
             className="w-full py-3 px-4 rounded-lg text-sm font-medium text-gray-500 border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"
           >
-            {t("auth.guestMode")}
+            {t("auth.guestModeWithLimit", { limit: PLAN_LIMITS.guest.dailyScanLimit })}
           </button>
 
           <div className="text-center">

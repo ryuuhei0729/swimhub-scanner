@@ -45,7 +45,6 @@ const en: TranslationShape = {
     googleSignUp: "Sign up with Google",
     appleLogin: "Login with Apple",
     appleSignUp: "Sign up with Apple",
-    guestMode: "Try without login (3 free scans)",
     guestModeWithLimit: "Try without login ({{limit}} free scans/day)",
     hasAccount: "Already have an account? Log in here",
     noAccount: "Don't have an account?",

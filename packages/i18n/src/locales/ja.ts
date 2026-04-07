@@ -43,7 +43,6 @@ const ja = {
     googleSignUp: "Google でサインアップ",
     appleLogin: "Apple でログイン",
     appleSignUp: "Apple でサインアップ",
-    guestMode: "ログインせずに試す（無料3回）",
     guestModeWithLimit: "ログインせずに試す（1日{{limit}}回無料）",
     hasAccount: "すでにアカウントをお持ちの方はこちら",
     noAccount: "アカウントをお持ちでない方はこちら",
