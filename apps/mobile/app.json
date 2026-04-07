@@ -27,10 +27,12 @@
         "expo-build-properties",
         {
           "ios": {
-            "useFrameworks": "static"
+            "useFrameworks": "static",
+            "buildReactNativeFromSource": true
           }
         }
       ],
+      "./plugins/ios/withFmtFix",
       [
         "react-native-google-mobile-ads",
         {
