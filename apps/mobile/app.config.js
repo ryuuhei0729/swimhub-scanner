@@ -15,6 +15,7 @@ module.exports = {
   icon: "./assets/icon.png",
   userInterfaceStyle: "light",
   plugins: [
+    "./plugins/fix-fmt-consteval",
     "expo-router",
     "expo-apple-authentication",
     "expo-web-browser",
