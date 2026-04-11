@@ -1,4 +1,4 @@
-import "./types/i18next";
+/// <reference path="./types/i18next.d.ts" />
 
 export { supportedLocales, defaultLocale, i18nResources, getI18nOptions } from "./config";
 export type { SupportedLocale } from "./config";
