@@ -23,7 +23,9 @@ export function PullToRefresh({ onRefresh, disabled = false, children }: PullToR
       {/* Pull indicator */}
       <div
         className="flex items-center justify-center overflow-hidden transition-[height] duration-200 ease-out"
-        style={{ height: showIndicator ? `${Math.max(pullDistance, isRefreshing ? 48 : 0)}px` : "0px" }}
+        style={{
+          height: showIndicator ? `${Math.max(pullDistance, isRefreshing ? 48 : 0)}px` : "0px",
+        }}
       >
         <div
           className="transition-transform duration-200"
@@ -33,13 +35,13 @@ export function PullToRefresh({ onRefresh, disabled = false, children }: PullToR
         >
           {isRefreshing ? (
             <div
-              className="h-6 w-6 animate-spin rounded-full border-3 border-gray-200 border-t-blue-600"
+              className="h-6 w-6 animate-spin rounded-full border-3 border-border border-t-primary"
               role="status"
               aria-label="更新中"
             />
           ) : (
             <svg
-              className={`h-6 w-6 ${isReady ? "text-blue-600" : "text-gray-400"}`}
+              className={`h-6 w-6 ${isReady ? "text-primary" : "text-muted-foreground"}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"

@@ -1,16 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, useParams } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
+import { PLAN_LIMITS } from "@swimhub-scanner/shared";
 
 export function LoginForm() {
-  const { signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail } = useAuth();
+  const { signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail, enterGuestMode } =
+    useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useParams();
+  const locale = (params.locale as string) || "ja";
   const [error, setError] = useState<string | null>(
-    searchParams.get("error") ? "ログインに失敗しました。もう一度お試しください。" : null,
+    searchParams.get("error") ? t("auth.loginFailed") : null,
   );
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -24,8 +31,10 @@ export function LoginForm() {
       setError(null);
       await signInWithGoogle();
     } catch (err) {
-      setError("Googleログインに失敗しました。もう一度お試しください。");
-      console.error("Google sign-in error:", err);
+      setError(t("auth.googleLoginFailed"));
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Google sign-in error:", err);
+      }
       setLoading(false);
     }
   };
@@ -36,8 +45,10 @@ export function LoginForm() {
       setError(null);
       await signInWithApple();
     } catch (err) {
-      setError("Appleログインに失敗しました。もう一度お試しください。");
-      console.error("Apple sign-in error:", err);
+      setError(t("auth.appleLoginFailed"));
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Apple sign-in error:", err);
+      }
       setLoading(false);
     }
   };
@@ -52,22 +63,24 @@ export function LoginForm() {
         setEmailSent(true);
       } else {
         await signInWithEmail(email, password);
-        router.push("/");
+        router.push(`/${locale}`);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "";
       if (message.includes("Invalid login credentials")) {
-        setError("メールアドレスまたはパスワードが正しくありません。");
+        setError(t("auth.invalidCredentials"));
       } else if (message.includes("already registered")) {
-        setError("このメールアドレスは既に登録されています。ログインしてください。");
+        setError(t("auth.alreadyRegistered"));
       } else {
         setError(
           isSignUp
-            ? "アカウント作成に失敗しました。もう一度お試しください。"
-            : "メールログインに失敗しました。もう一度お試しください。",
+            ? t("auth.signUpFailed")
+            : t("auth.emailLoginFailed"),
         );
       }
-      console.error("Email auth error:", err);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Email auth error:", err);
+      }
     } finally {
       setLoading(false);
     }
@@ -76,19 +89,34 @@ export function LoginForm() {
   return (
     <div className="max-w-md w-full space-y-6 bg-white p-6 sm:p-8 md:p-10 rounded-2xl shadow-xl animate-fade-in">
       <div className="text-center">
+        <Image
+          src="/icon.png"
+          alt="SwimHub Scanner"
+          width={180}
+          height={180}
+          className="mx-auto mb-3"
+        />
         <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">
-          {isSignUp ? "アカウント作成" : "ログイン"}
+          {isSignUp ? t("auth.signUp") : t("auth.login")}
         </h2>
         <p className="text-xs sm:text-sm text-gray-600">
-          {isSignUp ? "新しいアカウントを作成" : "手書きタイム記録表をAIで自動デジタル化"}
+          {isSignUp ? t("auth.createAccount") : t("auth.tagline")}
         </p>
       </div>
 
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
           <div className="flex items-start">
-            <svg className="w-5 h-5 text-red-400 mt-0.5 mr-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            <svg
+              className="w-5 h-5 text-red-400 mt-0.5 mr-3 shrink-0"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                clipRule="evenodd"
+              />
             </svg>
             <div className="text-sm leading-relaxed">{error}</div>
           </div>
@@ -98,13 +126,21 @@ export function LoginForm() {
       {emailSent ? (
         <div className="p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">
           <div className="flex items-start">
-            <svg className="w-5 h-5 text-green-400 mt-0.5 mr-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            <svg
+              className="w-5 h-5 text-green-400 mt-0.5 mr-3 shrink-0"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clipRule="evenodd"
+              />
             </svg>
             <div>
-              <p className="font-medium">確認メールを送信しました</p>
+              <p className="font-medium">{t("auth.confirmEmailSent")}</p>
               <p className="mt-1 text-sm">
-                メール内のリンクをクリックして、アカウントを有効化してください。
+                {t("auth.confirmEmailDesc")}
               </p>
             </div>
           </div>
@@ -116,7 +152,7 @@ export function LoginForm() {
               setIsSignUp(false);
             }}
           >
-            ログイン画面に戻る
+            {t("auth.backToLogin")}
           </button>
         </div>
       ) : (
@@ -124,11 +160,16 @@ export function LoginForm() {
           <form onSubmit={handleEmailSubmit} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                メールアドレス
+                {t("auth.emailLabel")}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <svg
+                    className="h-5 w-5 text-gray-400"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
                     <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                     <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                   </svg>
@@ -147,12 +188,21 @@ export function LoginForm() {
             </div>
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                パスワード
+                {t("auth.passwordLabel")}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                  <svg
+                    className="h-5 w-5 text-gray-400"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </div>
                 <input
@@ -163,7 +213,7 @@ export function LoginForm() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-3 pr-3 transition duration-150 ease-in-out"
-                  placeholder="6文字以上"
+                  placeholder={t("auth.passwordPlaceholder")}
                   disabled={loading}
                 />
               </div>
@@ -173,7 +223,7 @@ export function LoginForm() {
               disabled={loading}
               className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform transition duration-150 ease-in-out hover:scale-[1.02] shadow-md"
             >
-              {loading ? "処理中..." : isSignUp ? "アカウント作成" : "メールでログイン"}
+              {loading ? t("common.processing") : isSignUp ? t("auth.signUp") : t("auth.emailLogin")}
             </button>
           </form>
 
@@ -183,7 +233,7 @@ export function LoginForm() {
               <div className="w-full border-t border-gray-300" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">または</span>
+              <span className="px-2 bg-white text-gray-500">{t("common.or")}</span>
             </div>
           </div>
 
@@ -213,7 +263,7 @@ export function LoginForm() {
                   fill="#EA4335"
                 />
               </svg>
-              Google で{isSignUp ? "サインアップ" : "ログイン"}
+              {isSignUp ? t("auth.googleSignUp") : t("auth.googleLogin")}
             </button>
 
             <button
@@ -225,9 +275,31 @@ export function LoginForm() {
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
               </svg>
-              Apple で{isSignUp ? "サインアップ" : "ログイン"}
+              {isSignUp ? t("auth.appleSignUp") : t("auth.appleLogin")}
             </button>
           </div>
+
+          {/* 区切り線 */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">{t("common.or")}</span>
+            </div>
+          </div>
+
+          {/* ゲストとして利用 */}
+          <button
+            type="button"
+            onClick={() => {
+              enterGuestMode();
+              router.replace(`/${locale}`);
+            }}
+            className="w-full py-3 px-4 rounded-lg text-sm font-medium text-gray-500 border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"
+          >
+            {t("auth.guestModeWithLimit", { limit: PLAN_LIMITS.guest.dailyScanLimit })}
+          </button>
 
           <div className="text-center">
             <button
@@ -239,23 +311,23 @@ export function LoginForm() {
               className="text-blue-600 hover:text-blue-800 text-sm font-medium transition duration-150 ease-in-out"
             >
               {isSignUp
-                ? "すでにアカウントをお持ちの方はこちら"
-                : "アカウントをお持ちでない方はこちら"}
+                ? t("auth.hasAccount")
+                : t("auth.noAccount")}
             </button>
           </div>
         </>
       )}
 
       <p className="text-center text-xs text-gray-500">
-        ログインすることで、
-        <Link href="/terms" className="text-blue-600 underline hover:text-blue-800">
-          利用規約
+        {t("auth.termsAgreement")}
+        <Link href={`/${locale}/terms`} className="text-blue-600 underline hover:text-blue-800">
+          {t("auth.terms")}
         </Link>
-        および
-        <Link href="/privacy" className="text-blue-600 underline hover:text-blue-800">
-          プライバシーポリシー
+        {t("auth.and")}
+        <Link href={`/${locale}/privacy`} className="text-blue-600 underline hover:text-blue-800">
+          {t("auth.privacy")}
         </Link>
-        に同意したものとします。
+        {t("auth.termsAgreementEnd")}
       </p>
     </div>
   );

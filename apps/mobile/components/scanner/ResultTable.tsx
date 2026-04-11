@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -9,35 +9,31 @@ import {
   Platform,
   Alert,
   StyleSheet,
-} from 'react-native'
-import { Feather } from '@expo/vector-icons'
-import { useTranslation } from 'react-i18next'
-import { useScanResultStore } from '@/stores/scanResultStore'
-import {
-  formatTime,
-  averageTime,
-  fastestTime,
-  slowestTime,
-} from '@swimhub-scanner/shared'
-import type { SwimStroke } from '@swimhub-scanner/shared'
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+import { useScanResultStore } from "@/stores/scanResultStore";
+import { formatTime, averageTime, fastestTime, slowestTime } from "@swimhub-scanner/shared";
+import type { SwimStroke } from "@swimhub-scanner/shared";
+import { colors, spacing, radius, fontSize } from "@/theme";
 
-const STROKES: SwimStroke[] = ['Fr', 'Br', 'Ba', 'Fly', 'IM']
-const STROKE_LABELS: Record<SwimStroke, string> = {
-  Fr: 'Fr (自由形)',
-  Br: 'Br (平泳ぎ)',
-  Ba: 'Ba (背泳ぎ)',
-  Fly: 'Fly (バタフライ)',
-  IM: 'IM (個人メドレー)',
-}
+const STROKES: SwimStroke[] = ["Fr", "Br", "Ba", "Fly", "IM"];
 
 interface EditingCell {
-  swimmerNo: number
-  field: 'name' | 'time'
-  timeIndex?: number
+  swimmerNo: number;
+  field: "name" | "time";
+  timeIndex?: number;
 }
 
 export const ResultTable: React.FC = () => {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
+  const STROKE_LABELS: Record<SwimStroke, string> = {
+    Fr: t("strokes.Fr"),
+    Br: t("strokes.Br"),
+    Ba: t("strokes.Ba"),
+    Fly: t("strokes.Fly"),
+    IM: t("strokes.IM"),
+  };
   const {
     menu,
     swimmers,
@@ -46,88 +42,80 @@ export const ResultTable: React.FC = () => {
     updateTime,
     addSwimmer,
     removeSwimmer,
-  } = useScanResultStore()
+  } = useScanResultStore();
 
-  const [editingCell, setEditingCell] = useState<EditingCell | null>(null)
-  const [editValue, setEditValue] = useState('')
-  const scrollRef = useRef<ScrollView>(null)
+  const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const scrollRef = useRef<ScrollView>(null);
 
-  if (swimmers.length === 0) return null
+  if (swimmers.length === 0) return null;
 
-  const maxTimes = Math.max(...swimmers.map((s) => s.times.length))
-  const repCount = menu?.repCount ?? maxTimes
-  const setCount = menu?.setCount ?? 1
+  const maxTimes = Math.max(...swimmers.map((s) => s.times.length));
+  const repCount = menu?.repCount ?? maxTimes;
+  const setCount = menu?.setCount ?? 1;
 
   const handleStartEdit = (cell: EditingCell, currentValue: string) => {
-    setEditingCell(cell)
-    setEditValue(currentValue)
-  }
+    setEditingCell(cell);
+    setEditValue(currentValue);
+  };
 
   const handleEndEdit = () => {
-    if (!editingCell) return
+    if (!editingCell) return;
 
-    if (editingCell.field === 'name') {
-      updateSwimmerName(editingCell.swimmerNo, editValue)
-    } else if (editingCell.field === 'time' && editingCell.timeIndex !== undefined) {
-      const parsed = parseFloat(editValue)
-      updateTime(
-        editingCell.swimmerNo,
-        editingCell.timeIndex,
-        isNaN(parsed) ? null : parsed,
-      )
+    if (editingCell.field === "name") {
+      updateSwimmerName(editingCell.swimmerNo, editValue);
+    } else if (editingCell.field === "time" && editingCell.timeIndex !== undefined) {
+      const parsed = parseFloat(editValue);
+      updateTime(editingCell.swimmerNo, editingCell.timeIndex, isNaN(parsed) ? null : parsed);
     }
 
-    setEditingCell(null)
-    setEditValue('')
-  }
+    setEditingCell(null);
+    setEditValue("");
+  };
 
-  const showStylePicker = (swimmerNo: number, currentStyle: SwimStroke) => {
-    if (Platform.OS === 'ios') {
+  const showStylePicker = (swimmerNo: number, _currentStyle: SwimStroke) => {
+    if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: [t('common.cancel'), ...STROKES.map((s) => STROKE_LABELS[s])],
+          options: [t("common.cancel"), ...STROKES.map((s) => STROKE_LABELS[s])],
           cancelButtonIndex: 0,
         },
         (buttonIndex) => {
           if (buttonIndex > 0) {
-            updateSwimmerStyle(swimmerNo, STROKES[buttonIndex - 1]!)
+            updateSwimmerStyle(swimmerNo, STROKES[buttonIndex - 1]!);
           }
         },
-      )
+      );
     } else {
-      Alert.alert(t('result.style'), '', [
+      Alert.alert(t("result.selectStyle"), "", [
         ...STROKES.map((s) => ({
           text: STROKE_LABELS[s],
           onPress: () => updateSwimmerStyle(swimmerNo, s),
         })),
-        { text: t('common.cancel'), style: 'cancel' as const },
-      ])
+        { text: t("common.cancel"), style: "cancel" as const },
+      ]);
     }
-  }
+  };
 
   const handleRemoveSwimmer = (no: number, name: string) => {
-    Alert.alert(
-      t('result.deleteTooltip'),
-      `${name || t('result.notEntered')} ${t('result.deleteSwimmerConfirm')}`,
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        { text: t('common.delete'), style: 'destructive', onPress: () => removeSwimmer(no) },
-      ],
-    )
-  }
+    Alert.alert(t("result.deleteSwimmerTitle"), t("result.deleteSwimmerConfirm", { name: name || t("result.noName") }), [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: t("common.delete"), style: "destructive", onPress: () => removeSwimmer(no) },
+    ]);
+  };
 
   const isEditing = (swimmerNo: number, field: string, timeIndex?: number) => {
-    if (!editingCell) return false
+    if (!editingCell) return false;
     return (
       editingCell.swimmerNo === swimmerNo &&
       editingCell.field === field &&
       editingCell.timeIndex === timeIndex
-    )
-  }
+    );
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{t('scanner.result.title')}</Text>
+      <Text style={styles.title}>{t("result.title")}</Text>
 
       <View style={styles.tableWrapper}>
         {/* Fixed left columns (名前) */}
@@ -136,13 +124,13 @@ export const ResultTable: React.FC = () => {
           {setCount > 1 && <View style={styles.fixedHeaderCell} />}
           {/* Header */}
           <View style={styles.fixedHeaderCell}>
-            <Text style={styles.headerText}>{t('result.name')}</Text>
+            <Text style={styles.headerText}>{t("result.name")}</Text>
           </View>
 
           {/* Data rows */}
           {swimmers.map((swimmer) => (
             <View key={swimmer.no} style={styles.fixedDataRow}>
-              {isEditing(swimmer.no, 'name') ? (
+              {isEditing(swimmer.no, "name") ? (
                 <TextInput
                   style={styles.nameEditInput}
                   value={editValue}
@@ -154,10 +142,12 @@ export const ResultTable: React.FC = () => {
               ) : (
                 <TouchableOpacity
                   style={styles.nameCell}
-                  onPress={() => handleStartEdit({ swimmerNo: swimmer.no, field: 'name' }, swimmer.name)}
+                  onPress={() =>
+                    handleStartEdit({ swimmerNo: swimmer.no, field: "name" }, swimmer.name)
+                  }
                 >
                   <Text style={styles.nameCellText} numberOfLines={1}>
-                    {swimmer.name || '—'}
+                    {swimmer.name || "—"}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -165,7 +155,7 @@ export const ResultTable: React.FC = () => {
                 style={styles.deleteButton}
                 onPress={() => handleRemoveSwimmer(swimmer.no, swimmer.name)}
               >
-                <Feather name="x" size={12} color="#9CA3AF" />
+                <Feather name="x" size={12} color={colors.mutedLight} />
               </TouchableOpacity>
             </View>
           ))}
@@ -184,8 +174,19 @@ export const ResultTable: React.FC = () => {
               <View style={styles.scrollHeaderRow}>
                 <View style={styles.styleCol} />
                 {Array.from({ length: setCount }, (_, s) => (
-                  <View key={s} style={[{ width: repCount * 36, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }, s > 0 && styles.setBorder]}>
-                    <Text style={styles.setHeaderText}>{t('result.setHeader', { n: s + 1 })}</Text>
+                  <View
+                    key={s}
+                    style={[
+                      {
+                        width: repCount * 36,
+                        flexDirection: "row",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      },
+                      s > 0 && styles.setBorder,
+                    ]}
+                  >
+                    <Text style={styles.setHeaderText}>{s + 1}{t("result.set")}</Text>
                   </View>
                 ))}
                 <View style={styles.statCol} />
@@ -196,27 +197,33 @@ export const ResultTable: React.FC = () => {
             {/* Column header */}
             <View style={styles.scrollHeaderRow}>
               <View style={styles.styleCol}>
-                <Text style={styles.headerText}>{t('result.style')}</Text>
+                <Text style={styles.headerText}>{t("result.style")}</Text>
               </View>
               {Array.from({ length: maxTimes }, (_, i) => {
-                const isSetStart = i > 0 && i % repCount === 0
+                const isSetStart = i > 0 && i % repCount === 0;
                 return (
                   <View key={i} style={[styles.timeCol, isSetStart && styles.setBorder]}>
-                    <Text style={styles.headerText}>{t('result.repHeader', { n: (i % repCount) + 1 })}</Text>
+                    <Text style={styles.headerText}>{(i % repCount) + 1}{t("result.repShort")}</Text>
                   </View>
-                )
+                );
               })}
-              <View style={styles.statCol}><Text style={styles.headerText}>{t('result.average')}</Text></View>
-              <View style={styles.statCol}><Text style={styles.headerText}>{t('result.fastest')}</Text></View>
-              <View style={styles.statCol}><Text style={styles.headerText}>{t('result.slowest')}</Text></View>
+              <View style={[styles.statCol, styles.avgCol]}>
+                <Text style={styles.headerText}>{t("result.average")}</Text>
+              </View>
+              <View style={styles.statCol}>
+                <Text style={styles.headerText}>{t("result.fastest")}</Text>
+              </View>
+              <View style={styles.statCol}>
+                <Text style={styles.headerText}>{t("result.slowest")}</Text>
+              </View>
             </View>
 
             {/* Data rows */}
             {swimmers.map((swimmer) => {
-              const validTimes = swimmer.times.filter((t): t is number => t !== null)
-              const avg = averageTime(validTimes)
-              const fast = fastestTime(validTimes)
-              const slow = slowestTime(validTimes)
+              const validTimes = swimmer.times.filter((t): t is number => t !== null);
+              const avg = averageTime(validTimes);
+              const fast = fastestTime(validTimes);
+              const slow = slowestTime(validTimes);
 
               return (
                 <View key={swimmer.no} style={styles.scrollDataRow}>
@@ -233,16 +240,20 @@ export const ResultTable: React.FC = () => {
 
                   {/* タイム */}
                   {swimmer.times.map((time, i) => {
-                    const isFastest = time !== null && time === fast
-                    const isSlowest = time !== null && time === slow
-                    const isNull = time === null
-                    const isSetStart = i > 0 && i % repCount === 0
+                    const isFastest = time !== null && time === fast;
+                    const isSlowest = time !== null && time === slow;
+                    const isNull = time === null;
+                    const isSetStart = i > 0 && i % repCount === 0;
 
-                    if (isEditing(swimmer.no, 'time', i)) {
+                    if (isEditing(swimmer.no, "time", i)) {
                       return (
                         <TextInput
                           key={i}
-                          style={[styles.timeCol, styles.timeEditInput, isSetStart && styles.setBorder]}
+                          style={[
+                            styles.timeCol,
+                            styles.timeEditInput,
+                            isSetStart && styles.setBorder,
+                          ]}
                           value={editValue}
                           onChangeText={setEditValue}
                           onBlur={handleEndEdit}
@@ -250,17 +261,21 @@ export const ResultTable: React.FC = () => {
                           keyboardType="decimal-pad"
                           autoFocus
                         />
-                      )
+                      );
                     }
 
                     return (
                       <TouchableOpacity
                         key={i}
-                        style={[styles.timeCol, isNull && styles.nullCell, isSetStart && styles.setBorder]}
+                        style={[
+                          styles.timeCol,
+                          isNull && styles.nullCell,
+                          isSetStart && styles.setBorder,
+                        ]}
                         onPress={() =>
                           handleStartEdit(
-                            { swimmerNo: swimmer.no, field: 'time', timeIndex: i },
-                            time !== null ? time.toString() : '',
+                            { swimmerNo: swimmer.no, field: "time", timeIndex: i },
+                            time !== null ? time.toString() : "",
                           )
                         }
                       >
@@ -272,30 +287,28 @@ export const ResultTable: React.FC = () => {
                             isNull && styles.nullText,
                           ]}
                         >
-                          {time !== null ? formatTime(time) : '—'}
+                          {time !== null ? formatTime(time) : "—"}
                         </Text>
                       </TouchableOpacity>
-                    )
+                    );
                   })}
 
                   {/* 統計 */}
-                  <View style={styles.statCol}>
-                    <Text style={styles.cellText}>
-                      {avg !== null ? formatTime(avg) : '—'}
-                    </Text>
+                  <View style={[styles.statCol, styles.avgCol]}>
+                    <Text style={[styles.cellText, styles.avgText]}>{avg !== null ? formatTime(avg) : "—"}</Text>
                   </View>
                   <View style={styles.statCol}>
                     <Text style={[styles.cellText, styles.fastestText]}>
-                      {fast !== null ? formatTime(fast) : '—'}
+                      {fast !== null ? formatTime(fast) : "—"}
                     </Text>
                   </View>
                   <View style={styles.statCol}>
                     <Text style={[styles.cellText, styles.slowestText]}>
-                      {slow !== null ? formatTime(slow) : '—'}
+                      {slow !== null ? formatTime(slow) : "—"}
                     </Text>
                   </View>
                 </View>
-              )
+              );
             })}
           </View>
         </ScrollView>
@@ -303,73 +316,73 @@ export const ResultTable: React.FC = () => {
 
       {/* Add swimmer */}
       <TouchableOpacity style={styles.addButton} onPress={addSwimmer}>
-        <Text style={styles.addButtonText}>{t('result.addSwimmer')}</Text>
+        <Text style={styles.addButtonText}>{t("result.addSwimmer")}</Text>
       </TouchableOpacity>
     </View>
-  )
-}
+  );
+};
 
-const ROW_HEIGHT = 40
-const FIXED_WIDTH = 80
+const ROW_HEIGHT = 40;
+const FIXED_WIDTH = 80;
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   title: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#374151',
-    marginBottom: 8,
+    fontSize: fontSize.lg,
+    fontWeight: "bold",
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
   },
   tableWrapper: {
-    flexDirection: 'row',
-    borderRadius: 8,
+    flexDirection: "row",
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    overflow: 'hidden',
+    borderColor: colors.border,
+    overflow: "hidden",
   },
 
   // Fixed left
   fixedLeft: {
     width: FIXED_WIDTH,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surface,
     borderRightWidth: 1,
-    borderRightColor: '#E5E7EB',
+    borderRightColor: colors.border,
     zIndex: 1,
   },
   fixedHeaderCell: {
     height: ROW_HEIGHT,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: colors.surfaceRaised,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
   },
   fixedDataRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     height: ROW_HEIGHT,
-    alignItems: 'center',
+    alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
   },
   nameCell: {
     flex: 1,
     height: ROW_HEIGHT,
-    justifyContent: 'center',
-    paddingHorizontal: 8,
+    justifyContent: "center",
+    paddingHorizontal: spacing.sm,
   },
   nameCellText: {
     fontSize: 13,
-    color: '#374151',
+    color: colors.textSecondary,
   },
   nameEditInput: {
     flex: 1,
     height: ROW_HEIGHT - 4,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: '#2563EB',
-    borderRadius: 4,
+    borderColor: colors.primary,
+    borderRadius: radius.xs,
     fontSize: 13,
     paddingHorizontal: 6,
     marginHorizontal: 2,
@@ -377,8 +390,8 @@ const styles = StyleSheet.create({
   deleteButton: {
     width: 20,
     height: ROW_HEIGHT,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   // Scrollable right
@@ -386,113 +399,122 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollHeaderRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     height: ROW_HEIGHT,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.surfaceRaised,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    alignItems: 'center',
+    borderBottomColor: colors.border,
+    alignItems: "center",
   },
   scrollDataRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     height: ROW_HEIGHT,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    alignItems: 'center',
+    borderBottomColor: colors.border,
+    alignItems: "center",
   },
   headerText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6B7280',
-    textAlign: 'center',
+    fontSize: fontSize.sm,
+    fontWeight: "600",
+    color: colors.muted,
+    textAlign: "center",
   },
   cellText: {
     fontSize: 13,
-    color: '#374151',
-    textAlign: 'center',
+    color: colors.textSecondary,
+    textAlign: "center",
   },
 
   // Column widths
   styleCol: {
     width: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     height: ROW_HEIGHT,
   },
   styleText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#2563EB',
+    fontWeight: "600",
+    color: colors.primary,
   },
   styleChevron: {
     fontSize: 8,
-    color: '#9CA3AF',
+    color: colors.mutedLight,
   },
   timeCol: {
     width: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     height: ROW_HEIGHT,
   },
   statCol: {
     width: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     height: ROW_HEIGHT,
   },
   timeEditInput: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: '#2563EB',
-    borderRadius: 4,
+    borderColor: colors.primary,
+    borderRadius: radius.xs,
     fontSize: 13,
-    textAlign: 'center',
-    padding: 4,
+    textAlign: "center",
+    padding: spacing.xs,
     marginHorizontal: 2,
+  },
+
+  // Average column highlight
+  avgCol: {
+    backgroundColor: colors.warningLight,
+  },
+  avgText: {
+    fontWeight: "bold",
+    color: colors.amber,
   },
 
   // Highlights
   nullCell: {
-    backgroundColor: '#FEF9C3',
+    backgroundColor: colors.warningMuted,
   },
   nullText: {
-    color: '#92400E',
+    color: colors.amber,
   },
   fastestText: {
-    color: '#2563EB',
-    fontWeight: 'bold',
+    color: colors.primary,
+    fontWeight: "bold",
   },
   slowestText: {
-    color: '#DC2626',
-    fontWeight: 'bold',
+    color: colors.destructive,
+    fontWeight: "bold",
   },
 
   // Set separators
   setBorder: {
     borderLeftWidth: 2,
-    borderLeftColor: '#9CA3AF',
+    borderLeftColor: colors.mutedLight,
   },
   setHeaderText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#9CA3AF',
-    textAlign: 'center',
+    fontSize: fontSize.xs,
+    fontWeight: "600",
+    color: colors.mutedLight,
+    textAlign: "center",
   },
 
   // Add button
   addButton: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 8,
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radius.md,
     padding: 10,
-    alignItems: 'center',
-    marginTop: 8,
+    alignItems: "center",
+    marginTop: spacing.sm,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderStyle: 'dashed',
+    borderColor: colors.borderLight,
+    borderStyle: "dashed",
   },
   addButtonText: {
-    color: '#6B7280',
-    fontSize: 14,
-    fontWeight: '500',
+    color: colors.muted,
+    fontSize: fontSize.md,
+    fontWeight: "500",
   },
-})
+});

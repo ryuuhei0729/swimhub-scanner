@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useCallback, type DragEvent, type ChangeEvent } from "react";
+import { useTranslation } from "react-i18next";
+import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 
 interface ImageUploaderProps {
@@ -12,6 +14,7 @@ const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png"];
 
 export function ImageUploader({ onImageSelect, disabled }: ImageUploaderProps) {
+  const { t } = useTranslation();
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -22,12 +25,12 @@ export function ImageUploader({ onImageSelect, disabled }: ImageUploaderProps) {
       setError(null);
 
       if (!ALLOWED_TYPES.includes(file.type)) {
-        setError("JPEG または PNG 形式の画像をアップロードしてください");
+        setError(t("uploader.invalidFormat"));
         return;
       }
 
       if (file.size > MAX_SIZE_BYTES) {
-        setError("画像サイズは10MB以下にしてください");
+        setError(t("uploader.tooLarge"));
         return;
       }
 
@@ -41,7 +44,7 @@ export function ImageUploader({ onImageSelect, disabled }: ImageUploaderProps) {
       };
       reader.readAsDataURL(file);
     },
-    [onImageSelect],
+    [onImageSelect, t],
   );
 
   const handleDrop = useCallback(
@@ -90,12 +93,12 @@ export function ImageUploader({ onImageSelect, disabled }: ImageUploaderProps) {
           onClick={() => !disabled && fileInputRef.current?.click()}
           className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 transition-all duration-200 ${
             isDragging
-              ? "border-primary-500 bg-primary-50"
-              : "border-gray-300 bg-white hover:border-primary-400 hover:bg-gray-50"
+              ? "border-primary bg-primary/5"
+              : "border-border bg-card hover:border-primary/40 hover:bg-muted"
           } ${disabled ? "pointer-events-none opacity-50" : ""}`}
         >
           <svg
-            className="mb-4 h-12 w-12 text-gray-400"
+            className="mb-4 h-12 w-12 text-muted-foreground"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -113,19 +116,26 @@ export function ImageUploader({ onImageSelect, disabled }: ImageUploaderProps) {
               d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
             />
           </svg>
-          <p className="text-sm font-medium text-gray-700">
-            画像をドラッグ&ドロップ または クリックして選択
+          <p className="text-sm font-medium text-foreground">
+            {t("uploader.dragDrop")}
           </p>
-          <p className="mt-1 text-xs text-gray-500">JPEG / PNG 形式、10MB以下</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("uploader.formatHint")}</p>
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="relative overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
-            <img src={preview} alt="プレビュー" className="mx-auto max-h-80 object-contain" />
+          <div className="relative overflow-hidden rounded-lg border border-border bg-surface-raised">
+            <Image
+              src={preview}
+              alt={t("uploader.preview")}
+              width={400}
+              height={320}
+              className="mx-auto max-h-80 object-contain"
+              unoptimized
+            />
           </div>
           <div className="flex justify-center">
             <Button variant="ghost" size="sm" onClick={handleClear} disabled={disabled}>
-              画像を変更
+              {t("uploader.changeImage")}
             </Button>
           </div>
         </div>
@@ -140,7 +150,11 @@ export function ImageUploader({ onImageSelect, disabled }: ImageUploaderProps) {
         className="hidden"
       />
 
-      {error && <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
+      {error && (
+        <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          {error}
+        </div>
+      )}
     </div>
   );
 }

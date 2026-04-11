@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { Inter, Noto_Sans_JP } from "next/font/google";
 import { notFound } from "next/navigation";
-import { I18nProvider } from "@/components/I18nProvider";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { I18nProvider } from "@/components/I18nProvider";
 import {
   supportedLocales,
   i18nResources,
@@ -18,6 +19,17 @@ export function generateStaticParams() {
   return supportedLocales.map((locale) => ({ locale }));
 }
 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
+
+const notoSansJP = Noto_Sans_JP({
+  subsets: ["latin"],
+  variable: "--font-noto-sans-jp",
+  weight: ["400", "500", "700"],
+});
+
 export async function generateMetadata({
   params,
 }: {
@@ -28,12 +40,12 @@ export async function generateMetadata({
   const t = i18nResources[locale].translation;
 
   return {
-    metadataBase: new URL(siteUrl),
     title: {
       default: t.meta.title,
-      template: "%s | SwimHub Scanner",
+      template: `%s | ${t.common.appName}`,
     },
     description: t.meta.description,
+    metadataBase: new URL(siteUrl),
     alternates: {
       canonical: `/${locale}`,
       languages: {
@@ -41,23 +53,28 @@ export async function generateMetadata({
         en: "/en",
       },
     },
-    keywords: [...t.meta.keywords],
+    keywords: t.meta.keywords.split(","),
     openGraph: {
-      type: "website",
-      locale: t.meta.ogLocale,
-      url: siteUrl,
-      siteName: "SwimHub Scanner",
       title: t.meta.title,
       description: t.meta.description,
+      url: siteUrl,
+      siteName: t.common.appName,
+      locale: t.meta.ogLocale,
+      type: "website",
+      images: [
+        {
+          url: "/og-image.png",
+          width: 1200,
+          height: 630,
+          alt: t.common.appName,
+        },
+      ],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title: t.meta.title,
       description: t.meta.description,
-    },
-    robots: {
-      index: true,
-      follow: true,
+      images: ["/og-image.png"],
     },
     icons: {
       icon: [
@@ -66,8 +83,20 @@ export async function generateMetadata({
       ],
       apple: "/apple-touch-icon.png",
     },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+      },
+    },
   };
 }
+
+export const viewport: Viewport = {
+  themeColor: "#EFF6FF",
+};
 
 export default async function LocaleLayout({
   children,
@@ -79,9 +108,34 @@ export default async function LocaleLayout({
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
 
+  const t = i18nResources[locale].translation;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: t.common.appName,
+    url: siteUrl,
+    description: t.meta.description,
+    applicationCategory: "MultimediaApplication",
+    operatingSystem: "Any",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "JPY",
+    },
+    inLanguage: locale,
+  };
+
   return (
-    <I18nProvider locale={locale}>
-      <AuthProvider>{children}</AuthProvider>
-    </I18nProvider>
+    <html lang={locale} className="h-full">
+      <body className={`${inter.variable} ${notoSansJP.variable} font-sans`}>
+        <I18nProvider locale={locale}>
+          <AuthProvider>
+            <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+            {children}
+          </AuthProvider>
+        </I18nProvider>
+      </body>
+    </html>
   );
 }

@@ -1,14 +1,20 @@
 {
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-4640414097368188~XXXXXXXXXX",
+    "ios_app_id": "ca-app-pub-4640414097368188~6995328031"
+  },
   "expo": {
-    "name": "SwimHub Scanner",
+    "name": "SH Scanner",
     "slug": "swimhub-scanner-mobile",
-    "version": "1.0.0",
+    "version": "2.1.0",
     "description": "手書きタイム記録表をAIで読み取りデジタル化するアプリ",
     "scheme": "swimhub-scanner",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "plugins": [
+      "expo-router",
+      "expo-apple-authentication",
       "expo-web-browser",
       [
         "expo-image-picker",
@@ -16,16 +22,35 @@
           "photosPermission": "タイム記録表の画像を選択するためにフォトライブラリを使用します",
           "cameraPermission": "タイム記録表を撮影するためにカメラを使用します"
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static",
+            "buildReactNativeFromSource": true
+          }
+        }
+      ],
+      "./plugins/withFmtFix",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-4640414097368188~XXXXXXXXXX",
+          "iosAppId": "ca-app-pub-4640414097368188~6995328031"
+        }
       ]
     ],
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#EFF6FF"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.swim-hub.scanner",
+      "buildNumber": "28",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSCameraUsageDescription": "タイム記録表を撮影するためにカメラを使用します",
         "NSPhotoLibraryUsageDescription": "タイム記録表の画像を選択するためにフォトライブラリを使用します",
@@ -38,11 +63,13 @@
         "backgroundColor": "#ffffff"
       },
       "package": "app.swimhub.scanner",
+      "versionCode": 20,
       "permissions": ["android.permission.CAMERA"]
     },
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": ""
+        "projectId": "d123c26f-8ad7-4505-b6f2-11d82a741b99"
       }
     }
   }

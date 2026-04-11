@@ -1,0 +1,132 @@
+import { Platform } from "react-native";
+
+/** Dynamic require の戻り値用に MobileAd の使用メソッドを定義 */
+interface RewardedAdInstance {
+  addAdEventListener(type: string, listener: () => void): () => void;
+  load(): void;
+  show(): Promise<void>;
+}
+
+function getAdModule() {
+  try {
+    return require("react-native-google-mobile-ads");
+  } catch {
+    return null;
+  }
+}
+
+function getRewardedAdUnitId(): string {
+  const mod = getAdModule();
+  if (!mod) return "";
+
+  if (__DEV__) {
+    return mod.TestIds.REWARDED;
+  }
+
+  return Platform.select({
+    ios: "ca-app-pub-4640414097368188/5637814644",
+    android: "ca-app-pub-4640414097368188/SCANNER_ANDROID_UNIT_ID", // TODO: Replace with actual Android ad unit ID
+    default: "",
+  }) as string;
+}
+
+export type AdState = "idle" | "loading" | "loaded" | "showing" | "rewarded" | "error";
+
+export interface RewardedAdController {
+  load: () => void;
+  show: () => Promise<void>;
+  getState: () => AdState;
+  onStateChange: (callback: (state: AdState) => void) => () => void;
+  dispose: () => void;
+}
+
+export function createRewardedAdController(): RewardedAdController | null {
+  const mod = getAdModule();
+  if (!mod) return null;
+
+  const { RewardedAd, RewardedAdEventType, AdEventType } = mod;
+  const adUnitId = getRewardedAdUnitId();
+
+  let state: AdState = "idle";
+  let listeners: ((state: AdState) => void)[] = [];
+  let unsubscribers: (() => void)[] = [];
+  let rewardedAd: RewardedAdInstance | null = null;
+  let adRewardEarned = false;
+
+  function setState(newState: AdState) {
+    state = newState;
+    listeners.forEach((cb) => cb(newState));
+  }
+
+  function setupAd() {
+    unsubscribers.forEach((unsub) => unsub());
+    unsubscribers = [];
+    adRewardEarned = false;
+
+    rewardedAd = RewardedAd.createForAdRequest(adUnitId) as RewardedAdInstance;
+
+    const ad = rewardedAd;
+
+    unsubscribers.push(
+      ad.addAdEventListener(RewardedAdEventType.LOADED, () => {
+        setState("loaded");
+      }),
+    );
+
+    unsubscribers.push(
+      ad.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
+        adRewardEarned = true;
+        setState("rewarded");
+      }),
+    );
+
+    unsubscribers.push(
+      ad.addAdEventListener(AdEventType.CLOSED, () => {
+        if (!adRewardEarned) {
+          setState("error");
+        }
+      }),
+    );
+
+    unsubscribers.push(
+      ad.addAdEventListener(AdEventType.ERROR, () => {
+        setState("error");
+      }),
+    );
+  }
+
+  return {
+    load() {
+      setupAd();
+      setState("loading");
+      rewardedAd!.load();
+    },
+
+    async show() {
+      if (state !== "loaded") {
+        throw new Error("Ad is not loaded yet");
+      }
+      setState("showing");
+      await rewardedAd!.show();
+    },
+
+    getState() {
+      return state;
+    },
+
+    onStateChange(callback) {
+      listeners.push(callback);
+      return () => {
+        listeners = listeners.filter((cb) => cb !== callback);
+      };
+    },
+
+    dispose() {
+      unsubscribers.forEach((unsub) => unsub());
+      unsubscribers = [];
+      listeners = [];
+      rewardedAd = null;
+      state = "idle";
+    },
+  };
+}

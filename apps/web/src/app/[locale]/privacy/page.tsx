@@ -1,111 +1,159 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { BackButton } from "@/components/ui/BackButton";
-import { i18nResources, supportedLocales, type SupportedLocale } from "@swimhub-scanner/i18n";
 
-function isSupportedLocale(locale: string): locale is SupportedLocale {
-  return (supportedLocales as readonly string[]).includes(locale);
-}
+export const metadata: Metadata = {
+  title: "プライバシーポリシー | SwimHub Scanner",
+};
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
-  const { locale } = await params;
-  if (!isSupportedLocale(locale)) notFound();
-  const t = i18nResources[locale].translation;
-  return { title: t.privacy.metaTitle };
-}
-
-export default async function PrivacyPage({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params;
-  if (!isSupportedLocale(locale)) notFound();
-  const t = i18nResources[locale].translation;
-
+export default function PrivacyPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-12">
       <BackButton />
 
-      <h1 className="mt-6 text-2xl font-bold">{t.privacy.title}</h1>
-      <p className="mt-2 text-sm text-gray-500">{t.privacy.lastUpdated}</p>
+      <h1 className="mt-6 text-2xl font-bold">プライバシーポリシー</h1>
+      <p className="mt-2 text-sm text-gray-500">最終更新日: 2026年2月23日</p>
 
       <div className="mt-8 space-y-8 text-sm leading-relaxed text-gray-700">
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">{t.privacy.sec1Title}</h2>
-          <p className="mt-2">{t.privacy.sec1Body}</p>
+          <h2 className="text-lg font-semibold text-gray-900">1. はじめに</h2>
+          <p className="mt-2">
+            SwimHub
+            Scanner（以下「本サービス」）は、ユーザーのプライバシーを尊重し、個人情報の保護に努めます。本ポリシーは、本サービスにおける個人情報の取り扱いについて説明します。
+          </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">{t.privacy.sec2Title}</h2>
-          <p className="mt-2">{t.privacy.sec2Body}</p>
+          <h2 className="text-lg font-semibold text-gray-900">2. 収集する情報</h2>
+          <p className="mt-2">本サービスでは、以下の情報を収集します。</p>
           <ul className="mt-2 list-inside list-disc space-y-1">
-            {t.privacy.sec2Items.map((item, i) => (
-              <li key={i}>{item}</li>
-            ))}
+            <li>
+              <strong>アカウント情報:</strong> Google または Apple
+              アカウントから提供される名前、メールアドレス、プロフィール画像
+            </li>
+            <li>
+              <strong>アップロードデータ:</strong>{" "}
+              ユーザーがスキャンのためにアップロードした画像データ
+            </li>
+            <li>
+              <strong>利用状況:</strong> サービスの利用日時、利用回数などの統計情報
+            </li>
           </ul>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">{t.privacy.sec3Title}</h2>
-          <p className="mt-2">{t.privacy.sec3Body}</p>
+          <h2 className="text-lg font-semibold text-gray-900">3. 情報の利用目的</h2>
+          <p className="mt-2">収集した情報は、以下の目的で利用します。</p>
           <ol className="mt-2 list-inside list-decimal space-y-1">
-            {t.privacy.sec3Items.map((item, i) => (
-              <li key={i}>{item}</li>
-            ))}
+            <li>本サービスの提供・運営</li>
+            <li>ユーザー認証およびアカウント管理</li>
+            <li>AI によるタイム記録表の解析・変換処理</li>
+            <li>サービスの改善・新機能の開発</li>
+            <li>利用状況の分析・統計処理</li>
           </ol>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">{t.privacy.sec4Title}</h2>
-          <p className="mt-2">{t.privacy.sec4Body}</p>
+          <h2 className="text-lg font-semibold text-gray-900">4. 第三者への提供</h2>
+          <p className="mt-2">
+            以下の場合を除き、ユーザーの個人情報を第三者に提供することはありません。
+          </p>
           <ul className="mt-2 list-inside list-disc space-y-1">
-            {t.privacy.sec4Items.map((item, i) => (
-              <li key={i}>{item}</li>
-            ))}
-          </ul>
-          <p className="mt-2">{t.privacy.sec4Note}</p>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-semibold text-gray-900">{t.privacy.sec5Title}</h2>
-          <p className="mt-2">{t.privacy.sec5Body}</p>
-          <ul className="mt-2 list-inside list-disc space-y-1">
-            {t.privacy.sec5Items.map((item, i) => (
-              <li key={i}>{item}</li>
-            ))}
+            <li>ユーザーの同意がある場合</li>
+            <li>法令に基づく場合</li>
+            <li>人の生命・身体・財産の保護に必要な場合</li>
+            <li>サービス提供に必要な外部委託先への情報の提供</li>
           </ul>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">{t.privacy.sec6Title}</h2>
-          <p className="mt-2">{t.privacy.sec6Body}</p>
+          <h2 className="text-lg font-semibold text-gray-900">5. 外部サービスの利用</h2>
+          <p className="mt-2">本サービスでは、以下の外部サービスを利用しています。</p>
           <ul className="mt-2 list-inside list-disc space-y-1">
-            {t.privacy.sec6Items.map((item, i) => (
-              <li key={i}>{item}</li>
-            ))}
+            <li>
+              <strong>Google / Apple 認証:</strong> ログイン機能の提供
+            </li>
+            <li>
+              <strong>Google AI (Gemini):</strong> 画像解析・データ変換処理
+            </li>
+            <li>
+              <strong>Supabase:</strong> データの保存・管理
+            </li>
           </ul>
-          <p className="mt-2">{t.privacy.sec6Note}</p>
+          <p className="mt-2">
+            各外部サービスのプライバシーポリシーについては、各サービス提供元のサイトをご確認ください。
+          </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">{t.privacy.sec7Title}</h2>
+          <h2 className="text-lg font-semibold text-gray-900">6. 決済情報の取り扱い</h2>
+          <p className="mt-2">
+            本サービスの有料プラン（プレミアムプラン）をご利用いただく際、決済処理は以下の外部サービスに委託しており、本サービスがクレジットカード番号等の決済情報を直接保存することはありません。
+          </p>
           <ul className="mt-2 list-inside list-disc space-y-1">
-            {t.privacy.sec7Items.map((item, i) => (
-              <li key={i}>{item}</li>
-            ))}
+            <li>
+              <strong>Stripe, Inc.:</strong>{" "}
+              Web経由でのサブスクリプション決済処理を委託しています。StripeはPCI DSS
+              に準拠した決済基盤を提供しており、お客様の決済情報はStripeが安全に管理します。詳細は
+              <a
+                href="https://stripe.com/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
+                Stripeのプライバシーポリシー
+              </a>
+              をご確認ください。
+            </li>
+            <li>
+              <strong>RevenueCat, Inc.:</strong>{" "}
+              モバイルアプリでのサブスクリプション管理を委託しています。Apple App Store / Google
+              Play経由の課金処理はRevenueCatを通じて行われます。詳細は
+              <a
+                href="https://www.revenuecat.com/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
+                RevenueCatのプライバシーポリシー
+              </a>
+              をご確認ください。
+            </li>
+          </ul>
+          <p className="mt-2">
+            本サービスは、サブスクリプションの状態（有効/無効、プラン種別、有効期限等）のみを管理し、決済情報そのものは上記の委託先が管理します。
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold text-gray-900">7. データの保管と削除</h2>
+          <ul className="mt-2 list-inside list-disc space-y-1">
+            <li>アップロードされた画像データは、処理完了後に速やかに削除されます。</li>
+            <li>アカウント情報は、ユーザーがアカウントを削除するまで保管されます。</li>
+            <li>アカウント削除を希望される場合は、お問い合わせください。</li>
           </ul>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">{t.privacy.sec8Title}</h2>
-          <p className="mt-2">{t.privacy.sec8Body}</p>
+          <h2 className="text-lg font-semibold text-gray-900">8. Cookie について</h2>
+          <p className="mt-2">
+            本サービスでは、認証状態の維持のために Cookie を使用しています。ブラウザの設定により
+            Cookie
+            を無効にすることができますが、本サービスの一部機能が利用できなくなる場合があります。
+          </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">{t.privacy.sec9Title}</h2>
-          <p className="mt-2">{t.privacy.sec9Body}</p>
+          <h2 className="text-lg font-semibold text-gray-900">9. ポリシーの変更</h2>
+          <p className="mt-2">
+            本ポリシーは、必要に応じて変更されることがあります。重要な変更がある場合は、本サービス上で通知します。
+          </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">{t.privacy.sec10Title}</h2>
-          <p className="mt-2">{t.privacy.sec10Body}</p>
+          <h2 className="text-lg font-semibold text-gray-900">10. お問い合わせ</h2>
+          <p className="mt-2">
+            本ポリシーに関するお問い合わせは、本サービス内のお問い合わせ機能よりご連絡ください。
+          </p>
         </section>
       </div>
     </main>

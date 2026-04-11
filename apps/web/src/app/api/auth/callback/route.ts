@@ -1,20 +1,87 @@
-import { createRouteHandlerClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
+/**
+ * redirectToパラメータを検証・サニタイズする
+ * - '/'で始まる相対パスのみ許可（スキーム付きURLは拒否）
+ * - プロトコル相対URL（//evil.com）を拒否
+ * - CR/LFや制御文字を含まないことを確認
+ * - 無効な値の場合はデフォルトパスにフォールバック
+ * - デコード後の値に対してバリデーションを実行（二重エンコード攻撃を防止）
+ * - URLコンストラクタで同一オリジン確認（オープンリダイレクト対策）
+ */
+function validateRedirectPath(redirectTo: string | null, origin?: string): string {
+  const defaultPath = "/";
+
+  if (!redirectTo) {
+    return defaultPath;
+  }
+
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(redirectTo);
+  } catch {
+    return defaultPath;
+  }
+
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(decoded)) {
+    return defaultPath;
+  }
+
+  if (decoded.startsWith("//") || /^\/\//.test(decoded)) {
+    return defaultPath;
+  }
+
+  if (!decoded.startsWith("/")) {
+    return defaultPath;
+  }
+
+  for (let i = 0; i < decoded.length; i++) {
+    const charCode = decoded.charCodeAt(i);
+    if (
+      (charCode >= 0x00 && charCode <= 0x1f) ||
+      charCode === 0x7f ||
+      (charCode >= 0x80 && charCode <= 0x9f)
+    ) {
+      return defaultPath;
+    }
+  }
+
+  if (decoded.includes("..")) {
+    return defaultPath;
+  }
+
+  if (origin) {
+    try {
+      const resolvedUrl = new URL(decoded, origin);
+      if (resolvedUrl.origin !== origin) {
+        return defaultPath;
+      }
+    } catch {
+      return defaultPath;
+    }
+  }
+
+  return decoded;
+}
+
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const redirectTo = validateRedirectPath(
+    requestUrl.searchParams.get("redirect_to"),
+    requestUrl.origin,
+  );
 
   if (!code) {
-    return NextResponse.redirect(requestUrl.origin + "/login?error=missing_code");
+    return NextResponse.redirect(requestUrl.origin + "/ja/login?error=missing_code");
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.redirect(requestUrl.origin + "/login?error=config_error");
+    return NextResponse.redirect(requestUrl.origin + "/ja/login?error=config_error");
   }
 
   try {
@@ -61,18 +128,18 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error("OAuth callback error:", error);
       const errorResponse = NextResponse.redirect(
-        requestUrl.origin + "/login?error=auth_failed",
+        requestUrl.origin + "/ja/login?error=auth_failed",
       );
       applyCookies(errorResponse, cookiesToSet);
       return errorResponse;
     }
 
-    const successResponse = NextResponse.redirect(requestUrl.origin + "/");
+    const successResponse = NextResponse.redirect(requestUrl.origin + redirectTo);
     applyCookies(successResponse, cookiesToSet);
     return successResponse;
   } catch (error) {
     console.error("OAuth callback error:", error);
-    return NextResponse.redirect(requestUrl.origin + "/login?error=auth_failed");
+    return NextResponse.redirect(requestUrl.origin + "/ja/login?error=auth_failed");
   }
 }
 

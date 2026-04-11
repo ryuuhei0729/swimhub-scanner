@@ -7,8 +7,10 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
@@ -16,15 +18,18 @@
     "@google/genai": "^1.0.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.97.0",
+    "@swimhub/supabase": "link:../../../packages/supabase",
     "@swimhub-scanner/i18n": "workspace:*",
     "@swimhub-scanner/shared": "workspace:*",
     "i18next": "^24.0.0",
     "react-i18next": "^15.0.0",
     "file-saver": "^2.0.5",
-    "next": "^15.3.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "lucide-react": "^0.575.0",
+    "next": "16.1.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
     "server-only": "^0.0.1",
+    "stripe": "^17.7.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
@@ -38,10 +43,14 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "eslint": "^9.0.0",
-    "eslint-config-next": "^15.3.0",
+    "eslint-config-next": "16.1.6",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.0.0",
-    "wrangler": "^4.67.0"
+    "wrangler": "^4.67.0",
+    "vitest": "^3.2.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "jsdom": "^26.1.0"
   }
 }

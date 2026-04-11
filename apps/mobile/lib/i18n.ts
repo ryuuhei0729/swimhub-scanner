@@ -1,22 +1,7 @@
-import i18next from "i18next";
+import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import { getLocales } from "expo-localization";
-import {
-  getI18nOptions,
-  supportedLocales,
-  defaultLocale,
-  type SupportedLocale,
-} from "@swimhub-scanner/i18n";
+import { getI18nOptions, defaultLocale } from "@swimhub-scanner/i18n";
 
-function getDeviceLocale(): SupportedLocale {
-  const deviceLocales = getLocales();
-  const deviceLang = deviceLocales[0]?.languageCode ?? "ja";
-  if (supportedLocales.includes(deviceLang as SupportedLocale)) {
-    return deviceLang as SupportedLocale;
-  }
-  return defaultLocale;
-}
+i18n.use(initReactI18next).init(getI18nOptions(defaultLocale));
 
-const deviceLocale = getDeviceLocale();
-i18next.use(initReactI18next).init(getI18nOptions(deviceLocale));
-export default i18next;
+export default i18n;

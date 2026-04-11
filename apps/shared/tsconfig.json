@@ -1,0 +1,9 @@
+{
+  "extends": "@swimhub-scanner/config/tsconfig/library",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "."
+  },
+  "include": ["."],
+  "exclude": ["node_modules", "dist"]
+}

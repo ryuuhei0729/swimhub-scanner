@@ -1,99 +1,67 @@
 /**
- * Supabase認証エラーメッセージのi18n対応ユーティリティ
+ * Supabase認証エラーメッセージのローカライズユーティリティ
+ * i18n を使用して翻訳キーに対応
  */
-import i18next from 'i18next'
+import i18n from "@/lib/i18n";
 
-declare const __DEV__: boolean
+declare const __DEV__: boolean;
+
+const errorKeyMap: Record<string, string> = {
+  "invalid login credentials": "auth.errors.invalidCredentials",
+  "invalid credentials": "auth.errors.invalidCredentials",
+  "email not confirmed": "auth.errors.emailNotConfirmed",
+  "user not found": "auth.errors.userNotFound",
+  "user already registered": "auth.errors.alreadyRegistered",
+  "provider not enabled": "auth.errors.providerNotEnabled",
+  "oauth error": "auth.errors.oauthError",
+  access_denied: "auth.errors.accessDenied",
+  invalid_grant: "auth.errors.invalidGrant",
+  "invalid token": "auth.errors.invalidToken",
+  "token expired": "auth.errors.tokenExpired",
+  "invalid refresh token": "auth.errors.invalidRefreshToken",
+  "session not found": "auth.errors.sessionNotFound",
+  "session expired": "auth.errors.sessionExpired",
+  "too many requests": "auth.errors.tooManyRequests",
+  "rate limit exceeded": "auth.errors.rateLimitExceeded",
+  "network error": "auth.errors.networkError",
+  timeout: "auth.errors.timeout",
+};
 
 export const localizeAuthError = (message: string): string => {
-  const t = i18next.t.bind(i18next)
-
   if (!message) {
-    return t('auth.errors.generic')
+    return i18n.t("auth.errors.fallback");
   }
 
-  const lowerMessage = message.toLowerCase()
+  const lowerMessage = message.toLowerCase();
 
-  // invalid login credentials / invalid credentials
-  if (lowerMessage.includes('invalid') && (lowerMessage.includes('credentials') || lowerMessage.includes('email') || lowerMessage.includes('login'))) {
-    return t('auth.errors.invalidCredentials')
+  for (const [key, translationKey] of Object.entries(errorKeyMap)) {
+    if (lowerMessage === key || lowerMessage.includes(key)) {
+      return i18n.t(translationKey);
+    }
   }
 
-  // email not confirmed
-  if (lowerMessage.includes('email not confirmed')) {
-    return t('auth.errors.emailNotConfirmed')
-  }
-
-  // user not found
-  if (lowerMessage.includes('user not found')) {
-    return t('auth.errors.invalidCredentials')
-  }
-
-  // user already registered
-  if (lowerMessage.includes('user already registered')) {
-    return t('auth.errors.alreadyRegistered')
-  }
-
-  // provider not enabled
-  if (lowerMessage.includes('provider not enabled')) {
-    return t('auth.errors.generic')
-  }
-
-  // oauth error
-  if (lowerMessage.includes('oauth error') || lowerMessage.includes('oauth')) {
-    return t('auth.errors.googleFailed')
-  }
-
-  // access_denied
-  if (lowerMessage.includes('access_denied')) {
-    return t('auth.errors.generic')
-  }
-
-  // invalid_grant / invalid token / token expired / invalid refresh token
-  if (lowerMessage.includes('invalid_grant') || lowerMessage.includes('invalid token') || lowerMessage.includes('token expired') || lowerMessage.includes('invalid refresh token')) {
-    return t('auth.errors.loginFailedRetry')
-  }
-
-  // session not found / session expired
-  if (lowerMessage.includes('session not found') || lowerMessage.includes('session expired')) {
-    return t('auth.errors.loginFailedRetry')
-  }
-
-  // too many requests / rate limit exceeded
-  if (lowerMessage.includes('too many requests') || lowerMessage.includes('rate limit')) {
-    return t('auth.errors.tooManyRequests')
-  }
-
-  // network error / timeout
-  if (lowerMessage.includes('network error') || lowerMessage.includes('timeout')) {
-    return t('auth.errors.network')
-  }
-
-  // cancel
-  if (lowerMessage.includes('cancel') || lowerMessage.includes('キャンセル')) {
-    return t('auth.errors.generic')
+  if (lowerMessage.includes("cancel") || lowerMessage.includes("キャンセル")) {
+    return i18n.t("auth.errors.cancelled");
   }
 
   // 既に日本語のメッセージはそのまま返す
   if (/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(message)) {
-    return message
+    return message;
   }
 
   if (__DEV__) {
-    return t('auth.errors.genericDev', { message, status: '' })
+    return i18n.t("auth.errors.fallbackDev", { message });
   }
 
-  return t('auth.errors.generic')
-}
+  return i18n.t("auth.errors.fallback");
+};
 
 export const localizeSupabaseAuthError = (
   error: { message?: string; error_description?: string; error?: string } | null | undefined,
 ): string => {
-  const t = i18next.t.bind(i18next)
-
   if (!error) {
-    return t('auth.errors.generic')
+    return i18n.t("auth.errors.fallback");
   }
-  const message = error.message || error.error_description || error.error || ''
-  return localizeAuthError(message)
-}
+  const message = error.message || error.error_description || error.error || "";
+  return localizeAuthError(message);
+};

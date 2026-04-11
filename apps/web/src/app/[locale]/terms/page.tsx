@@ -1,92 +1,130 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { BackButton } from "@/components/ui/BackButton";
-import { i18nResources, supportedLocales, type SupportedLocale } from "@swimhub-scanner/i18n";
 
-function isSupportedLocale(locale: string): locale is SupportedLocale {
-  return (supportedLocales as readonly string[]).includes(locale);
-}
+export const metadata: Metadata = {
+  title: "利用規約 | SwimHub Scanner",
+};
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
-  const { locale } = await params;
-  if (!isSupportedLocale(locale)) notFound();
-  const t = i18nResources[locale].translation;
-  return { title: t.terms.metaTitle };
-}
-
-export default async function TermsPage({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale } = await params;
-  if (!isSupportedLocale(locale)) notFound();
-  const t = i18nResources[locale].translation;
-
+export default function TermsPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-12">
       <BackButton />
 
-      <h1 className="mt-6 text-2xl font-bold">{t.terms.title}</h1>
-      <p className="mt-2 text-sm text-gray-500">{t.terms.lastUpdated}</p>
+      <h1 className="mt-6 text-2xl font-bold">利用規約</h1>
+      <p className="mt-2 text-sm text-gray-500">最終更新日: 2026年2月23日</p>
 
       <div className="mt-8 space-y-8 text-sm leading-relaxed text-gray-700">
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">{t.terms.article1Title}</h2>
-          <p className="mt-2">{t.terms.article1Body}</p>
+          <h2 className="text-lg font-semibold text-gray-900">第1条（適用）</h2>
+          <p className="mt-2">
+            本利用規約（以下「本規約」）は、SwimHub
+            Scanner（以下「本サービス」）の利用に関する条件を定めるものです。ユーザーは本規約に同意の上、本サービスを利用するものとします。
+          </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">{t.terms.article2Title}</h2>
-          <p className="mt-2">{t.terms.article2Body}</p>
+          <h2 className="text-lg font-semibold text-gray-900">第2条（サービス内容）</h2>
+          <p className="mt-2">
+            本サービスは、手書きのタイム記録表を撮影・アップロードし、AI技術を用いて自動的にデジタルデータに変換するサービスです。
+          </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">{t.terms.article3Title}</h2>
+          <h2 className="text-lg font-semibold text-gray-900">第3条（アカウント）</h2>
           <ol className="mt-2 list-inside list-decimal space-y-1">
-            {t.terms.article3Items.map((item, i) => (
-              <li key={i}>{item}</li>
-            ))}
+            <li>
+              ユーザーは、Google または Apple のアカウントを使用して本サービスにログインします。
+            </li>
+            <li>ユーザーは、自己のアカウントを適切に管理する責任を負います。</li>
+            <li>アカウントの第三者への譲渡・貸与は禁止します。</li>
           </ol>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">{t.terms.article4Title}</h2>
-          <p className="mt-2">{t.terms.article4Body}</p>
+          <h2 className="text-lg font-semibold text-gray-900">第4条（禁止事項）</h2>
+          <p className="mt-2">ユーザーは、以下の行為を行ってはなりません。</p>
           <ol className="mt-2 list-inside list-decimal space-y-1">
-            {t.terms.article4Items.map((item, i) => (
-              <li key={i}>{item}</li>
-            ))}
+            <li>法令または公序良俗に違反する行為</li>
+            <li>本サービスの運営を妨害する行為</li>
+            <li>他のユーザーまたは第三者の権利を侵害する行為</li>
+            <li>不正アクセスまたはこれを試みる行為</li>
+            <li>本サービスを商用目的で無断利用する行為</li>
+            <li>その他、運営者が不適切と判断する行為</li>
           </ol>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">{t.terms.article5Title}</h2>
+          <h2 className="text-lg font-semibold text-gray-900">第5条（利用制限）</h2>
           <ol className="mt-2 list-inside list-decimal space-y-1">
-            {t.terms.article5Items.map((item, i) => (
-              <li key={i}>{item}</li>
-            ))}
+            <li>本サービスでは、1日あたりの解析回数に制限を設けています。</li>
+            <li>
+              将来的に有料プランを提供する場合があります。その際は事前に利用規約を更新し通知します。
+            </li>
           </ol>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">{t.terms.article6Title}</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            第6条（有料プラン（サブスクリプション））
+          </h2>
+          <p className="mt-2">
+            本サービスでは、追加機能を利用できる有料プラン（以下「プレミアムプラン」）を提供しています。
+          </p>
+          <ul className="mt-2 list-inside list-disc space-y-1">
+            <li>
+              プレミアムプランの料金は、月額プラン（¥500/月）および年額プラン（¥5,000/年）です。料金は変更される場合があり、変更時は事前に通知いたします。
+            </li>
+            <li>
+              サブスクリプションは、現在の期間が終了する少なくとも24時間前にキャンセルしない限り、同じ条件で自動的に更新されます。
+            </li>
+            <li>
+              初回登録時には7日間の無料トライアル期間が設けられます。トライアル期間中にキャンセルしない場合、トライアル終了後に自動的に課金が開始されます。
+            </li>
+            <li>
+              Web経由でのお支払いにはStripeを使用し、モバイルアプリでのお支払いにはApple App Store
+              / Google Playのアプリ内課金（RevenueCat経由）を使用します。
+            </li>
+            <li>
+              解約はいつでも可能です。Web経由の場合はStripeカスタマーポータルから、モバイルの場合は各ストアのサブスクリプション管理画面から行えます。解約後も、現在の課金期間が終了するまでプレミアム機能をご利用いただけます。
+            </li>
+            <li>
+              返金については、各決済プラットフォーム（Stripe、Apple App Store、Google
+              Play）のポリシーに準じます。
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold text-gray-900">第7条（免責事項）</h2>
           <ol className="mt-2 list-inside list-decimal space-y-1">
-            {t.terms.article6Items.map((item, i) => (
-              <li key={i}>{item}</li>
-            ))}
+            <li>
+              AI
+              による変換結果の正確性を保証するものではありません。ユーザーは変換結果を確認の上ご利用ください。
+            </li>
+            <li>本サービスの利用により生じた損害について、運営者は一切の責任を負いません。</li>
+            <li>本サービスは予告なく変更・停止する場合があります。</li>
           </ol>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">{t.terms.article7Title}</h2>
-          <p className="mt-2">{t.terms.article7Body}</p>
+          <h2 className="text-lg font-semibold text-gray-900">第8条（知的財産権）</h2>
+          <p className="mt-2">
+            本サービスに関する知的財産権は運営者に帰属します。ユーザーがアップロードしたデータの権利はユーザーに帰属します。
+          </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">{t.terms.article8Title}</h2>
-          <p className="mt-2">{t.terms.article8Body}</p>
+          <h2 className="text-lg font-semibold text-gray-900">第9条（規約の変更）</h2>
+          <p className="mt-2">
+            運営者は、必要に応じて本規約を変更できるものとします。変更後の規約は、本サービス上に掲示した時点で効力を生じます。
+          </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900">{t.terms.article9Title}</h2>
-          <p className="mt-2">{t.terms.article9Body}</p>
+          <h2 className="text-lg font-semibold text-gray-900">第10条（準拠法・管轄裁判所）</h2>
+          <p className="mt-2">
+            本規約は日本法に準拠し、本サービスに関する紛争は東京地方裁判所を第一審の専属的合意管轄裁判所とします。
+          </p>
         </section>
       </div>
     </main>

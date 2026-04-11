@@ -1,0 +1,42 @@
+{
+  "name": "@swimhub-scanner/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "types": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./types": "./types/index.ts",
+    "./types/api": "./types/api.ts",
+    "./types/auth": "./types/auth.ts",
+    "./types/firestore": "./types/firestore.ts",
+    "./types/plan": "./types/plan.ts",
+    "./hooks": "./hooks/index.ts",
+    "./validation": "./validation/index.ts",
+    "./validation/image": "./validation/image.ts",
+    "./validation/scan-result": "./validation/scan-result.ts",
+    "./utils": "./utils/index.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.97.0"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@swimhub-scanner/config": "workspace:*",
+    "typescript": "^5.7.0",
+    "eslint": "^9.0.0",
+    "@eslint/js": "^9.0.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.2.1"
+  }
+}

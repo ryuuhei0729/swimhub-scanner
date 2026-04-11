@@ -24,7 +24,9 @@ function getEnv() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
-    throw new Error("NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY が設定されていません");
+    throw new Error(
+      "NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY が設定されていません",
+    );
   }
   return { url, anonKey };
 }
@@ -43,9 +45,7 @@ export async function createServerComponentClient(): Promise<SupabaseClient> {
       },
       setAll(cookiesToSet) {
         try {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options),
-          );
+          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
         } catch {
           // Server Component では Cookie 設定不可の場合がある
         }

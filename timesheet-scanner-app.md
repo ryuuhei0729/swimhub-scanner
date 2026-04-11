@@ -3,20 +3,24 @@
 ## 1. 概要
 
 ### 1.1 背景
+
 水泳の練習現場では、コーチが手書きのタイム記録表に各選手のタイムを記録している。この手書きデータをデジタル化するには手入力が必要で、時間がかかり入力ミスも発生しやすい。AI Vision を活用し、記録表の画像からタイムを自動で読み取り、整形された画像や CSV/Excel ファイルとして出力するツールを Web アプリ・モバイルアプリの両方で提供する。
 
 ### 1.2 目的
+
 - 手書きタイム記録表のデジタル化を自動化
 - 整形された画像形式での出力（印刷・共有用）
 - CSV / Excel 形式での出力（データ管理・分析用）
 - 入力ミスの削減と記録作業の効率化
 
 ### 1.3 対象ユーザー
+
 - 水泳チームのコーチ / 管理者
 - 選手の保護者
 - スイミングスクールのスタッフ
 
 ### 1.4 スコープ
+
 - **対象**:
   - Web アプリ（レスポンシブ対応） — `scanner.swim-hub.app`
   - モバイルアプリ（iOS / Android） — Expo (React Native)
@@ -44,6 +48,7 @@ SO THAT 記録の共有・保管・分析が手軽にできる
 ## 3. 技術選定
 
 ### 3.1 フロントエンド（Web）
+
 - **Next.js** (App Router) + TypeScript
 - **Tailwind CSS** でスタイリング
 - **html2canvas** or **@napi-rs/canvas** で整形画像生成
@@ -52,6 +57,7 @@ SO THAT 記録の共有・保管・分析が手軽にできる
 - **ドメイン**: `scanner.swim-hub.app`
 
 ### 3.2 モバイルアプリ
+
 - **Expo** (React Native) + TypeScript
 - **Expo Camera** でカメラ撮影
 - **Expo Router** で画面遷移
@@ -59,6 +65,7 @@ SO THAT 記録の共有・保管・分析が手軽にできる
 - iOS / Android 両対応
 
 ### 3.3 AI Vision API
+
 - **採用**: Google Gemini 2.5 Flash
 - **理由**:
   - 無料枠あり（15RPM, 1Mトークン/日）→ 小規模利用ならコスト0円
@@ -67,30 +74,35 @@ SO THAT 記録の共有・保管・分析が手軽にできる
 - **コスト**: 入力 $0.15/M トークン、出力 $0.60/M トークン（1回あたり約 $0.001）
 
 ### 3.4 バックエンド
+
 - **Next.js API Route** (Route Handler) on Cloudflare Workers
 - クライアントから画像(base64)を送信 → API Route で認証検証 + 利用回数チェック → Gemini API 呼び出し → 構造化 JSON を返却
 - API キーをクライアントに露出させない
 - Firebase Admin SDK でトークン検証
 
 ### 3.5 認証
+
 - **Firebase Auth**
 - ログイン方法: Google Sign-In / Apple Sign-In
 - Web・モバイル両方の SDK あり
 - 無料枠: 月間 50,000 MAU まで無料
 
 ### 3.6 決済
+
 - **Web**: Stripe Checkout + Stripe Billing（サブスクリプション管理）
 - **モバイル**: RevenueCat（Apple IAP / Google Play Billing を統合管理）
 - RevenueCat の Webhook → API で Firebase ユーザーの課金状態を同期
 - RevenueCat 無料枠: 月間収益 $2,500 まで無料
 
 ### 3.7 広告
+
 - **モバイル**: Google AdMob（リワード広告）
 - **Web**: Google AdSense（リワード広告）
 - 解析中（ローディング中）にリワード広告を表示
 - 有料ユーザーには広告非表示
 
 ### 3.8 データストア
+
 - **Firestore** (Firebase)
 - 保存データ:
   - ユーザーごとの日次利用回数
@@ -99,8 +111,10 @@ SO THAT 記録の共有・保管・分析が手軽にできる
 - 画像データ・解析結果はサーバーに保持しない（プライバシー配慮）
 
 ### 3.9 モノレポ構成
+
 - **Turborepo** + **pnpm workspaces**
 - 構成:
+
 ```
 swimhub-scanner/
 ├── apps/
@@ -113,6 +127,7 @@ swimhub-scanner/
 ├── pnpm-workspace.yaml
 └── package.json
 ```
+
 - **packages/shared** で共有するもの:
   - API リクエスト / レスポンスの型定義
   - タイム変換ロジック（3桁数字 → 秒.コンマ秒）
@@ -120,14 +135,15 @@ swimhub-scanner/
   - 課金プラン定義（制限値など）
 
 ### 3.10 不採用とした選択肢
-| 選択肢 | 不採用理由 |
-|---|---|
-| Google Cloud Vision (OCR) | テキスト抽出のみで表の構造を理解できない |
-| クライアント直接呼び出し | API キーがブラウザに露出するセキュリティリスク |
-| Claude Vision | 精度は高いがコストが Gemini の約6倍。無料枠なし |
-| Vercel | Cloudflare で swim-hub.app ドメインを管理しており、Pages/Workers に統一する方が運用シンプル |
-| Supabase Auth | モバイル SDK が Firebase より薄い。Firestore との統合が不要になるメリットもない |
-| Stripe のみ (IAP なし) | モバイルアプリで外部決済を使うと Apple 審査でリジェクトリスクあり |
+
+| 選択肢                    | 不採用理由                                                                                  |
+| ------------------------- | ------------------------------------------------------------------------------------------- |
+| Google Cloud Vision (OCR) | テキスト抽出のみで表の構造を理解できない                                                    |
+| クライアント直接呼び出し  | API キーがブラウザに露出するセキュリティリスク                                              |
+| Claude Vision             | 精度は高いがコストが Gemini の約6倍。無料枠なし                                             |
+| Vercel                    | Cloudflare で swim-hub.app ドメインを管理しており、Pages/Workers に統一する方が運用シンプル |
+| Supabase Auth             | モバイル SDK が Firebase より薄い。Firestore との統合が不要になるメリットもない             |
+| Stripe のみ (IAP なし)    | モバイルアプリで外部決済を使うと Apple 審査でリジェクトリスクあり                           |
 
 ---
 
@@ -189,6 +205,7 @@ swimhub-scanner/
 ## 5. 認証設計
 
 ### 5.1 ログインフロー
+
 1. ユーザーがアプリを開く
 2. 未ログインの場合 → ログイン画面を表示
 3. Google Sign-In または Apple Sign-In でログイン
@@ -196,12 +213,14 @@ swimhub-scanner/
 5. 以降の API 呼び出しに `Authorization: Bearer <idToken>` を付与
 
 ### 5.2 トークン検証（API Route）
+
 - リクエストヘッダーから Bearer トークンを取得
 - Firebase Admin SDK の `verifyIdToken()` で検証
 - 検証失敗 → 401 Unauthorized を返却
 - 検証成功 → `uid` を取得し、Firestore で利用状態を参照
 
 ### 5.3 Apple Sign-In 対応
+
 - iOS アプリでは Apple Sign-In が必須（App Store ガイドライン）
 - Web でも Apple Sign-In を提供（Firebase Auth が対応済み）
 
@@ -211,16 +230,17 @@ swimhub-scanner/
 
 ### 6.1 プラン比較
 
-| | 無料プラン | Premium（¥1,000/月） |
-|---|---|---|
-| 1日の利用回数 | **1回**（0:00 JST リセット） | **無制限** |
-| 1回の最大選手数 | **8名** | **無制限**（10名程度まで精度保証） |
-| リワード広告 | **解析中に表示** | **非表示** |
-| 出力機能 | 全て利用可 | 全て利用可 |
+|                 | 無料プラン                   | Premium（¥1,000/月）               |
+| --------------- | ---------------------------- | ---------------------------------- |
+| 1日の利用回数   | **1回**（0:00 JST リセット） | **無制限**                         |
+| 1回の最大選手数 | **8名**                      | **無制限**（10名程度まで精度保証） |
+| リワード広告    | **解析中に表示**             | **非表示**                         |
+| 出力機能        | 全て利用可                   | 全て利用可                         |
 
 ### 6.2 利用回数管理
 
 **Firestore データモデル**:
+
 ```typescript
 // コレクション: users/{uid}
 {
@@ -237,6 +257,7 @@ swimhub-scanner/
 ```
 
 **リセットロジック**:
+
 - 日付キー (`YYYY-MM-DD`) を JST 基準で生成
 - 当日のドキュメントが存在しなければ `scanCount: 0` で新規作成
 - `scanCount` が制限に達していたら 429 を返却
@@ -258,6 +279,7 @@ swimhub-scanner/
 ### 6.4 サブスクリプション管理
 
 **Web (Stripe)**:
+
 - Stripe Checkout Session を作成 → ユーザーが決済ページで支払い
 - Webhook イベント:
   - `checkout.session.completed` → Firestore を `premium` に更新
@@ -266,6 +288,7 @@ swimhub-scanner/
 - 月額: ¥1,000（税込）
 
 **Mobile (RevenueCat)**:
+
 - RevenueCat SDK で Apple IAP / Google Play Billing を統合
 - RevenueCat Webhook → API Route で受信
   - `INITIAL_PURCHASE` → Firestore を `premium` に更新
@@ -274,6 +297,7 @@ swimhub-scanner/
 - 月額: ¥1,000（Apple/Google の手数料 15-30% は売上から差し引かれる）
 
 ### 6.5 クロスプラットフォーム課金の同期
+
 - Web で課金 → Stripe Webhook → Firestore 更新 → モバイルでも Premium 反映
 - モバイルで課金 → RevenueCat Webhook → Firestore 更新 → Web でも Premium 反映
 - 課金状態は Firestore を Single Source of Truth とする
@@ -286,11 +310,13 @@ swimhub-scanner/
 ### 7.1 スキャン API: `POST /api/scan-timesheet`
 
 **Headers**:
+
 ```
 Authorization: Bearer <Firebase ID Token>
 ```
 
 **Request**:
+
 ```typescript
 {
   "image": string,       // base64エンコードされた画像データ
@@ -299,6 +325,7 @@ Authorization: Bearer <Firebase ID Token>
 ```
 
 **Response (200)**:
+
 ```typescript
 {
   "menu": {
@@ -325,6 +352,7 @@ Authorization: Bearer <Firebase ID Token>
 ```
 
 **Error Responses**:
+
 ```typescript
 // 401 Unauthorized
 { "error": "認証が必要です", "code": "UNAUTHORIZED" }
@@ -345,11 +373,13 @@ Authorization: Bearer <Firebase ID Token>
 ### 7.2 ユーザー状態 API: `GET /api/user/status`
 
 **Headers**:
+
 ```
 Authorization: Bearer <Firebase ID Token>
 ```
 
 **Response (200)**:
+
 ```typescript
 {
   "plan": "free" | "premium",
@@ -363,11 +393,13 @@ Authorization: Bearer <Firebase ID Token>
 ### 7.3 Stripe Checkout API: `POST /api/checkout/stripe`
 
 **Headers**:
+
 ```
 Authorization: Bearer <Firebase ID Token>
 ```
 
 **Response (200)**:
+
 ```typescript
 {
   "checkoutUrl": string  // Stripe Checkout Session の URL
@@ -404,11 +436,11 @@ Authorization: Bearer <Firebase ID Token>
 
 ### 8.1 ページ構成
 
-| ページ | パス | 説明 |
-|---|---|---|
-| ログイン | `/login` | Google / Apple Sign-In |
-| トップ / スキャン | `/` | メイン画面。画像アップロード → 解析 → 確認 → 出力 |
-| サブスクリプション | `/subscription` | プラン確認・課金・解約 |
+| ページ             | パス            | 説明                                              |
+| ------------------ | --------------- | ------------------------------------------------- |
+| ログイン           | `/login`        | Google / Apple Sign-In                            |
+| トップ / スキャン  | `/`             | メイン画面。画像アップロード → 解析 → 確認 → 出力 |
+| サブスクリプション | `/subscription` | プラン確認・課金・解約                            |
 
 ### 8.2 UX フロー
 
@@ -458,12 +490,14 @@ Authorization: Bearer <Firebase ID Token>
 ```
 
 ### 8.3 ログイン画面
+
 - アプリロゴ + サービス名
 - 「Google でログイン」ボタン
 - 「Apple でログイン」ボタン
 - サービス説明（簡潔に）
 
 ### 8.4 Step 1: 画像アップロード
+
 - ドラッグ&ドロップ or クリックでファイル選択
 - スマホの場合はカメラ撮影も選択可能（`accept="image/*" capture="environment"`）
 - モバイルアプリの場合は Expo Camera でネイティブカメラ起動
@@ -474,12 +508,14 @@ Authorization: Bearer <Firebase ID Token>
 - 「解析する」ボタン
 
 ### 8.5 Step 2: 解析中 + リワード広告
+
 - ローディングスピナー + 「画像を解析しています...」メッセージ
 - 無料ユーザー: リワード広告を表示（広告読み込み失敗時はスキップ）
 - 有料ユーザー: 広告なし
 - キャンセルボタン
 
 ### 8.6 Step 3: 結果確認・修正
+
 - **メニュー情報表示**: 距離、サークル、セット数、本数、セット説明
 - **選手×タイム テーブル**:
   - 名前・種目は編集可能
@@ -491,6 +527,7 @@ Authorization: Bearer <Firebase ID Token>
 - **出力ボタン群**（3種類）
 
 ### 8.7 サブスクリプション画面
+
 - 現在のプラン表示（Free / Premium）
 - Premium の特典一覧
 - 月額 ¥1,000 で購入ボタン
@@ -507,6 +544,7 @@ Authorization: Bearer <Firebase ID Token>
 見やすく整形されたタイム記録表を画像として生成・ダウンロード。
 
 **レイアウト**:
+
 ```
 ┌─────────────────────────────────────────────────┐
 │            タイム記録表                           │
@@ -552,27 +590,28 @@ No,名前,種目,1本目,2本目,3本目,...,平均,最速,最遅
 
 ## 10. エラーハンドリング
 
-| エラーケース | 対応 |
-|---|---|
-| 未ログイン | ログイン画面にリダイレクト |
-| 認証トークン期限切れ | 自動リフレッシュ → 失敗なら再ログイン |
-| 日次利用回数超過 | 「本日の利用回数に達しました」+ Premium 誘導 |
-| 選手数超過（無料ユーザー） | 「無料プランでは8名まで解析可能です」+ Premium 誘導 |
-| 画像が不鮮明 | 「読み取れませんでした。鮮明な画像で再試行してください」 |
-| 一部のタイムが読み取れない | null として返却 → 確認画面で黄色ハイライト → 手動入力 |
-| Gemini API エラー | リトライ1回 → 失敗なら「サーバーエラーが発生しました」表示 |
-| ネットワークエラー | 「ネットワークエラーです。接続を確認してください」 |
-| 画像サイズ超過（10MB以上） | アップロード前にバリデーション、エラー表示 |
-| 非対応の画像形式 | 「JPEG または PNG 形式の画像をアップロードしてください」 |
-| 決済エラー (Stripe) | 「決済に失敗しました。別の支払い方法をお試しください」 |
-| 決済エラー (IAP) | 「購入に失敗しました。App Store / Google Play の設定を確認してください」 |
-| 広告読み込み失敗 | 広告をスキップして解析を続行（UX を阻害しない） |
+| エラーケース               | 対応                                                                     |
+| -------------------------- | ------------------------------------------------------------------------ |
+| 未ログイン                 | ログイン画面にリダイレクト                                               |
+| 認証トークン期限切れ       | 自動リフレッシュ → 失敗なら再ログイン                                    |
+| 日次利用回数超過           | 「本日の利用回数に達しました」+ Premium 誘導                             |
+| 選手数超過（無料ユーザー） | 「無料プランでは8名まで解析可能です」+ Premium 誘導                      |
+| 画像が不鮮明               | 「読み取れませんでした。鮮明な画像で再試行してください」                 |
+| 一部のタイムが読み取れない | null として返却 → 確認画面で黄色ハイライト → 手動入力                    |
+| Gemini API エラー          | リトライ1回 → 失敗なら「サーバーエラーが発生しました」表示               |
+| ネットワークエラー         | 「ネットワークエラーです。接続を確認してください」                       |
+| 画像サイズ超過（10MB以上） | アップロード前にバリデーション、エラー表示                               |
+| 非対応の画像形式           | 「JPEG または PNG 形式の画像をアップロードしてください」                 |
+| 決済エラー (Stripe)        | 「決済に失敗しました。別の支払い方法をお試しください」                   |
+| 決済エラー (IAP)           | 「購入に失敗しました。App Store / Google Play の設定を確認してください」 |
+| 広告読み込み失敗           | 広告をスキップして解析を続行（UX を阻害しない）                          |
 
 ---
 
 ## 11. 制約・制限事項
 
 ### 11.1 アプリ制約
+
 - **対応画像**: JPEG, PNG
 - **最大画像サイズ**: 10MB
 - **最大選手数**: 無料 8名 / Premium 10名程度（それ以上は精度低下の可能性）
@@ -580,6 +619,7 @@ No,名前,種目,1本目,2本目,3本目,...,平均,最速,最遅
 - **画像データ保持**: サーバーに保存しない（解析後即破棄）
 
 ### 11.2 外部サービス制限
+
 - **Gemini 無料枠**: 15RPM, 1M トークン/日
 - **Firebase Auth 無料枠**: 50,000 MAU/月
 - **Firestore 無料枠**: 読み取り 50,000回/日、書き込み 20,000回/日
@@ -587,6 +627,7 @@ No,名前,種目,1本目,2本目,3本目,...,平均,最速,最遅
 - **Cloudflare Workers 無料枠**: 100,000 リクエスト/日
 
 ### 11.3 課金に関する注意
+
 - Apple IAP 手数料: 15%（Small Business Program 適用時）〜 30%
 - Google Play 手数料: 15%（年間 $1M まで）〜 30%
 - Web (Stripe) 手数料: 3.6%
@@ -596,17 +637,17 @@ No,名前,種目,1本目,2本目,3本目,...,平均,最速,最遅
 
 ## 12. 将来の拡張
 
-| 機能 | 説明 | 優先度 |
-|---|---|---|
-| 複数画像対応 | 2ページにまたがる記録表を連結して解析 | 高 |
-| テンプレート機能 | よく使うメニュー構成を保存・再利用 | 中 |
-| PDF 出力 | 印刷用 PDF ファイルの出力 | 中 |
-| 履歴機能 | Firestore にスキャン履歴を保存（Premium のみ） | 中 |
-| チーム課金プラン | チーム単位でのサブスク（複数コーチで共有） | 中 |
-| PWA 対応 | Web版をホーム画面追加可能に、モバイルアプリへの誘導 | 低 |
-| モデル切り替え | Gemini Pro / Claude への動的切り替え | 低 |
-| バッチ処理 | 複数画像を一括アップロード・一括出力 | 低 |
-| プッシュ通知 | モバイルアプリでの練習リマインダー等 | 低 |
+| 機能             | 説明                                                | 優先度 |
+| ---------------- | --------------------------------------------------- | ------ |
+| 複数画像対応     | 2ページにまたがる記録表を連結して解析               | 高     |
+| テンプレート機能 | よく使うメニュー構成を保存・再利用                  | 中     |
+| PDF 出力         | 印刷用 PDF ファイルの出力                           | 中     |
+| 履歴機能         | Firestore にスキャン履歴を保存（Premium のみ）      | 中     |
+| チーム課金プラン | チーム単位でのサブスク（複数コーチで共有）          | 中     |
+| PWA 対応         | Web版をホーム画面追加可能に、モバイルアプリへの誘導 | 低     |
+| モデル切り替え   | Gemini Pro / Claude への動的切り替え                | 低     |
+| バッチ処理       | 複数画像を一括アップロード・一括出力                | 低     |
+| プッシュ通知     | モバイルアプリでの練習リマインダー等                | 低     |
 
 ---
 

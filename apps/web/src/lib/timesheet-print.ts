@@ -223,10 +223,7 @@ function generateTimesheetHtml(): string {
  * テーブルHTMLを生成
  */
 function buildTableHtml(): string {
-  const thCells = Array.from(
-    { length: NUM_COLUMNS },
-    (_, i) => `<th>${i + 1}</th>`,
-  ).join("");
+  const thCells = Array.from({ length: NUM_COLUMNS }, (_, i) => `<th>${i + 1}</th>`).join("");
 
   const headerRow = `<tr><th class="col-name">名前</th><th class="col-style">種目</th>${thCells}</tr>`;
 
@@ -243,13 +240,8 @@ function buildTableHtml(): string {
       rows.push(headerRow);
     }
 
-    const mainCells = Array.from(
-      { length: NUM_COLUMNS },
-      () => `<td class="cell"></td>`,
-    ).join("");
-    rows.push(
-      `<tr><td class="col-name"></td><td class="col-style"></td>${mainCells}</tr>`,
-    );
+    const mainCells = Array.from({ length: NUM_COLUMNS }, () => `<td class="cell"></td>`).join("");
+    rows.push(`<tr><td class="col-name"></td><td class="col-style"></td>${mainCells}</tr>`);
 
     if (i < DATA_ROWS - 1 && (i + 1) % HEADER_REPEAT_INTERVAL !== 0) {
       const spacerCells = Array.from(

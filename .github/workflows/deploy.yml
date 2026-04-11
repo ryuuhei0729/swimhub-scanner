@@ -30,23 +30,23 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: pnpm turbo build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+        working-directory: apps/web
+        run: |
+          # .env.production から NEXT_PUBLIC_* を自動読み込み
+          pnpm build
 
       - name: Build for Cloudflare
         working-directory: apps/web
-        run: npx opennextjs-cloudflare build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+        run: pnpm exec opennextjs-cloudflare build
 
       - name: Deploy to Cloudflare Workers
         working-directory: apps/web
-        run: npx wrangler deploy
+        run: |
+          # .env.production から変数を読み込んで wrangler に渡す
+          set -a && source .env.production && set +a
+          pnpm exec wrangler deploy \
+            --var NEXT_PUBLIC_SUPABASE_URL:$NEXT_PUBLIC_SUPABASE_URL \
+            --var NEXT_PUBLIC_SUPABASE_ANON_KEY:$NEXT_PUBLIC_SUPABASE_ANON_KEY
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

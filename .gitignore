@@ -2,11 +2,23 @@ node_modules/
 .next/
 dist/
 .turbo/
+package-lock.json
+# env files
 .env
 .env.local
+.env.*.local
+.env.production
+!apps/web/.env.production
 .dev.vars
+
+# dotenvx keys
+.env.keys
+.env.*.keys
+**/.env.keys
+**/.env.*.keys
 *.tsbuildinfo
 .open-next/
 .wrangler/
 .DS_Store
 *.ipa
+*.tar.gz

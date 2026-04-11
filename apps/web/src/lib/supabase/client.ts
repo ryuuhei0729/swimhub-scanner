@@ -30,9 +30,9 @@ export const supabase: SupabaseClient | undefined =
       ))
     : undefined;
 
-export function getSupabaseBrowserClient(): SupabaseClient {
+export function getSupabaseBrowserClient(): SupabaseClient | undefined {
   if (typeof window === "undefined") {
-    throw new Error("getSupabaseBrowserClient()はブラウザ環境でのみ使用できます");
+    return undefined;
   }
   if (!supabase) {
     throw new Error("Supabaseクライアントが初期化されていません");

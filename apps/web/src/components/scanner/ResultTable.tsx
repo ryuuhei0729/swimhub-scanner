@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import type { ScanTimesheetResponse, SwimmerResult, SwimStroke } from "@swimhub-scanner/shared";
 import { averageTime, fastestTime, slowestTime, formatCircleTime } from "@swimhub-scanner/shared";
-import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/Button";
+import type { TFunction } from "i18next";
 
 interface ResultTableProps {
   data: ScanTimesheetResponse;
@@ -60,18 +61,19 @@ function DeleteConfirmDialog({
   swimmerName,
   onConfirm,
   onCancel,
+  t,
 }: {
   swimmerName: string;
   onConfirm: () => void;
   onCancel: () => void;
+  t: TFunction;
 }) {
-  const { t } = useTranslation();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="w-72 rounded-lg bg-white p-5 shadow-xl">
         <p className="text-sm text-gray-700">
           <span className="font-medium">{swimmerName || t("result.thisSwimmer")}</span>
-          {t("result.deleteSwimmerConfirm")}
+          {t("result.deleteConfirm")}
         </p>
         <div className="mt-4 flex justify-end gap-2">
           <button
@@ -159,7 +161,7 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
   // Generate set header labels
   const setHeaders: { label: string; colSpan: number }[] = [];
   for (let s = 0; s < data.menu.setCount; s++) {
-    setHeaders.push({ label: t("result.setHeader", { n: s + 1 }), colSpan: data.menu.repCount });
+    setHeaders.push({ label: `${s + 1} ${t("result.set")}`, colSpan: data.menu.repCount });
   }
 
   const { menu } = data;
@@ -168,16 +170,12 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
     <div className="w-full space-y-4">
       {/* Menu info */}
       <div className="rounded-lg bg-gray-50 px-4 py-3 space-y-1">
-        {menu.description && (
-          <p className="text-sm text-gray-500">{menu.description}</p>
-        )}
+        {menu.description && <p className="text-sm text-gray-500">{menu.description}</p>}
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-gray-700">
-          <span>{t("result.distance")}: {menu.distance}m</span>
-          <span>{t("result.repCount")}: {menu.repCount}</span>
-          <span>{t("result.setCount")}: {menu.setCount}</span>
-          {menu.circle != null && (
-            <span>{t("result.circle")}: {formatCircleTime(menu.circle)}</span>
-          )}
+          <span>{`${t("result.distance")}:`} {menu.distance}m</span>
+          <span>{`${t("result.repCount")}:`} {menu.repCount}</span>
+          <span>{`${t("result.setCount")}:`} {menu.setCount}</span>
+          {menu.circle != null && <span>{`${t("result.circle")}:`} {formatCircleTime(menu.circle)}</span>}
         </div>
       </div>
 
@@ -190,6 +188,7 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
             setDeleteTarget(null);
           }}
           onCancel={() => setDeleteTarget(null)}
+          t={t}
         />
       )}
 
@@ -209,13 +208,21 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
           <thead>
             {/* Set row + Column headers */}
             <tr className="border-b bg-gray-100">
-              <th rowSpan={2} className="sticky left-0 z-10 bg-gray-50 px-1 py-1 text-center align-middle font-medium">
+              <th
+                rowSpan={2}
+                className="sticky left-0 z-10 bg-gray-50 px-1 py-1 text-center align-middle font-medium"
+              >
                 {t("result.no")}
               </th>
-              <th rowSpan={2} className="sticky left-7 z-10 bg-gray-50 px-1 py-1 text-left align-middle font-medium">
+              <th
+                rowSpan={2}
+                className="sticky left-7 z-10 bg-gray-50 px-1 py-1 text-left align-middle font-medium"
+              >
                 {t("result.name")}
               </th>
-              <th rowSpan={2} className="bg-gray-50 px-1 py-1 text-center align-middle font-medium">{t("result.style")}</th>
+              <th rowSpan={2} className="bg-gray-50 px-1 py-1 text-center align-middle font-medium">
+                {t("result.style")}
+              </th>
               {setHeaders.map((h, i) => (
                 <th
                   key={i}
@@ -225,7 +232,9 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
                   {h.label}
                 </th>
               ))}
-              <th rowSpan={2} className="border-l px-2 py-1 text-center align-middle font-medium">{t("result.average")}</th>
+              <th rowSpan={2} className="border-l px-2 py-1 text-center align-middle font-medium">
+                {t("result.average")}
+              </th>
               <th rowSpan={2} className="w-8" />
             </tr>
             <tr className="border-b bg-gray-50">
@@ -266,7 +275,7 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
                         className="cursor-pointer hover:text-blue-600"
                         onClick={() => setEditingCell({ swimmerIdx: sIdx, field: "name" })}
                       >
-                        {swimmer.name || <span className="text-gray-400">{t("result.notEntered")}</span>}
+                        {swimmer.name || <span className="text-gray-400">{t("result.noInput")}</span>}
                       </span>
                     )}
                   </td>
@@ -300,29 +309,29 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
                   {swimmer.times.map((time, tIdx) => {
                     const isSetStart = tIdx > 0 && tIdx % data.menu.repCount === 0;
                     return (
-                    <td
-                      key={tIdx}
-                      className={`px-1 py-2 text-center tabular-nums ${isSetStart ? "border-l-2 border-l-gray-400" : "border-l"} ${getCellStyle(time, swimmer)}`}
-                    >
-                      {editingCell?.swimmerIdx === sIdx &&
-                      editingCell?.field === "time" &&
-                      editingCell?.timeIdx === tIdx ? (
-                        <TimeInput
-                          initialValue={time}
-                          onCommit={(val) => updateTime(sIdx, tIdx, val)}
-                          onClose={() => setEditingCell(null)}
-                        />
-                      ) : (
-                        <span
-                          className="cursor-pointer"
-                          onClick={() =>
-                            setEditingCell({ swimmerIdx: sIdx, field: "time", timeIdx: tIdx })
-                          }
-                        >
-                          {time !== null ? time.toFixed(1) : "-"}
-                        </span>
-                      )}
-                    </td>
+                      <td
+                        key={tIdx}
+                        className={`px-1 py-2 text-center tabular-nums ${isSetStart ? "border-l-2 border-l-gray-400" : "border-l"} ${getCellStyle(time, swimmer)}`}
+                      >
+                        {editingCell?.swimmerIdx === sIdx &&
+                        editingCell?.field === "time" &&
+                        editingCell?.timeIdx === tIdx ? (
+                          <TimeInput
+                            initialValue={time}
+                            onCommit={(val) => updateTime(sIdx, tIdx, val)}
+                            onClose={() => setEditingCell(null)}
+                          />
+                        ) : (
+                          <span
+                            className="cursor-pointer"
+                            onClick={() =>
+                              setEditingCell({ swimmerIdx: sIdx, field: "time", timeIdx: tIdx })
+                            }
+                          >
+                            {time !== null ? time.toFixed(1) : "-"}
+                          </span>
+                        )}
+                      </td>
                     );
                   })}
                   <td className="border-l px-2 py-2 text-center tabular-nums font-medium">
@@ -335,10 +344,20 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
                         setDeleteTarget(sIdx);
                       }}
                       className="text-gray-400 hover:text-red-500"
-                      title={t("result.deleteTooltip")}
+                      title={t("common.delete")}
                     >
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
                       </svg>
                     </button>
                   </td>
