@@ -14,10 +14,19 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PullToRefresh } from "@/components/ui/PullToRefresh";
 import { openTimesheetPrintWindow } from "@/lib/timesheet-print";
 
-type Step = "upload" | "scanning" | "result";
+export type Step = "upload" | "scanning" | "result";
 
-export function ScannerFlow() {
-  const [step, setStep] = useState<Step>("upload");
+interface ScannerFlowProps {
+  onStepChange?: (step: Step) => void;
+}
+
+export function ScannerFlow({ onStepChange }: ScannerFlowProps) {
+  const [step, _setStep] = useState<Step>("upload");
+
+  const setStep = useCallback((newStep: Step) => {
+    _setStep(newStep);
+    onStepChange?.(newStep);
+  }, [onStepChange]);
   const [image, setImage] = useState<{ base64: string; mimeType: "image/jpeg" | "image/png" } | null>(null);
   const [result, setResult] = useState<ScanTimesheetResponse | null>(null);
   const [error, setError] = useState<string | null>(null);

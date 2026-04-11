@@ -8,3 +8,5 @@ dist/
 *.tsbuildinfo
 .open-next/
 .wrangler/
+.DS_Store
+*.ipa
