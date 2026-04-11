@@ -36,7 +36,7 @@ export const localizeAuthError = (message: string): string => {
 
   for (const [key, translationKey] of Object.entries(errorKeyMap)) {
     if (lowerMessage === key || lowerMessage.includes(key)) {
-      return i18n.t(translationKey);
+      return i18n.t(translationKey, { defaultValue: translationKey });
     }
   }
 

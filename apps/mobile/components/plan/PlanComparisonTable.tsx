@@ -53,7 +53,7 @@ function CellContent({ value }: { value: CellValue }) {
 
   return (
     <Text style={styles.cellText}>
-      {t(value as Parameters<typeof t>[0])}
+      {t(value, { defaultValue: value })}
     </Text>
   );
 }
@@ -107,7 +107,7 @@ export function PlanComparisonTable({ currentPlan }: PlanComparisonTableProps) {
         >
           <View style={styles.featureCell}>
             <Text style={styles.featureLabel}>
-              {t(row.labelKey as Parameters<typeof t>[0])}
+              {t(row.labelKey, { defaultValue: row.labelKey })}
             </Text>
           </View>
           {COLUMNS.map((col) => (

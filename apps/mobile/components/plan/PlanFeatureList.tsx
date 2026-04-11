@@ -64,11 +64,11 @@ export function PlanFeatureList({ currentPlan }: PlanFeatureListProps) {
                     !available && styles.featureLabelMuted,
                   ]}
                 >
-                  {t(feature.labelKey as Parameters<typeof t>[0])}
+                  {t(feature.labelKey, { defaultValue: feature.labelKey })}
                 </Text>
                 {!available && feature.unlockConditionKey && (
                   <Text style={styles.unlockCondition}>
-                    {t(feature.unlockConditionKey as Parameters<typeof t>[0])}
+                    {t(feature.unlockConditionKey, { defaultValue: feature.unlockConditionKey })}
                   </Text>
                 )}
               </View>
