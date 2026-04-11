@@ -14,6 +14,8 @@ const ja = {
     next: "次へ",
     save: "保存",
     ok: "OK",
+    loading: "読み込み中",
+    loadingApp: "アプリケーションを読み込み中...",
   },
   meta: {
     title: "SwimHub Scanner - 手書きタイム記録表をAIで自動デジタル化",
