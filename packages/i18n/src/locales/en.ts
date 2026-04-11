@@ -16,6 +16,8 @@ const en: TranslationShape = {
     next: "Next",
     save: "Save",
     ok: "OK",
+    loading: "Loading",
+    loadingApp: "Loading application...",
   },
   meta: {
     title: "SwimHub Scanner - Digitize Handwritten Swim Time Sheets with AI",

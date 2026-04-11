@@ -47,7 +47,6 @@ export async function generateMetadata({
     description: t.meta.description,
     metadataBase: new URL(siteUrl),
     alternates: {
-      canonical: `/${locale}`,
       languages: {
         ja: "/ja",
         en: "/en",
