@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { verifyAuth, ensureUserDocument } from "@/lib/api-helpers";
 import { canUserScan, incrementScanCount, logTokenConsumption } from "@/lib/supabase/usage";
 import { scanTimesheetWithGemini } from "@/lib/gemini/client";
@@ -6,6 +7,8 @@ import { validateImageMimeType, validateImageSize, estimateBase64Size } from "@s
 import { validateScanResult } from "@swimhub-scanner/shared/validation/scan-result";
 import { PLAN_LIMITS } from "@swimhub-scanner/shared/types/plan";
 import type { ScanTimesheetRequest, ScanTimesheetResponse, ApiErrorResponse } from "@swimhub-scanner/shared/types/api";
+import { getClientIp } from "@/lib/client-ip";
+import { checkGuestRateLimit, incrementGuestScanCount } from "@/lib/rate-limit";
 
 /**
  * ゲストリクエストかどうか判定
@@ -96,6 +99,22 @@ async function performScan(
 export async function POST(request: NextRequest) {
   // === ゲストモード ===
   if (isGuestRequest(request)) {
+    // IP ベースのレート制限 (KV による サーバーサイド強制)
+    const ip = getClientIp(request);
+    const { env } = await getCloudflareContext({ async: true });
+    const kv = env.RATE_LIMIT_KV;
+
+    const { allowed } = await checkGuestRateLimit(kv, ip);
+    if (!allowed) {
+      return NextResponse.json<ApiErrorResponse>(
+        {
+          error: "本日の無料利用回数に達しました。アカウント登録で利用回数が増えます。",
+          code: "DAILY_LIMIT_EXCEEDED",
+        },
+        { status: 429 },
+      );
+    }
+
     let body: ScanTimesheetRequest;
     try {
       body = await request.json();
@@ -108,7 +127,14 @@ export async function POST(request: NextRequest) {
 
     // ゲストはguestプランの制限を適用（選手数上限）
     const maxSwimmers = PLAN_LIMITS.guest.maxSwimmers;
-    return performScan(body, maxSwimmers);
+    const result = await performScan(body, maxSwimmers);
+
+    // スキャン成功時のみカウントをインクリメント
+    if (result.status === 200) {
+      await incrementGuestScanCount(kv, ip);
+    }
+
+    return result;
   }
 
   // === 認証済みユーザー ===
