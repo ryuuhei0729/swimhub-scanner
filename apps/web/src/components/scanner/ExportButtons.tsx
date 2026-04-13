@@ -76,44 +76,55 @@ export function ExportButtons({ data }: ExportButtonsProps) {
   }, [data, t]);
 
   const exportExcel = useCallback(async () => {
-    const XLSX = await import("xlsx");
+    const ExcelJS = (await import("exceljs")).default;
     const { headers, rows } = buildRows(data, t);
 
-    const wsData = [headers, ...rows];
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet(t("export.timeRecord"));
 
-    // Column widths
-    ws["!cols"] = [
-      { wch: 4 }, // No
-      { wch: 12 }, // Name
-      { wch: 5 }, // Style
-      ...Array(data.menu.repCount * data.menu.setCount).fill({ wch: 7 }),
-      { wch: 7 }, // Avg
-      { wch: 7 }, // Fast
-      { wch: 7 }, // Slow
+    // Column widths: No=4, Name=12, Style=5, time cols=7, Avg/Fast/Slow=7
+    const colWidths = [
+      4, // No
+      12, // Name
+      5, // Style
+      ...Array(data.menu.repCount * data.menu.setCount).fill(7),
+      7, // Avg
+      7, // Fast
+      7, // Slow
     ];
+    colWidths.forEach((width, i) => {
+      worksheet.getColumn(i + 1).width = width;
+    });
 
-    const wb = XLSX.utils.book_new();
-
-    // Add menu info as first row
-    const infoSheet = XLSX.utils.aoa_to_sheet([
-      [t("export.menu"), data.menu.description],
-      [
-        t("result.distance"),
-        `${data.menu.distance}m`,
-        t("result.repCount"),
-        `${data.menu.repCount}`,
-        t("result.setCount"),
-        `${data.menu.setCount}`,
-      ],
-      ...(data.menu.circle ? [[t("result.circle"), formatCircleTime(data.menu.circle)]] : []),
-      [],
-      ...wsData,
+    // Menu info rows
+    worksheet.addRow([t("export.menu"), data.menu.description]);
+    worksheet.addRow([
+      t("result.distance"),
+      `${data.menu.distance}m`,
+      t("result.repCount"),
+      `${data.menu.repCount}`,
+      t("result.setCount"),
+      `${data.menu.setCount}`,
     ]);
-    infoSheet["!cols"] = ws["!cols"];
+    if (data.menu.circle) {
+      worksheet.addRow([t("result.circle"), formatCircleTime(data.menu.circle)]);
+    }
+    worksheet.addRow([]);
 
-    XLSX.utils.book_append_sheet(wb, infoSheet, t("export.timeRecord"));
-    XLSX.writeFile(wb, `${t("export.timeRecord")}_${getDateString()}.xlsx`);
+    // Header row + data rows
+    worksheet.addRow(headers);
+    rows.forEach((row) => worksheet.addRow(row));
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${t("export.timeRecord")}_${getDateString()}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
   }, [data, t]);
 
   const exportImage = useCallback(async () => {
