@@ -684,10 +684,10 @@ export default function ScannerScreen() {
                 style={styles.modalCloseButton}
                 onPress={() => setTemplatePreviewVisible(false)}
               >
-                <Text style={styles.modalCloseText}>閉じる</Text>
+                <Text style={styles.modalCloseText}>{t("common.close")}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalSaveButton} onPress={shareTimesheetImage}>
-                <Text style={styles.modalSaveText}>保存する</Text>
+                <Text style={styles.modalSaveText}>{t("common.save")}</Text>
               </TouchableOpacity>
             </View>
           </SafeAreaView>
