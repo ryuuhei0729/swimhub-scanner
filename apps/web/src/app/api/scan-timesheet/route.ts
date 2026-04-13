@@ -104,6 +104,14 @@ export async function POST(request: NextRequest) {
     const { env } = await getCloudflareContext({ async: true });
     const kv = env.RATE_LIMIT_KV;
 
+    if (!kv) {
+      console.error("RATE_LIMIT_KV binding is not configured");
+      return NextResponse.json<ApiErrorResponse>(
+        { error: "サーバー設定エラーが発生しました", code: "API_ERROR" },
+        { status: 500 },
+      );
+    }
+
     const { allowed } = await reserveGuestScan(kv, ip);
     if (!allowed) {
       return NextResponse.json<ApiErrorResponse>(
