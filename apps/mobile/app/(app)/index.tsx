@@ -79,16 +79,24 @@ export default function ScannerScreen() {
 
   // Onboarding: check if first-time user
   useEffect(() => {
-    AsyncStorage.getItem(ONBOARDING_SEEN_KEY).then((value) => {
-      if (value === null) {
-        setShowOnboarding(true);
-      }
-    });
+    AsyncStorage.getItem(ONBOARDING_SEEN_KEY)
+      .then((value) => {
+        if (value === null) {
+          setShowOnboarding(true);
+        }
+      })
+      .catch(() => {
+        // AsyncStorage failure is non-critical — skip onboarding
+      });
   }, []);
 
   const dismissOnboarding = useCallback(async () => {
     setShowOnboarding(false);
-    await AsyncStorage.setItem(ONBOARDING_SEEN_KEY, "1");
+    try {
+      await AsyncStorage.setItem(ONBOARDING_SEEN_KEY, "1");
+    } catch {
+      // Best-effort persistence — onboarding may show again next launch
+    }
   }, []);
 
   const fetchStatus = useCallback(async () => {
