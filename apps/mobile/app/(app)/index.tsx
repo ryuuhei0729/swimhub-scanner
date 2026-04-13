@@ -26,6 +26,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getUserStatus, scanTimesheet, guestScanTimesheet, ApiError } from "@/lib/api-client";
 import { canGuestScanToday, recordGuestScan, getGuestTodayCount } from "@/lib/guest-daily-limit";
 import { PLAN_LIMITS, checkIsPremium } from "@swimhub-scanner/shared";
@@ -48,6 +49,8 @@ import {
 import { colors, spacing, radius, fontSize } from "@/theme";
 import { UsageIndicator } from "@/components/plan/UsageIndicator";
 
+const ONBOARDING_SEEN_KEY = "swimhub_scanner_onboarding_seen";
+
 type Step = "idle" | "scanning" | "result";
 
 export default function ScannerScreen() {
@@ -66,6 +69,8 @@ export default function ScannerScreen() {
   const [statusLoading, setStatusLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [templatePreviewVisible, setTemplatePreviewVisible] = useState(false);
+  const [templateSectionOpen, setTemplateSectionOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // --- Pinch zoom state for template preview modal ---
   const scale = useSharedValue(1);
@@ -85,6 +90,28 @@ export default function ScannerScreen() {
 
   // Premium ユーザーかどうか（広告制御で使うため早めに定義）
   const isPremium = checkIsPremium(subscription);
+
+  // Onboarding: check if first-time user
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_SEEN_KEY)
+      .then((value) => {
+        if (value === null) {
+          setShowOnboarding(true);
+        }
+      })
+      .catch(() => {
+        // AsyncStorage failure is non-critical — skip onboarding
+      });
+  }, []);
+
+  const dismissOnboarding = useCallback(async () => {
+    setShowOnboarding(false);
+    try {
+      await AsyncStorage.setItem(ONBOARDING_SEEN_KEY, "1");
+    } catch {
+      // Best-effort persistence — onboarding may show again next launch
+    }
+  }, []);
 
   const fetchStatus = useCallback(async () => {
     setStatusLoading(true);
@@ -479,18 +506,23 @@ export default function ScannerScreen() {
     );
   }
 
-  const steps = [t("scanner.step1"), t("scanner.step2"), t("scanner.step3")];
+  // Step 1 step flow data
+  const stepFlow: Array<{ icon: React.ComponentProps<typeof Feather>["name"]; label: string }> = [
+    { icon: "camera", label: t("scanner.step1Short") },
+    { icon: "cpu", label: t("scanner.step2Short") },
+    { icon: "download-cloud", label: t("scanner.step3Short") },
+  ];
 
   // Step 1: 画像選択
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.idleContainer}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>{t("scanner.heroTitle")}</Text>
-          <Text style={styles.subtitle}>{t("scanner.subtitle")}</Text>
-
-          {/* Auth action bar */}
+      <ScrollView
+        contentContainerStyle={styles.idleScrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+      >
+        {/* Top bar: auth chip */}
+        <View style={styles.topBar}>
           {isAuthenticated ? (
             <Pressable
               style={styles.accountChip}
@@ -511,15 +543,35 @@ export default function ScannerScreen() {
                 <Text style={styles.loginChipText}>{t("common.login")}</Text>
                 <Ionicons name="arrow-forward" size={14} color={colors.white} />
               </Pressable>
-              <Text style={styles.guestHint}>{t("scanner.guestLimitHint")}</Text>
-              <Text style={styles.guestHintSub}>{t("scanner.registerUnlockHint")}</Text>
             </View>
           )}
         </View>
 
-        {/* Main card */}
-        <View style={styles.card}>
-          {/* Usage indicator */}
+        {/* Hero message */}
+        <View style={styles.heroSection}>
+          <Text style={styles.heroMessage}>{t("scanner.heroMessage")}</Text>
+        </View>
+
+        {/* Visual step flow */}
+        <View style={styles.stepFlow}>
+          {stepFlow.map((item, i) => (
+            <React.Fragment key={item.label}>
+              <View style={styles.stepCard}>
+                <View style={styles.stepCardIcon}>
+                  <Feather name={item.icon} size={20} color={colors.primary} />
+                </View>
+                <Text style={styles.stepCardLabel}>{item.label}</Text>
+              </View>
+              {i < stepFlow.length - 1 && (
+                <Feather name="arrow-right" size={14} color={colors.mutedLight} style={styles.stepArrow} />
+              )}
+            </React.Fragment>
+          ))}
+        </View>
+
+        {/* Main CTA card */}
+        <View style={styles.ctaCard}>
+          {/* Usage indicator inside card */}
           {!statusLoading && (
             <UsageIndicator
               plan={isPremium ? "premium" : isGuest ? "guest" : "free"}
@@ -571,25 +623,19 @@ export default function ScannerScreen() {
               </Pressable>
             </>
           ) : (
-            <>
-              <View style={styles.iconCircle}>
-                <Feather name="camera" size={26} color={colors.muted} />
+            <Pressable
+              style={({ pressed }) => [
+                styles.ctaTouchTarget,
+                pressed && styles.ctaTouchTargetPressed,
+              ]}
+              onPress={showImagePickerOptions}
+            >
+              <View style={styles.ctaIconCircle}>
+                <Feather name="camera" size={36} color={colors.primary} />
               </View>
-              <Text style={styles.cardTitle}>{t("scanner.selectImage")}</Text>
-              <Text style={styles.cardDescription}>
-                {t("scanner.selectImageDesc")}
-              </Text>
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.primaryButton,
-                  pressed && styles.buttonPressed,
-                ]}
-                onPress={showImagePickerOptions}
-              >
-                <Text style={styles.primaryButtonText}>{t("scanner.selectImage")}</Text>
-              </Pressable>
-            </>
+              <Text style={styles.ctaTitle}>{t("scanner.selectImage")}</Text>
+              <Text style={styles.ctaDescription}>{t("scanner.selectImageDesc")}</Text>
+            </Pressable>
           )}
 
           {/* Error */}
@@ -621,41 +667,55 @@ export default function ScannerScreen() {
           )}
         </View>
 
-        {/* Step guide */}
-        <View style={styles.steps}>
-          {steps.map((label, i) => (
-            <View key={label} style={styles.stepRow}>
-              <View style={[styles.stepDot, i === 0 && styles.stepDotActive]}>
-                <Text style={[styles.stepNumber, i === 0 && styles.stepNumberActive]}>{i + 1}</Text>
-              </View>
-              <Text style={[styles.stepLabel, i === 0 && styles.stepLabelActive]}>{label}</Text>
+        {/* Guest hint below card */}
+        {!isAuthenticated && (
+          <View style={styles.guestHintRow}>
+            <Text style={styles.guestHintText}>{t("scanner.guestLimitHint")}</Text>
+            <Text style={styles.guestHintSub}>{t("scanner.registerUnlockHint")}</Text>
+          </View>
+        )}
+
+        {/* Collapsible template section */}
+        <View style={styles.templateSection}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.templateToggleRow,
+              pressed && styles.templateTogglePressed,
+            ]}
+            onPress={() => setTemplateSectionOpen((v) => !v)}
+          >
+            <Feather
+              name={templateSectionOpen ? "chevron-down" : "chevron-right"}
+              size={14}
+              color={colors.muted}
+            />
+            <Text style={styles.templateToggleText}>{t("scanner.templateToggle")}</Text>
+          </Pressable>
+
+          {templateSectionOpen && (
+            <View style={styles.templateButtonRow}>
+              <TouchableOpacity
+                style={styles.templateButton}
+                onPress={shareTimesheetPdf}
+                activeOpacity={0.7}
+              >
+                <Feather name="file-text" size={14} color={colors.primary} />
+                <Text style={styles.templateButtonText}>PDF</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.templateButton}
+                onPress={() => setTemplatePreviewVisible(true)}
+                activeOpacity={0.7}
+              >
+                <Feather name="image" size={14} color={colors.primary} />
+                <Text style={styles.templateButtonText}>画像</Text>
+              </TouchableOpacity>
             </View>
-          ))}
+          )}
         </View>
 
-        {/* Template buttons */}
-        <View style={styles.templateSection}>
-          <Text style={styles.templateLabel}>{t("scanner.templateLabel")}</Text>
-          <View style={styles.templateButtonRow}>
-            <TouchableOpacity
-              style={styles.templateButton}
-              onPress={shareTimesheetPdf}
-              activeOpacity={0.7}
-            >
-              <Feather name="file-text" size={16} color={colors.primary} />
-              <Text style={styles.templateButtonText}>PDF</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.templateButton}
-              onPress={() => setTemplatePreviewVisible(true)}
-              activeOpacity={0.7}
-            >
-              <Feather name="image" size={16} color={colors.primary} />
-              <Text style={styles.templateButtonText}>画像</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+        <View style={{ height: spacing.xl }} />
+      </ScrollView>
 
       {/* テンプレート画像プレビューモーダル */}
       <Modal
@@ -693,6 +753,17 @@ export default function ScannerScreen() {
           </SafeAreaView>
         </TouchableOpacity>
       </Modal>
+
+      {/* First-time onboarding overlay */}
+      {showOnboarding && (
+        <Pressable style={styles.onboardingOverlay} onPress={dismissOnboarding}>
+          <View style={styles.onboardingContent}>
+            <View style={styles.onboardingArrow} />
+            <Text style={styles.onboardingText}>{t("scanner.onboardingHint")}</Text>
+            <Text style={styles.onboardingDismiss}>{t("common.close")}</Text>
+          </View>
+        </Pressable>
+      )}
     </SafeAreaView>
   );
 }
@@ -702,23 +773,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  // Step 1: Idle
-  idleContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: spacing.xl,
+  // Step 1: Idle - scroll wrapper
+  idleScrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
   },
-  header: {
+  // Top bar
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
     alignItems: "center",
-    marginBottom: 48,
-    width: "100%",
-  },
-  title: {
-    fontSize: fontSize["4xl"],
-    fontWeight: "800",
-    color: colors.text,
-    letterSpacing: -0.5,
+    marginBottom: spacing.xl,
   },
   accountChip: {
     flexDirection: "row",
@@ -728,7 +794,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.xxl,
     paddingVertical: spacing.sm,
     paddingHorizontal: 14,
-    marginTop: spacing.lg,
     borderWidth: 1,
     borderColor: colors.primaryBorder,
   },
@@ -739,23 +804,13 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   guestBar: {
+    flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
-    marginTop: spacing.lg,
   },
   guestLabel: {
-    fontSize: 13,
+    fontSize: fontSize.sm,
     color: colors.mutedLight,
-    fontWeight: "500",
-  },
-  guestHint: {
-    fontSize: 12,
-    color: colors.muted,
-    marginTop: spacing.xs,
-  },
-  guestHintSub: {
-    fontSize: 12,
-    color: colors.primary,
     fontWeight: "500",
   },
   loginChip: {
@@ -772,13 +827,49 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: colors.white,
   },
-  subtitle: {
-    fontSize: fontSize.sm,
-    color: colors.muted,
-    marginTop: spacing.sm,
+  // Hero message
+  heroSection: {
+    marginBottom: spacing.xl,
+  },
+  heroMessage: {
+    fontSize: fontSize["3xl"],
+    fontWeight: "800",
+    color: colors.text,
+    lineHeight: 34,
+    letterSpacing: -0.3,
+  },
+  // Visual step flow
+  stepFlow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.xl,
+    gap: spacing.xs,
+  },
+  stepCard: {
+    alignItems: "center",
+    gap: spacing.xs,
+    flex: 1,
+  },
+  stepCardIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: colors.primaryLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepCardLabel: {
+    fontSize: fontSize.xs,
+    fontWeight: "600",
+    color: colors.textSecondary,
     textAlign: "center",
   },
-  card: {
+  stepArrow: {
+    marginBottom: 20,
+  },
+  // Main CTA card
+  ctaCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.xxl,
     padding: spacing.xl,
@@ -786,25 +877,40 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.md,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    marginBottom: spacing.md,
   },
-  iconCircle: {
-    width: 56,
-    height: 56,
+  ctaTouchTarget: {
+    width: "100%",
+    alignItems: "center",
+    paddingVertical: spacing.xl,
+    gap: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.primaryBorder,
+    borderStyle: "dashed",
     borderRadius: radius.xl,
-    backgroundColor: colors.surfaceRaised,
+  },
+  ctaTouchTargetPressed: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary,
+  },
+  ctaIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: radius.xxl,
+    backgroundColor: colors.primaryLight,
     alignItems: "center",
     justifyContent: "center",
   },
-  cardTitle: {
+  ctaTitle: {
     fontSize: fontSize.xxl,
     fontWeight: "700",
     color: colors.text,
   },
-  cardDescription: {
+  ctaDescription: {
     fontSize: fontSize.sm,
     color: colors.muted,
     textAlign: "center",
@@ -900,67 +1006,52 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     textDecorationLine: "underline",
   },
-  steps: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 40,
-    gap: spacing.xl,
-  },
-  stepRow: {
+  // Guest hint row
+  guestHintRow: {
     alignItems: "center",
-    gap: 6,
+    gap: 2,
+    marginBottom: spacing.md,
   },
-  stepDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.surfaceRaised,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  stepDotActive: {
-    backgroundColor: colors.primaryMuted,
-    borderColor: colors.primaryMutedBorder,
-  },
-  stepNumber: {
+  guestHintText: {
     fontSize: fontSize.xs,
-    fontWeight: "700",
     color: colors.muted,
+    textAlign: "center",
   },
-  stepNumberActive: {
+  guestHintSub: {
+    fontSize: fontSize.xs,
     color: colors.primary,
+    fontWeight: "500",
   },
-  stepLabel: {
-    fontSize: fontSize.sm,
-    color: colors.muted,
-  },
-  stepLabelActive: {
-    color: colors.text,
-    fontWeight: "600",
-  },
+  // Collapsible template section
   templateSection: {
-    marginTop: spacing.xl,
-    alignItems: "center",
+    alignItems: "flex-start",
     width: "100%",
   },
-  templateLabel: {
-    fontSize: fontSize.xs,
+  templateToggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+  },
+  templateTogglePressed: {
+    opacity: 0.7,
+  },
+  templateToggleText: {
+    fontSize: fontSize.sm,
     color: colors.muted,
     fontWeight: "500",
-    marginBottom: spacing.xs,
   },
   templateButtonRow: {
     flexDirection: "row",
     gap: spacing.sm,
+    marginTop: spacing.xs,
   },
   templateButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 6,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.borderLight,
@@ -1121,5 +1212,47 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: fontSize.base,
     fontWeight: "600",
+  },
+  // Onboarding overlay
+  onboardingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: spacing.xl,
+  },
+  onboardingContent: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    alignItems: "center",
+    gap: spacing.md,
+    maxWidth: 320,
+    width: "100%",
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  onboardingArrow: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.xxl,
+    backgroundColor: colors.primaryLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  onboardingText: {
+    fontSize: fontSize.base,
+    color: colors.text,
+    textAlign: "center",
+    lineHeight: 22,
+    fontWeight: "500",
+  },
+  onboardingDismiss: {
+    fontSize: fontSize.sm,
+    color: colors.muted,
+    marginTop: spacing.xs,
   },
 });
