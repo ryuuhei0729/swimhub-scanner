@@ -15,6 +15,12 @@ import {
   Modal,
   Dimensions,
 } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from "react-native-reanimated";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -60,6 +66,14 @@ export default function ScannerScreen() {
   const [statusLoading, setStatusLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [templatePreviewVisible, setTemplatePreviewVisible] = useState(false);
+
+  // --- Pinch zoom state for template preview modal ---
+  const scale = useSharedValue(1);
+  const savedScale = useSharedValue(1);
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const savedTranslateX = useSharedValue(0);
+  const savedTranslateY = useSharedValue(0);
 
   // --- Ad state ---
   const adControllerRef = useRef<RewardedAdController | null>(null);
@@ -130,6 +144,72 @@ export default function ScannerScreen() {
       controller.dispose();
     };
   }, [imageBase64, isPremium]);
+
+  // Reset zoom when modal closes (JS thread)
+  useEffect(() => {
+    if (!templatePreviewVisible) {
+      scale.value = withTiming(1);
+      translateX.value = withTiming(0);
+      translateY.value = withTiming(0);
+      savedScale.value = 1;
+      savedTranslateX.value = 0;
+      savedTranslateY.value = 0;
+    }
+  }, [templatePreviewVisible, scale, savedScale, translateX, translateY, savedTranslateX, savedTranslateY]);
+
+  const pinchGesture = Gesture.Pinch()
+    .onUpdate((e) => {
+      "worklet";
+      scale.value = Math.min(Math.max(savedScale.value * e.scale, 1), 4);
+    })
+    .onEnd(() => {
+      "worklet";
+      savedScale.value = scale.value;
+      if (scale.value <= 1) {
+        scale.value = withTiming(1);
+        translateX.value = withTiming(0);
+        translateY.value = withTiming(0);
+        savedScale.value = 1;
+        savedTranslateX.value = 0;
+        savedTranslateY.value = 0;
+      }
+    });
+
+  const panGesture = Gesture.Pan()
+    .onUpdate((e) => {
+      "worklet";
+      if (scale.value > 1) {
+        translateX.value = savedTranslateX.value + e.translationX;
+        translateY.value = savedTranslateY.value + e.translationY;
+      }
+    })
+    .onEnd(() => {
+      "worklet";
+      savedTranslateX.value = translateX.value;
+      savedTranslateY.value = translateY.value;
+    });
+
+  const doubleTap = Gesture.Tap()
+    .numberOfTaps(2)
+    .onEnd(() => {
+      "worklet";
+      scale.value = withTiming(1);
+      translateX.value = withTiming(0);
+      translateY.value = withTiming(0);
+      savedScale.value = 1;
+      savedTranslateX.value = 0;
+      savedTranslateY.value = 0;
+    });
+
+  const composedGesture = Gesture.Simultaneous(pinchGesture, panGesture, doubleTap);
+
+  const animatedImageStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+  }));
 
   const pickImage = async (useCamera: boolean) => {
     setError(null);
@@ -591,25 +671,23 @@ export default function ScannerScreen() {
         >
           <SafeAreaView style={styles.modalContent} pointerEvents="box-none">
             <View style={styles.modalImageContainer}>
-              <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
-                <Image
+              <GestureDetector gesture={composedGesture}>
+                <Animated.Image
                   source={require("../../assets/timesheet-template.png")}
-                  style={styles.modalImage}
+                  style={[styles.modalImage, animatedImageStyle]}
                   resizeMode="contain"
                 />
-              </TouchableOpacity>
+              </GestureDetector>
             </View>
             <View style={styles.modalFooter}>
               <TouchableOpacity
                 style={styles.modalCloseButton}
                 onPress={() => setTemplatePreviewVisible(false)}
               >
-                <Feather name="x" size={44} color={colors.white} />
                 <Text style={styles.modalCloseText}>{t("common.close")}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalShareButton} onPress={shareTimesheetImage}>
-                <Feather name="download" size={44} color={colors.white} />
-                <Text style={styles.modalShareText}>{t("common.save")}</Text>
+              <TouchableOpacity style={styles.modalSaveButton} onPress={shareTimesheetImage}>
+                <Text style={styles.modalSaveText}>{t("common.save")}</Text>
               </TouchableOpacity>
             </View>
           </SafeAreaView>
@@ -1002,6 +1080,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: spacing.lg,
+    overflow: "hidden",
   },
   modalImage: {
     width: Dimensions.get("window").width - spacing.xxl,
@@ -1010,26 +1089,37 @@ const styles = StyleSheet.create({
   modalFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: 64,
+    paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xl,
     paddingTop: spacing.md,
+    gap: spacing.md,
   },
-  modalShareButton: {
+  modalSaveButton: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: 12,
+    paddingHorizontal: spacing.xl,
     alignItems: "center",
-    gap: 6,
   },
-  modalShareText: {
+  modalSaveText: {
     color: colors.white,
-    fontSize: fontSize.md,
+    fontSize: fontSize.base,
     fontWeight: "600",
   },
   modalCloseButton: {
+    flex: 1,
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: colors.white,
+    borderRadius: radius.md,
+    paddingVertical: 12,
+    paddingHorizontal: spacing.xl,
     alignItems: "center",
-    gap: 6,
   },
   modalCloseText: {
     color: colors.white,
-    fontSize: fontSize.md,
+    fontSize: fontSize.base,
     fontWeight: "600",
   },
 });
