@@ -8,7 +8,7 @@ import { validateScanResult } from "@swimhub-scanner/shared/validation/scan-resu
 import { PLAN_LIMITS } from "@swimhub-scanner/shared/types/plan";
 import type { ScanTimesheetRequest, ScanTimesheetResponse, ApiErrorResponse } from "@swimhub-scanner/shared/types/api";
 import { getClientIp } from "@/lib/client-ip";
-import { checkGuestRateLimit, incrementGuestScanCount } from "@/lib/rate-limit";
+import { reserveGuestScan, rollbackGuestScanCount } from "@/lib/rate-limit";
 
 /**
  * ゲストリクエストかどうか判定
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     const { env } = await getCloudflareContext({ async: true });
     const kv = env.RATE_LIMIT_KV;
 
-    const { allowed } = await checkGuestRateLimit(kv, ip);
+    const { allowed } = await reserveGuestScan(kv, ip);
     if (!allowed) {
       return NextResponse.json<ApiErrorResponse>(
         {
@@ -119,6 +119,7 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json();
     } catch {
+      await rollbackGuestScanCount(kv, ip);
       return NextResponse.json<ApiErrorResponse>(
         { error: "リクエストの形式が不正です", code: "IMAGE_ERROR" },
         { status: 400 },
@@ -129,9 +130,9 @@ export async function POST(request: NextRequest) {
     const maxSwimmers = PLAN_LIMITS.guest.maxSwimmers;
     const result = await performScan(body, maxSwimmers);
 
-    // スキャン成功時のみカウントをインクリメント
-    if (result.status === 200) {
-      await incrementGuestScanCount(kv, ip);
+    // スキャン失敗時はカウントをロールバック
+    if (result.status !== 200) {
+      await rollbackGuestScanCount(kv, ip);
     }
 
     return result;
