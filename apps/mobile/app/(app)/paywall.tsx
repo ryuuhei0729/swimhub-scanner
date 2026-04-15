@@ -1,7 +1,3 @@
-/**
- * ペイウォール画面
- * RevenueCat の offerings から月額/年額プランを表示し、購入・リストアを行う
- */
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
@@ -100,8 +96,8 @@ export default function PaywallScreen() {
 
     setPurchasing(true);
     try {
-      const info = await purchasePackage(pkg);
-      if (info) {
+      const customerInfo = await purchasePackage(pkg);
+      if (customerInfo) {
         // 購入成功 → サブスクリプション情報を更新して戻る
         await refreshSubscription();
         Alert.alert(t("paywall.purchaseSuccess"), t("paywall.purchaseSuccessMessage"), [
@@ -119,6 +115,10 @@ export default function PaywallScreen() {
 
   // リストア処理
   const handleRestore = async () => {
+    if (isGuest || !isAuthenticated) {
+      router.push("/(auth)/login-method");
+      return;
+    }
     setRestoring(true);
     try {
       await restorePurchases();
@@ -187,7 +187,11 @@ export default function PaywallScreen() {
         {/* プラン比較表 */}
         <View style={styles.comparisonSection}>
           <PlanComparisonTable
-            currentPlan={isGuest || !isAuthenticated ? "guest" : (subscription?.plan ?? "free") as "guest" | "free" | "premium"}
+            currentPlan={
+              (isGuest || !isAuthenticated)
+                ? "guest"
+                : (subscription?.plan ?? "free")
+            }
           />
         </View>
 
@@ -296,24 +300,26 @@ export default function PaywallScreen() {
           )
         )}
 
-        {!hasTrialed && (
+        {!hasTrialed && !isGuest && isAuthenticated && (
           <Text style={styles.trialNote}>{t("paywall.trialNote")}</Text>
         )}
 
         <Text style={styles.cancelNote}>{t("paywall.cancelNote")}</Text>
 
         {/* リストアボタン */}
-        <TouchableOpacity
-          style={styles.restoreButton}
-          onPress={handleRestore}
-          disabled={restoring}
-        >
-          {restoring ? (
-            <ActivityIndicator color="#2563EB" size="small" />
-          ) : (
-            <Text style={styles.restoreButtonText}>{t("paywall.restore")}</Text>
-          )}
-        </TouchableOpacity>
+        {!isGuest && isAuthenticated && (
+          <TouchableOpacity
+            style={styles.restoreButton}
+            onPress={handleRestore}
+            disabled={restoring}
+          >
+            {restoring ? (
+              <ActivityIndicator color="#2563EB" size="small" />
+            ) : (
+              <Text style={styles.restoreButtonText}>{t("paywall.restore")}</Text>
+            )}
+          </TouchableOpacity>
+        )}
 
         {/* 利用規約・プライバシーポリシー */}
         <View style={styles.legalLinks}>
