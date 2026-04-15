@@ -336,6 +336,7 @@ const en: TranslationShape = {
     cancelNote: "You can cancel your subscription anytime.\nManage it in your App Store settings.",
     termsLink: "Terms of Use",
     privacyLink: "Privacy Policy",
+    loginToUpgrade: "Log In to Upgrade",
   },
   upgrade: {
     limitReached: "You've reached today's limit ({{count}} scans used)",

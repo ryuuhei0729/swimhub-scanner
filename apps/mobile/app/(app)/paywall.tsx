@@ -89,6 +89,12 @@ export default function PaywallScreen() {
 
   // 購入処理
   const handlePurchase = async () => {
+    // ゲスト状態での防御的ガード
+    if (isGuest || !isAuthenticated) {
+      router.push("/(auth)/login-method");
+      return;
+    }
+
     const pkg = selectedPeriod === "monthly" ? monthlyPackage : annualPackage;
     if (!pkg) return;
 
@@ -264,21 +270,30 @@ export default function PaywallScreen() {
           )}
         </View>
 
-        {/* 購入ボタン */}
-        {hasPackages && (
+        {/* 購入ボタン / ゲスト時ログイン CTA */}
+        {isGuest || !isAuthenticated ? (
           <TouchableOpacity
-            style={[styles.purchaseButton, purchasing && styles.purchaseButtonDisabled]}
-            onPress={handlePurchase}
-            disabled={purchasing}
+            style={styles.loginCtaButton}
+            onPress={() => router.push("/(auth)/login-method")}
           >
-            {purchasing ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <Text style={styles.purchaseButtonText}>
-                {!hasTrialed ? t("paywall.startTrial") : t("paywall.subscribe")}
-              </Text>
-            )}
+            <Text style={styles.loginCtaButtonText}>{t("paywall.loginToUpgrade")}</Text>
           </TouchableOpacity>
+        ) : (
+          hasPackages && (
+            <TouchableOpacity
+              style={[styles.purchaseButton, purchasing && styles.purchaseButtonDisabled]}
+              onPress={handlePurchase}
+              disabled={purchasing}
+            >
+              {purchasing ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <Text style={styles.purchaseButtonText}>
+                  {!hasTrialed ? t("paywall.startTrial") : t("paywall.subscribe")}
+                </Text>
+              )}
+            </TouchableOpacity>
+          )
         )}
 
         {!hasTrialed && (
@@ -528,5 +543,18 @@ const styles = StyleSheet.create({
     color: "#2563EB",
     fontSize: 14,
     fontWeight: "600",
+  },
+  loginCtaButton: {
+    backgroundColor: "#2563EB",
+    height: 52,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  loginCtaButtonText: {
+    color: "#ffffff",
+    fontSize: 17,
+    fontWeight: "bold",
   },
 });

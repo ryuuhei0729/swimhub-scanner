@@ -334,6 +334,7 @@ const ja = {
     cancelNote: "サブスクリプションはいつでもキャンセルできます。\nApp Store の設定から管理できます。",
     termsLink: "利用規約",
     privacyLink: "プライバシーポリシー",
+    loginToUpgrade: "ログインしてアップグレード",
   },
   upgrade: {
     limitReached: "今日の利用回数に達しました（{{count}}回使用済み）",
