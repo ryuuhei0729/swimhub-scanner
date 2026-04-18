@@ -16,6 +16,9 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,json,md}\"",
     "deploy": "turbo build --filter=!@swimhub-scanner/mobile && pnpm --filter @swimhub-scanner/web run deploy"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "sharp", "unrs-resolver"]
+  },
   "devDependencies": {
     "turbo": "^2.6.0",
     "prettier": "^3.4.0"
