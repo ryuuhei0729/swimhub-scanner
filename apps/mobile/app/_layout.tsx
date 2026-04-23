@@ -27,28 +27,38 @@ function SupabaseErrorScreen() {
 
 /**
  * 認証状態に応じてルーティングをガード
- * ※ 審査対応: 未ログインでもスキャナー機能にアクセス可能にする
- *   スキャン機能はアカウント不要のため、常にゲストモードで開始
+ * 初回起動時は get-started 画面に誘導し、ユーザーがゲスト利用を選んだ場合のみゲストモードに入る
+ * （スキャン機能はアカウント不要なので、get-started にゲスト利用ボタンを用意する）
  */
 function AuthGate() {
-  const { isAuthenticated, isGuest, loading, transitioning, enterGuestMode } = useAuth();
+  const { user, isAuthenticated, isGuest, loading, transitioning } = useAuth();
   const segments = useSegments();
   const router = useRouter();
-  const autoGuestDone = useRef(false);
+  const redirectDone = useRef(false);
+  const prevAuthStateRef = useRef({ user: !!user, isGuest });
 
   useEffect(() => {
     if (loading || transitioning) return;
 
+    const prevUser = prevAuthStateRef.current.user;
+    const prevIsGuest = prevAuthStateRef.current.isGuest;
+    if (prevUser !== !!user || prevIsGuest !== isGuest) {
+      redirectDone.current = false;
+      prevAuthStateRef.current = { user: !!user, isGuest };
+    }
+
+    if (redirectDone.current) return;
+
     const inAuthGroup = segments[0] === "(auth)";
 
     if (!isAuthenticated && !isGuest && !inAuthGroup) {
-      // 未認証・非ゲスト・非authグループ → 自動ゲストモード
-      if (!autoGuestDone.current) {
-        autoGuestDone.current = true;
-        enterGuestMode();
-      }
+      redirectDone.current = true;
+      router.replace("/(auth)/get-started");
+    } else if (!!user && inAuthGroup) {
+      redirectDone.current = true;
+      router.replace("/(app)");
     }
-  }, [isAuthenticated, isGuest, loading, transitioning, segments, router, enterGuestMode]);
+  }, [user, isAuthenticated, isGuest, loading, transitioning, segments, router]);
 
   if (!supabase) {
     return <SupabaseErrorScreen />;

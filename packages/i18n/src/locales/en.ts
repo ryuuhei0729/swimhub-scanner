@@ -159,7 +159,6 @@ const en: TranslationShape = {
     step2Short: "AI Scan",
     step3Short: "Results",
     templateToggle: "View Templates",
-    onboardingHint: "Tap here to photograph your time sheet",
     step1Title: "Step 1: Upload Image",
     step3Title: "Step 3: Review & Edit Results",
     scan: "Analyze",

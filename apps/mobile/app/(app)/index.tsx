@@ -14,6 +14,7 @@ import {
   StyleSheet,
   Modal,
   Dimensions,
+  KeyboardAvoidingView,
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -26,7 +27,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getUserStatus, scanTimesheet, guestScanTimesheet, ApiError } from "@/lib/api-client";
 import { canGuestScanToday, recordGuestScan, getGuestTodayCount } from "@/lib/guest-daily-limit";
 import { PLAN_LIMITS, checkIsPremium } from "@swimhub-scanner/shared";
@@ -49,8 +49,6 @@ import {
 import { colors, spacing, radius, fontSize } from "@/theme";
 import { UsageIndicator } from "@/components/plan/UsageIndicator";
 
-const ONBOARDING_SEEN_KEY = "swimhub_scanner_onboarding_seen";
-
 type Step = "idle" | "scanning" | "result";
 
 export default function ScannerScreen() {
@@ -70,7 +68,6 @@ export default function ScannerScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [templatePreviewVisible, setTemplatePreviewVisible] = useState(false);
   const [templateSectionOpen, setTemplateSectionOpen] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // --- Pinch zoom state for template preview modal ---
   const scale = useSharedValue(1);
@@ -90,28 +87,6 @@ export default function ScannerScreen() {
 
   // Premium ユーザーかどうか（広告制御で使うため早めに定義）
   const isPremium = checkIsPremium(subscription);
-
-  // Onboarding: check if first-time user
-  useEffect(() => {
-    AsyncStorage.getItem(ONBOARDING_SEEN_KEY)
-      .then((value) => {
-        if (value === null) {
-          setShowOnboarding(true);
-        }
-      })
-      .catch(() => {
-        // AsyncStorage failure is non-critical — skip onboarding
-      });
-  }, []);
-
-  const dismissOnboarding = useCallback(async () => {
-    setShowOnboarding(false);
-    try {
-      await AsyncStorage.setItem(ONBOARDING_SEEN_KEY, "1");
-    } catch {
-      // Best-effort persistence — onboarding may show again next launch
-    }
-  }, []);
 
   const fetchStatus = useCallback(async () => {
     setStatusLoading(true);
@@ -461,8 +436,13 @@ export default function ScannerScreen() {
         <View style={styles.resultHeader}>
           <Text style={styles.resultHeaderTitle}>{t("scanner.resultHeader")}</Text>
         </View>
+        <KeyboardAvoidingView
+          style={styles.keyboardView}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
         <ScrollView
           style={styles.resultContainer}
+          keyboardShouldPersistTaps="handled"
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         >
           <View style={styles.menuInfo}>
@@ -502,6 +482,7 @@ export default function ScannerScreen() {
 
           <View style={{ height: spacing.xxl }} />
         </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
@@ -684,12 +665,14 @@ export default function ScannerScreen() {
             ]}
             onPress={() => setTemplateSectionOpen((v) => !v)}
           >
+            <Feather name="file-text" size={18} color={colors.primary} />
+            <Text style={styles.templateToggleText}>{t("scanner.templateToggle")}</Text>
             <Feather
               name={templateSectionOpen ? "chevron-down" : "chevron-right"}
-              size={14}
-              color={colors.muted}
+              size={18}
+              color={colors.primary}
+              style={styles.templateToggleChevron}
             />
-            <Text style={styles.templateToggleText}>{t("scanner.templateToggle")}</Text>
           </Pressable>
 
           {templateSectionOpen && (
@@ -753,17 +736,6 @@ export default function ScannerScreen() {
           </SafeAreaView>
         </TouchableOpacity>
       </Modal>
-
-      {/* First-time onboarding overlay */}
-      {showOnboarding && (
-        <Pressable style={styles.onboardingOverlay} onPress={dismissOnboarding}>
-          <View style={styles.onboardingContent}>
-            <View style={styles.onboardingArrow} />
-            <Text style={styles.onboardingText}>{t("scanner.onboardingHint")}</Text>
-            <Text style={styles.onboardingDismiss}>{t("common.close")}</Text>
-          </View>
-        </Pressable>
-      )}
     </SafeAreaView>
   );
 }
@@ -772,6 +744,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  keyboardView: {
+    flex: 1,
   },
   // Step 1: Idle - scroll wrapper
   idleScrollContent: {
@@ -1024,22 +999,32 @@ const styles = StyleSheet.create({
   },
   // Collapsible template section
   templateSection: {
-    alignItems: "flex-start",
+    alignItems: "stretch",
     width: "100%",
+    marginTop: spacing.md,
   },
   templateToggleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.primaryBorder,
+    backgroundColor: colors.primaryLight,
   },
   templateTogglePressed: {
     opacity: 0.7,
   },
   templateToggleText: {
-    fontSize: fontSize.sm,
-    color: colors.muted,
-    fontWeight: "500",
+    flex: 1,
+    fontSize: fontSize.base,
+    color: colors.primaryDark,
+    fontWeight: "600",
+  },
+  templateToggleChevron: {
+    marginLeft: "auto",
   },
   templateButtonRow: {
     flexDirection: "row",
@@ -1212,47 +1197,5 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: fontSize.base,
     fontWeight: "600",
-  },
-  // Onboarding overlay
-  onboardingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: spacing.xl,
-  },
-  onboardingContent: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    padding: spacing.xl,
-    alignItems: "center",
-    gap: spacing.md,
-    maxWidth: 320,
-    width: "100%",
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  onboardingArrow: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.xxl,
-    backgroundColor: colors.primaryLight,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  onboardingText: {
-    fontSize: fontSize.base,
-    color: colors.text,
-    textAlign: "center",
-    lineHeight: 22,
-    fontWeight: "500",
-  },
-  onboardingDismiss: {
-    fontSize: fontSize.sm,
-    color: colors.muted,
-    marginTop: spacing.xs,
   },
 });

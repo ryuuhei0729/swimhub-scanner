@@ -157,7 +157,6 @@ const ja = {
     step2Short: "AI解析",
     step3Short: "結果",
     templateToggle: "テンプレートを確認",
-    onboardingHint: "ここをタップしてタイムシートを撮影しましょう",
     step1Title: "Step 1: 画像アップロード",
     step3Title: "Step 3: 結果確認・修正",
     scan: "解析する",
