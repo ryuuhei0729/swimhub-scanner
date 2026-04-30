@@ -197,9 +197,11 @@ export function UserMenu() {
           setIsLoggingOut(true);
           try {
             await signOut();
+            setIsLogoutDialogOpen(false);
+          } catch (err) {
+            alert(err instanceof Error ? err.message : t("accountScreen.logoutFailed"));
           } finally {
             setIsLoggingOut(false);
-            setIsLogoutDialogOpen(false);
           }
         }}
         onCancel={() => setIsLogoutDialogOpen(false)}

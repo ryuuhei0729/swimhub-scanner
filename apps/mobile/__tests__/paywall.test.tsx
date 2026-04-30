@@ -8,7 +8,6 @@
  * - React Native Testing Library (@testing-library/react-native) を想定。
  */
 
-import React from "react";
 // import { render, screen, fireEvent } from "@testing-library/react-native";
 // import PaywallScreen from "../app/(app)/paywall";
 

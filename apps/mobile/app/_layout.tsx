@@ -36,6 +36,7 @@ function AuthGate() {
   const router = useRouter();
   const redirectDone = useRef(false);
   const prevAuthStateRef = useRef({ user: !!user, isGuest });
+  const prevSegmentsRef = useRef<string | undefined>(segments[0]);
 
   useEffect(() => {
     if (loading || transitioning) return;
@@ -45,6 +46,12 @@ function AuthGate() {
     if (prevUser !== !!user || prevIsGuest !== isGuest) {
       redirectDone.current = false;
       prevAuthStateRef.current = { user: !!user, isGuest };
+    }
+
+    // ルートグループが変わったら再評価する (deep-link や手動遷移をガード)
+    if (prevSegmentsRef.current !== segments[0]) {
+      redirectDone.current = false;
+      prevSegmentsRef.current = segments[0];
     }
 
     if (redirectDone.current) return;

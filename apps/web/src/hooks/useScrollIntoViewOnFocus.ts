@@ -24,18 +24,22 @@ export function useScrollIntoViewOnFocus(): void {
       }
     };
 
+    const initialHeight = vv.height;
+    let prevHeight = initialHeight;
+
     const onFocusIn = (e: FocusEvent) => {
       if (isFormField(e.target)) {
         focusedEl = e.target;
-        // visualViewport の resize が来るのを待つ (iOS Safari)
+        // キーボード表示中の input 切替では resize が来ないため、ここで再評価
+        if (vv.height < initialHeight) {
+          requestAnimationFrame(scrollIfBelowFold);
+        }
       }
     };
 
     const onFocusOut = () => {
       focusedEl = null;
     };
-
-    let prevHeight = vv.height;
 
     const onResize = () => {
       // 高さが縮小した場合のみスクロール (キーボード展開を検知)

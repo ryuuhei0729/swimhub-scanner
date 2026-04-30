@@ -48,9 +48,9 @@ describe("POST /api/stripe/checkout (scanner) — UUID 検証", () => {
     vi.resetAllMocks();
 
     // 環境変数: priceId ホワイトリストに最低 1 件必要
-    process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID = "price_test_monthly";
-    process.env.NEXT_PUBLIC_STRIPE_YEARLY_PRICE_ID = "price_test_yearly";
-    process.env.STRIPE_SECRET_KEY = "sk_test_dummy";
+    vi.stubEnv("NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID", "price_test_monthly");
+    vi.stubEnv("NEXT_PUBLIC_STRIPE_YEARLY_PRICE_ID", "price_test_yearly");
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_dummy");
 
     const stripeModule = await import("@/lib/stripe");
     mockGetStripe = vi.mocked(stripeModule.getStripe);

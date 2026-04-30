@@ -19,7 +19,7 @@ import { beforeEach, afterEach, describe, it, vi } from "vitest";
 // ============================================================
 
 function createMockVisualViewport(height = 844) {
-  const listeners: Map<string, Set<EventListener>> = new Map();
+  const listeners: Map<string, Set<EventListenerOrEventListenerObject>> = new Map();
   return {
     height,
     width: 390,
@@ -28,14 +28,20 @@ function createMockVisualViewport(height = 844) {
     pageTop: 0,
     pageLeft: 0,
     scale: 1,
-    addEventListener(type: string, listener: EventListener) {
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject) {
       if (!listeners.has(type)) listeners.set(type, new Set());
       listeners.get(type)!.add(listener);
     },
-    removeEventListener(type: string, listener: EventListener) {
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject) {
       listeners.get(type)?.delete(listener);
     },
-    dispatchEvent: vi.fn(),
+    dispatchEvent: vi.fn((event: Event) => {
+      listeners.get(event.type)?.forEach((listener) => {
+        if (typeof listener === "function") listener(event);
+        else listener.handleEvent(event);
+      });
+      return true;
+    }),
   };
 }
 
