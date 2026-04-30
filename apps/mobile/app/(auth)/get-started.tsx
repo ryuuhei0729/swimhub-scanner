@@ -74,6 +74,11 @@ export default function GetStartedScreen() {
           <Text style={styles.subtitle}>{t("auth.getStarted.subtitle")}</Text>
         </View>
 
+        <View style={styles.crossAppNotice}>
+          <Feather name="info" size={16} color={colors.primary} />
+          <Text style={styles.crossAppNoticeText}>{t("auth.getStarted.crossAppNotice")}</Text>
+        </View>
+
         {displayError && (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{displayError}</Text>
@@ -195,6 +200,24 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: fontSize.base,
     color: colors.muted,
+  },
+  crossAppNotice: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.sm,
+    backgroundColor: colors.primaryMuted,
+    borderColor: colors.primaryMutedBorder,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  crossAppNoticeText: {
+    flex: 1,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    lineHeight: 18,
   },
   errorContainer: {
     backgroundColor: colors.errorBackground,

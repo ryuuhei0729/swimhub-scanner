@@ -265,7 +265,7 @@ export default function ScannerScreen() {
     // 権限チェック: トークン不足の場合はペイウォールに遷移
     if (!canScan) {
       if (isGuest) {
-        router.push("/(app)/guest-signup");
+        router.push("/(auth)/get-started");
       } else if (isAuthenticated) {
         router.push("/(app)/paywall");
       }
@@ -474,7 +474,7 @@ export default function ScannerScreen() {
           {isGuest && (
             <TouchableOpacity
               style={styles.signupPromptButton}
-              onPress={() => router.push("/(app)/guest-signup")}
+              onPress={() => router.push("/(auth)/get-started")}
             >
               <Text style={styles.signupPromptText}>{t("scanner.registerForMore")}</Text>
             </TouchableOpacity>
@@ -560,7 +560,7 @@ export default function ScannerScreen() {
               dailyLimit={isPremium ? null : (PLAN_LIMITS[isGuest ? "guest" : "free"].dailyScanLimit ?? 1)}
               onUpsellPress={() => {
                 if (isGuest) {
-                  router.push("/(app)/guest-signup");
+                  router.push("/(auth)/get-started");
                 } else {
                   router.push("/(app)/paywall");
                 }
@@ -632,7 +632,7 @@ export default function ScannerScreen() {
               style={styles.limitBanner}
               onPress={() => {
                 if (isGuest) {
-                  router.push("/(app)/guest-signup");
+                  router.push("/(auth)/get-started");
                 } else {
                   router.push("/(app)/paywall");
                 }

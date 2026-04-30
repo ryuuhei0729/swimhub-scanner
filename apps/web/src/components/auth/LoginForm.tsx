@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { PLAN_LIMITS } from "@swimhub-scanner/shared";
+import { validatePassword, type PasswordChecks } from "@/lib/passwordValidator";
 
 export function LoginForm() {
   const { signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail, enterGuestMode } =
@@ -20,10 +22,13 @@ export function LoginForm() {
     searchParams.get("error") ? t("auth.loginFailed") : null,
   );
   const [loading, setLoading] = useState(false);
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+
+  const passwordValidation = useMemo(() => validatePassword(password), [password]);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -55,11 +60,38 @@ export function LoginForm() {
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSignUp) {
+      if (!name.trim()) {
+        setError(t("auth.nameRequired"));
+        return;
+      }
+      const checks = passwordValidation.checks;
+      if (!checks.minLength) {
+        setError(t("auth.emailSignupScreen.passwordTooShort"));
+        return;
+      }
+      if (!checks.lowercase) {
+        setError(t("auth.passwordMissingLowercase"));
+        return;
+      }
+      if (!checks.uppercase) {
+        setError(t("auth.passwordMissingUppercase"));
+        return;
+      }
+      if (!checks.digit) {
+        setError(t("auth.passwordMissingDigit"));
+        return;
+      }
+      if (!checks.symbol) {
+        setError(t("auth.passwordMissingSymbol"));
+        return;
+      }
+    }
     try {
       setLoading(true);
       setError(null);
       if (isSignUp) {
-        await signUpWithEmail(email, password);
+        await signUpWithEmail(email, password, name.trim());
         setEmailSent(true);
       } else {
         await signInWithEmail(email, password);
@@ -158,6 +190,40 @@ export function LoginForm() {
       ) : (
         <>
           <form onSubmit={handleEmailSubmit} className="space-y-4">
+            {isSignUp && (
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("auth.nameLabel")}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg
+                      className="h-5 w-5 text-gray-400"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <input
+                    id="name"
+                    type="text"
+                    autoComplete="name"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="pl-10 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-3 pr-3 transition duration-150 ease-in-out"
+                    placeholder={t("auth.namePlaceholder")}
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+            )}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 {t("auth.emailLabel")}
@@ -210,6 +276,7 @@ export function LoginForm() {
                   type="password"
                   required
                   minLength={6}
+                  autoComplete={isSignUp ? "new-password" : "current-password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-3 pr-3 transition duration-150 ease-in-out"
@@ -217,6 +284,11 @@ export function LoginForm() {
                   disabled={loading}
                 />
               </div>
+              {isSignUp && (
+                <div className="mt-2">
+                  <PasswordRequirementsList checks={passwordValidation.checks} t={t} />
+                </div>
+              )}
             </div>
             <button
               type="submit"
@@ -329,6 +401,43 @@ export function LoginForm() {
         </Link>
         {t("auth.termsAgreementEnd")}
       </p>
+    </div>
+  );
+}
+
+function PasswordRequirementsList({
+  checks,
+  t,
+}: {
+  checks: PasswordChecks;
+  t: TFunction;
+}) {
+  const items: { key: keyof PasswordChecks; label: string }[] = [
+    { key: "minLength", label: t("auth.passwordRequirements.minLength") },
+    { key: "lowercase", label: t("auth.passwordRequirements.lowercase") },
+    { key: "uppercase", label: t("auth.passwordRequirements.uppercase") },
+    { key: "digit", label: t("auth.passwordRequirements.digit") },
+    { key: "symbol", label: t("auth.passwordRequirements.symbol") },
+  ];
+  return (
+    <div className="space-y-1 rounded-lg border border-gray-200 bg-gray-50 p-3">
+      <p className="text-xs font-medium text-gray-600">{t("auth.passwordRequirements.title")}</p>
+      <ul className="space-y-1">
+        {items.map(({ key, label }) => {
+          const met = checks[key];
+          return (
+            <li
+              key={key}
+              className={`flex items-center gap-2 text-xs ${
+                met ? "text-emerald-600" : "text-gray-500"
+              }`}
+            >
+              <span aria-hidden="true">{met ? "✓" : "○"}</span>
+              <span>{label}</span>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
