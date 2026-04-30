@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -13,22 +13,31 @@ import {
   Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthProvider";
 import { colors, spacing, radius, fontSize } from "@/theme";
+import { validatePassword, type PasswordChecks } from "@/utils/validatePassword";
 
 export default function EmailSignupScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { signUp } = useAuth();
 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const passwordValidation = useMemo(() => validatePassword(password), [password]);
+
   const validateForm = (): boolean => {
+    if (!name.trim()) {
+      setError(t("auth.nameRequired"));
+      return false;
+    }
     if (!email.trim()) {
       setError(t("auth.emailSignupScreen.emailRequired"));
       return false;
@@ -42,8 +51,25 @@ export default function EmailSignupScreen() {
       setError(t("auth.emailSignupScreen.passwordRequired"));
       return false;
     }
-    if (password.length < 6) {
+    const checks = passwordValidation.checks;
+    if (!checks.minLength) {
       setError(t("auth.emailSignupScreen.passwordTooShort"));
+      return false;
+    }
+    if (!checks.lowercase) {
+      setError(t("auth.passwordMissingLowercase"));
+      return false;
+    }
+    if (!checks.uppercase) {
+      setError(t("auth.passwordMissingUppercase"));
+      return false;
+    }
+    if (!checks.digit) {
+      setError(t("auth.passwordMissingDigit"));
+      return false;
+    }
+    if (!checks.symbol) {
+      setError(t("auth.passwordMissingSymbol"));
       return false;
     }
     return true;
@@ -72,7 +98,7 @@ export default function EmailSignupScreen() {
     setError(null);
 
     try {
-      const { error: authError } = await signUp(email, password);
+      const { error: authError } = await signUp(email, password, name.trim());
       if (authError) {
         setError(formatAuthError(authError));
       } else {
@@ -112,6 +138,20 @@ export default function EmailSignupScreen() {
 
             <View style={styles.form}>
               <View style={styles.inputGroup}>
+                <Text style={styles.label}>{t("auth.nameLabel")}</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={t("auth.namePlaceholder")}
+                  placeholderTextColor={colors.mutedLight}
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                  textContentType="name"
+                  editable={!loading}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
                 <Text style={styles.label}>{t("auth.emailLabel")}</Text>
                 <TextInput
                   style={styles.input}
@@ -141,6 +181,7 @@ export default function EmailSignupScreen() {
                   textContentType="newPassword"
                   editable={!loading}
                 />
+                <PasswordRequirementsList checks={passwordValidation.checks} />
               </View>
 
               <Pressable
@@ -183,6 +224,35 @@ export default function EmailSignupScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+}
+
+function PasswordRequirementsList({ checks }: { checks: PasswordChecks }) {
+  const { t } = useTranslation();
+  const items: { key: keyof PasswordChecks; label: string }[] = [
+    { key: "minLength", label: t("auth.passwordRequirements.minLength") },
+    { key: "lowercase", label: t("auth.passwordRequirements.lowercase") },
+    { key: "uppercase", label: t("auth.passwordRequirements.uppercase") },
+    { key: "digit", label: t("auth.passwordRequirements.digit") },
+    { key: "symbol", label: t("auth.passwordRequirements.symbol") },
+  ];
+  return (
+    <View style={styles.requirements}>
+      <Text style={styles.requirementsTitle}>{t("auth.passwordRequirements.title")}</Text>
+      {items.map(({ key, label }) => {
+        const met = checks[key];
+        return (
+          <View key={key} style={styles.requirementRow}>
+            <Ionicons
+              name={met ? "checkmark-circle" : "ellipse-outline"}
+              size={14}
+              color={met ? "#10B981" : colors.mutedLight}
+            />
+            <Text style={[styles.requirementText, met && styles.requirementTextMet]}>{label}</Text>
+          </View>
+        );
+      })}
+    </View>
   );
 }
 
@@ -293,5 +363,27 @@ const styles = StyleSheet.create({
   legalLink: {
     color: colors.primary,
     fontWeight: "500",
+  },
+  requirements: {
+    marginTop: spacing.xs,
+    gap: 4,
+  },
+  requirementsTitle: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    fontWeight: "500",
+    marginBottom: 2,
+  },
+  requirementRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  requirementText: {
+    fontSize: fontSize.sm,
+    color: colors.mutedLight,
+  },
+  requirementTextMet: {
+    color: "#10B981",
   },
 });

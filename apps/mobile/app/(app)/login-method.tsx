@@ -98,7 +98,7 @@ export default function LoginMethodScreen() {
 
         <Pressable
           style={styles.signupLink}
-          onPress={() => router.push("/(app)/email-signup")}
+          onPress={() => router.push("/(auth)/get-started")}
           accessibilityRole="button"
           accessibilityLabel={t("auth.noAccountSignup")}
         >
