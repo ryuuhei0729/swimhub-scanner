@@ -29,13 +29,6 @@ export default function AppLayout() {
         }}
       />
       <Stack.Screen
-        name="guest-signup"
-        options={{
-          headerTitle: t("auth.guestSignup.title", { defaultValue: "アカウント登録" }),
-          headerBackTitle: t("common.back", { defaultValue: "戻る" }),
-        }}
-      />
-      <Stack.Screen
         name="login-method"
         options={{
           headerTitle: t("auth.loginMethod.title", { defaultValue: "ログイン" }),

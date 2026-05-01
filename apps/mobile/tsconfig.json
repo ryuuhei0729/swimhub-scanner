@@ -16,5 +16,5 @@
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", ".expo", "dist"]
+  "exclude": ["node_modules", ".expo", "dist", "__tests__"]
 }

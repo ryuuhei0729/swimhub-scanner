@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 export function UserMenu() {
   const { t } = useTranslation();
@@ -12,6 +13,8 @@ export function UserMenu() {
   const params = useParams();
   const locale = (params.locale as string) || "ja";
   const [isOpen, setIsOpen] = useState(false);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -136,7 +139,7 @@ export function UserMenu() {
               role="menuitem"
               onClick={() => {
                 setIsOpen(false);
-                signOut();
+                setIsLogoutDialogOpen(true);
               }}
               className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors duration-200"
             >
@@ -182,6 +185,27 @@ export function UserMenu() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        isOpen={isLogoutDialogOpen}
+        variant="danger"
+        title={t("accountScreen.logoutTitle")}
+        message={t("accountScreen.logoutConfirm")}
+        confirmLabel={t("common.logout")}
+        cancelLabel={t("common.cancel")}
+        isConfirming={isLoggingOut}
+        onConfirm={async () => {
+          setIsLoggingOut(true);
+          try {
+            await signOut();
+            setIsLogoutDialogOpen(false);
+          } catch (err) {
+            alert(err instanceof Error ? err.message : t("accountScreen.logoutFailed"));
+          } finally {
+            setIsLoggingOut(false);
+          }
+        }}
+        onCancel={() => setIsLogoutDialogOpen(false)}
+      />
     </div>
   );
 }

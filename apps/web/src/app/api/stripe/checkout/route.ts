@@ -60,6 +60,12 @@ export async function POST(request: NextRequest) {
 
     const hasUsedTrial = subscription?.trial_start != null;
 
+    // UUID 検証 (Issue #2) — Stripe クライアント初期化より前に行う
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_REGEX.test(uid)) {
+      return NextResponse.json({ error: "不正なユーザーIDです" }, { status: 400 });
+    }
+
     // 4. Stripe Customer を取得または作成（DB キャッシュ優先で Search API の遅延を回避）
     const stripe = getStripe();
 

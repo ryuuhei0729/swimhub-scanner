@@ -3,6 +3,7 @@ import { Inter, Noto_Sans_JP } from "next/font/google";
 import { notFound } from "next/navigation";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { I18nProvider } from "@/components/I18nProvider";
+import { KeyboardScrollProvider } from "@/components/keyboard/KeyboardScrollProvider";
 import {
   supportedLocales,
   i18nResources,
@@ -130,8 +131,10 @@ export default async function LocaleLayout({
       <body className={`${inter.variable} ${notoSansJP.variable} font-sans`}>
         <I18nProvider locale={locale}>
           <AuthProvider>
-            <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
-            {children}
+            <KeyboardScrollProvider>
+              <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+              {children}
+            </KeyboardScrollProvider>
           </AuthProvider>
         </I18nProvider>
       </body>

@@ -53,7 +53,7 @@ export interface ScannerWebAuthContextValue {
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
-  signUpWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string, name?: string) => Promise<void>;
   signOut: () => Promise<void>;
   enterGuestMode: () => void;
   exitGuestMode: () => void;
@@ -65,7 +65,7 @@ export interface ScannerMobileAuthContextType extends BaseAuthState {
   isAuthenticated: boolean;
   isGuest: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
   enterGuestMode: () => void;
   exitGuestMode: () => void;

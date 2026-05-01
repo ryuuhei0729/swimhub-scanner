@@ -8,11 +8,14 @@ import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { useAppleAuth } from "@/hooks/useAppleAuth";
 import { AppleLoginButton } from "@/components/auth/AppleLoginButton";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
+import { useAuth } from "@/contexts/AuthProvider";
 import { colors, spacing, radius, fontSize } from "@/theme";
+import { PLAN_LIMITS } from "@swimhub-scanner/shared";
 
 export default function GetStartedScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { enterGuestMode } = useAuth();
   const {
     signInWithGoogle,
     loading: googleLoading,
@@ -44,6 +47,11 @@ export default function GetStartedScreen() {
     await signInWithGoogle();
   };
 
+  const handleContinueAsGuest = () => {
+    enterGuestMode();
+    router.replace("/(app)");
+  };
+
   const displayError = error || googleError || appleError;
 
   return (
@@ -64,6 +72,11 @@ export default function GetStartedScreen() {
           <Image source={require("@/assets/icon.png")} style={styles.appIcon} />
           <Text style={styles.title}>{t("auth.getStarted.title")}</Text>
           <Text style={styles.subtitle}>{t("auth.getStarted.subtitle")}</Text>
+        </View>
+
+        <View style={styles.crossAppNotice}>
+          <Feather name="info" size={16} color={colors.primary} />
+          <Text style={styles.crossAppNoticeText}>{t("auth.getStarted.crossAppNotice")}</Text>
         </View>
 
         {displayError && (
@@ -108,6 +121,22 @@ export default function GetStartedScreen() {
                 <Text style={styles.emailButtonText}>{t("auth.getStarted.withEmail")}</Text>
               </View>
             )}
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.guestButton,
+              isLoading && styles.buttonDisabled,
+              pressed && !isLoading && styles.guestButtonPressed,
+            ]}
+            onPress={handleContinueAsGuest}
+            disabled={isLoading}
+            accessibilityRole="button"
+            accessibilityLabel={t("auth.guestModeWithLimit", { limit: PLAN_LIMITS.guest.dailyScanLimit })}
+          >
+            <Text style={styles.guestButtonText}>
+              {t("auth.guestModeWithLimit", { limit: PLAN_LIMITS.guest.dailyScanLimit })}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -172,6 +201,24 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
     color: colors.muted,
   },
+  crossAppNotice: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.sm,
+    backgroundColor: colors.primaryMuted,
+    borderColor: colors.primaryMutedBorder,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  crossAppNoticeText: {
+    flex: 1,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    lineHeight: 18,
+  },
   errorContainer: {
     backgroundColor: colors.errorBackground,
     borderColor: colors.errorBorder,
@@ -215,6 +262,19 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     fontWeight: "500",
     color: colors.textSecondary,
+  },
+  guestButton: {
+    paddingVertical: spacing.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  guestButtonPressed: {
+    opacity: 0.6,
+  },
+  guestButtonText: {
+    color: colors.muted,
+    fontSize: fontSize.sm,
+    fontWeight: "500",
   },
   legalContainer: {
     paddingHorizontal: spacing.xxl,
