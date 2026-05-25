@@ -1,7 +1,24 @@
-import i18n from "i18next";
+import "intl-pluralrules";
+import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
-import { getI18nOptions, defaultLocale } from "@swimhub-scanner/i18n";
+import { getLocales } from "expo-localization";
+import {
+  getI18nOptions,
+  isSupportedLocale,
+  DEVICE_FALLBACK_LOCALE,
+  type SupportedLocale,
+} from "@swimhub-scanner/i18n";
 
-i18n.use(initReactI18next).init(getI18nOptions(defaultLocale));
+function getDeviceLocale(): SupportedLocale {
+  try {
+    const code = getLocales()[0]?.languageCode?.toLowerCase();
+    return isSupportedLocale(code) ? code : DEVICE_FALLBACK_LOCALE;
+  } catch (err) {
+    console.error("[i18n] getDeviceLocale 失敗:", err);
+    return DEVICE_FALLBACK_LOCALE;
+  }
+}
 
-export default i18n;
+void i18next.use(initReactI18next).init(getI18nOptions(getDeviceLocale()));
+
+export default i18next;
