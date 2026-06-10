@@ -7,12 +7,9 @@ import { KeyboardScrollProvider } from "@/components/keyboard/KeyboardScrollProv
 import {
   supportedLocales,
   i18nResources,
+  isSupportedLocale,
   type SupportedLocale,
 } from "@swimhub-scanner/i18n";
-
-function isSupportedLocale(locale: string): locale is SupportedLocale {
-  return (supportedLocales as readonly string[]).includes(locale);
-}
 
 const siteUrl = "https://scanner.swim-hub.app";
 
@@ -51,6 +48,7 @@ export async function generateMetadata({
       languages: {
         ja: "/ja",
         en: "/en",
+        "x-default": "/ja",
       },
     },
     keywords: t.meta.keywords.split(","),

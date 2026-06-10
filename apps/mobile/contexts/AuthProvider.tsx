@@ -193,7 +193,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { error: new Error("Supabaseクライアントが初期化されていません") };
     }
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -202,6 +202,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       if (error) {
         return { error };
+      }
+      // Supabase は Confirm Email 有効時、登録済みメールでも error を返さず
+      // identities が空配列の user を返す（メール列挙対策のデフォルト挙動）。
+      // 確認メールも実際には送信されないため、明示的にエラーへ変換する。
+      if (data?.user && (data.user.identities?.length ?? 0) === 0) {
+        return { error: new Error("User already registered") };
       }
       setIsGuest(false);
       return { error: null };
