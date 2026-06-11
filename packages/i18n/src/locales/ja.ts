@@ -16,6 +16,7 @@ const ja = {
     ok: "OK",
     loading: "読み込み中",
     loadingApp: "アプリケーションを読み込み中...",
+    language: "言語",
   },
   meta: {
     title: "SwimHub Scanner - 手書きタイム記録表をAIで自動デジタル化",
@@ -65,7 +66,8 @@ const ja = {
     noAccount: "アカウントをお持ちでない方はこちら",
     noAccountSignup: "新規登録",
     confirmEmailSent: "確認メール送信",
-    confirmEmailDesc: "ご登録のメールアドレスに確認メールを送信しました。メール内のリンクをクリックして登録を完了してください。",
+    confirmEmailDesc:
+      "ご登録のメールアドレスに確認メールを送信しました。メール内のリンクをクリックして登録を完了してください。",
     backToLogin: "ログイン画面に戻る",
     termsAgreement: "続行することで、",
     terms: "利用規約",
@@ -80,7 +82,8 @@ const ja = {
     deleteAccountTitle: "アカウント削除",
     deleteAccountStep1: "SwimHub、Scanner、Timer のアカウントが全て削除されます。よろしいですか？",
     deleteAccountFinalTitle: "最終確認",
-    deleteAccountStep2: "SwimHub で蓄積したタイム、動画、画像等のデータも全て削除されます。本当に削除しますか？",
+    deleteAccountStep2:
+      "SwimHub で蓄積したタイム、動画、画像等のデータも全て削除されます。本当に削除しますか？",
     deleteAccountButton: "削除する",
     deleteAccountWarning: "すべてのデータが完全に削除されます",
     deleteAccountFailed: "アカウントの削除に失敗しました。再度お試しください。",
@@ -97,7 +100,8 @@ const ja = {
       withApple: "Appleで作成",
       withGoogle: "Googleで作成",
       withEmail: "Emailで作成",
-      crossAppNotice: "1つのアカウントで、SwimHub・Scanner・Timer すべてのアプリをご利用いただけます",
+      crossAppNotice:
+        "1つのアカウントで、SwimHub・Scanner・Timer すべてのアプリをご利用いただけます",
     },
     welcome: {
       getStarted: "さっそく始める",
@@ -306,7 +310,8 @@ const ja = {
     checkoutError: "チェックアウトの作成に失敗しました",
     portalError: "ポータルの作成に失敗しました",
     paymentFailedTitle: "お支払いが失敗しました",
-    paymentFailedDescription: "お支払い方法を更新してください。更新しない場合、プレミアム機能が停止します。",
+    paymentFailedDescription:
+      "お支払い方法を更新してください。更新しない場合、プレミアム機能が停止します。",
     updatePaymentMethod: "お支払い方法を更新する →",
     pastDueBadge: "Premium（支払い未完了）",
     expiresAt: "有効期限: {{date}}",
@@ -340,7 +345,8 @@ const ja = {
     restoreEmptyMessage: "復元可能な購入が見つかりませんでした。",
     restoreFailed: "購入情報の復元に失敗しました。",
     alreadyPremium: "すでに Premium プランです",
-    cancelNote: "サブスクリプションはいつでもキャンセルできます。\nApp Store の設定から管理できます。",
+    cancelNote:
+      "サブスクリプションはいつでもキャンセルできます。\nApp Store の設定から管理できます。",
     termsLink: "利用規約",
     privacyLink: "プライバシーポリシー",
     loginToUpgrade: "ログインしてアップグレード",
@@ -355,7 +361,8 @@ const ja = {
     account: "アカウント",
     email: "メールアドレス:",
     configError: "設定エラー",
-    configErrorMessage: "Supabaseの設定が正しく行われていません。\n\nアプリの設定を確認してください。",
+    configErrorMessage:
+      "Supabaseの設定が正しく行われていません。\n\nアプリの設定を確認してください。",
   },
   accountScreen: {
     accountInfo: "アカウント情報",

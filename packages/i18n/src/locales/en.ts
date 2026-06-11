@@ -18,6 +18,7 @@ const en: TranslationShape = {
     ok: "OK",
     loading: "Loading",
     loadingApp: "Loading application...",
+    language: "Language",
   },
   meta: {
     title: "SwimHub Scanner - Digitize Handwritten Swim Time Sheets with AI",
@@ -67,7 +68,8 @@ const en: TranslationShape = {
     noAccount: "Don't have an account?",
     noAccountSignup: "Sign Up",
     confirmEmailSent: "Confirmation Email Sent",
-    confirmEmailDesc: "We sent a confirmation email to your address. Please click the link in the email to complete registration.",
+    confirmEmailDesc:
+      "We sent a confirmation email to your address. Please click the link in the email to complete registration.",
     backToLogin: "Back to login",
     termsAgreement: "By continuing, you agree to the ",
     terms: "Terms of Service",
@@ -80,9 +82,11 @@ const en: TranslationShape = {
       "Deleting your account will permanently remove all your data. This action cannot be undone.\n\nAre you sure?",
     deleteFailed: "Failed to delete account",
     deleteAccountTitle: "Delete Account",
-    deleteAccountStep1: "Your accounts for SwimHub, Scanner, and Timer will all be deleted. Are you sure?",
+    deleteAccountStep1:
+      "Your accounts for SwimHub, Scanner, and Timer will all be deleted. Are you sure?",
     deleteAccountFinalTitle: "Final Confirmation",
-    deleteAccountStep2: "All data accumulated in SwimHub, including times, videos, and images, will be permanently deleted. Are you absolutely sure?",
+    deleteAccountStep2:
+      "All data accumulated in SwimHub, including times, videos, and images, will be permanently deleted. Are you absolutely sure?",
     deleteAccountButton: "Delete",
     deleteAccountWarning: "All data will be permanently deleted",
     deleteAccountFailed: "Failed to delete account. Please try again.",
@@ -200,8 +204,7 @@ const en: TranslationShape = {
     dailyLimitUpgradeLink: "Upgrade to Premium →",
     swimmerLimitExceeded: "Free plan allows up to 6 swimmers per scan",
     swimmerLimitScan: "Maximum 8 swimmers per scan",
-    parseError:
-      "Could not read time data from the image. Please use a clear image of a time sheet",
+    parseError: "Could not read time data from the image. Please use a clear image of a time sheet",
     apiError: "Failed to analyze image. Please verify it is a time sheet and try again",
     scanError: "An error occurred during analysis. Please try again",
     scanFailed: "Analysis failed. Please try again",
@@ -308,7 +311,8 @@ const en: TranslationShape = {
     checkoutError: "Failed to create checkout session",
     portalError: "Failed to create portal session",
     paymentFailedTitle: "Payment failed",
-    paymentFailedDescription: "Please update your payment method. Premium features will be suspended if not updated.",
+    paymentFailedDescription:
+      "Please update your payment method. Premium features will be suspended if not updated.",
     updatePaymentMethod: "Update payment method →",
     pastDueBadge: "Premium (payment overdue)",
     expiresAt: "Expires: {{date}}",
@@ -328,7 +332,8 @@ const en: TranslationShape = {
     subscribe: "Start Premium",
     startTrial: "Start 7-day free trial",
     trialRemaining: "{{days}} days left in trial",
-    trialNote: "After the 7-day free trial, you will be charged automatically.\nYou can cancel anytime.",
+    trialNote:
+      "After the 7-day free trial, you will be charged automatically.\nYou can cancel anytime.",
     restore: "Restore Purchases",
     noPackages: "No plans available",
     offeringsError: "Failed to load plans",
