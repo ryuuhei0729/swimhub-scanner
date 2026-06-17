@@ -9,5 +9,6 @@ export const env = {
   supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "",
   webApiUrl: process.env.EXPO_PUBLIC_WEB_API_URL || "https://scanner.swim-hub.app",
   revenuecatIosApiKey: process.env.EXPO_PUBLIC_REVENUCAT_IOS_API_KEY ?? "",
+  revenuecatAndroidApiKey: process.env.EXPO_PUBLIC_REVENUCAT_ANDROID_API_KEY ?? "",
   environment: process.env.EXPO_PUBLIC_ENVIRONMENT || "development",
 } as const;
