@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, Pressable, StyleSheet, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useSegments } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
@@ -10,9 +10,16 @@ import { AppleLoginButton } from "@/components/auth/AppleLoginButton";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 import { colors, spacing, radius, fontSize } from "@/theme";
 
+/**
+ * (auth)/(app) 両方のグループからこの画面が呼ばれる（ゲストが (app) 内からログインする
+ * 導線もあるため）。所属グループを見て遷移先を切り替え、別グループのスタックへ
+ * 迷い込まないようにする。
+ */
 export default function LoginMethodScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const segments = useSegments();
+  const emailLoginHref = segments[0] === "(app)" ? "/(app)/email-login" : "/(auth)/email-login";
   const {
     signInWithGoogle,
     loading: googleLoading,
@@ -84,7 +91,7 @@ export default function LoginMethodScreen() {
               isLoading && styles.buttonDisabled,
               pressed && !isLoading && styles.emailButtonPressed,
             ]}
-            onPress={() => router.push("/(auth)/email-login")}
+            onPress={() => router.push(emailLoginHref)}
             disabled={isLoading}
             accessibilityRole="button"
             accessibilityLabel={t("auth.loginMethod.withEmail")}

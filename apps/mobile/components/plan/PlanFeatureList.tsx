@@ -21,11 +21,6 @@ const FEATURES: FeatureItem[] = [
     unlockConditionKey: "planFeature.unlockWithPremium",
   },
   {
-    labelKey: "planFeature.scanHistory",
-    availableFor: ["free", "premium"],
-    unlockConditionKey: "planFeature.unlockWithAccount",
-  },
-  {
     labelKey: "planFeature.unlimitedSwimmers",
     availableFor: ["free", "premium"],
     unlockConditionKey: "planFeature.unlockWithAccount",

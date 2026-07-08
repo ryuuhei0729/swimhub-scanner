@@ -20,6 +20,12 @@ const API_KEY = Platform.select({
 });
 const EXPECTED_PREFIX = Platform.select({ ios: "appl_", android: "goog_", default: "" });
 
+/**
+ * RevenueCat の Premium entitlement 識別子。
+ * AuthProvider / paywall / account 画面で共通利用し、直書きの三重定義を避ける。
+ */
+export const PREMIUM_ENTITLEMENT_ID = "premium";
+
 const isValidApiKey =
   !!API_KEY &&
   !!EXPECTED_PREFIX &&
@@ -27,6 +33,14 @@ const isValidApiKey =
   !API_KEY.includes("PLACEHOLDER");
 
 let isInitialized = false;
+
+/** SDK が未初期化の状態で課金系操作を呼び出した場合に投げるエラー */
+export class RevenueCatNotInitializedError extends Error {
+  constructor() {
+    super("RevenueCat SDK が初期化されていません");
+    this.name = "RevenueCatNotInitializedError";
+  }
+}
 
 /** SDK を初期化する（対応プラットフォームの有効なAPIキーがある場合のみ） */
 export async function initRevenueCat(): Promise<void> {
@@ -97,9 +111,14 @@ export async function purchasePackage(
   }
 }
 
-/** 購入をリストアする */
-export async function restorePurchases(): Promise<CustomerInfo | null> {
-  if (!isInitialized) return null;
+/**
+ * 購入をリストアする。
+ * SDK 未初期化の場合は `RevenueCatNotInitializedError` を投げる（成功扱いにしない）。
+ */
+export async function restorePurchases(): Promise<CustomerInfo> {
+  if (!isInitialized) {
+    throw new RevenueCatNotInitializedError();
+  }
 
   try {
     const customerInfo = await Purchases.restorePurchases();

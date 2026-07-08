@@ -7,13 +7,17 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthProvider";
 import { checkIsPremium } from "@swimhub-scanner/shared";
 import { deleteAccount, ApiError } from "@/lib/api-client";
-import { restorePurchases } from "@/lib/revenucat";
+import {
+  restorePurchases,
+  RevenueCatNotInitializedError,
+  PREMIUM_ENTITLEMENT_ID,
+} from "@/lib/revenucat";
 import { colors, spacing, radius, fontSize } from "@/theme";
 import { PlanFeatureList } from "@/components/plan/PlanFeatureList";
 
 export default function AccountScreen() {
-  const { t } = useTranslation();
-  const { user, signOut, subscription, refreshSubscription } = useAuth();
+  const { t, i18n } = useTranslation();
+  const { user, signOut, subscription, applyCustomerInfo } = useAuth();
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
   const [restoring, setRestoring] = useState(false);
@@ -33,18 +37,27 @@ export default function AccountScreen() {
   const renewalDateFormatted = (() => {
     if (!subscription?.premiumExpiresAt) return null;
     const date = new Date(subscription.premiumExpiresAt);
-    return date.toLocaleDateString("ja-JP");
+    return date.toLocaleDateString(i18n.language);
   })();
 
   // リストア処理
   const handleRestore = async () => {
     setRestoring(true);
     try {
-      await restorePurchases();
-      await refreshSubscription();
+      const customerInfo = await restorePurchases();
+      const hasPremium = !!customerInfo.entitlements.active[PREMIUM_ENTITLEMENT_ID];
+      if (!hasPremium) {
+        Alert.alert(t("accountScreen.restoreEmpty"), t("accountScreen.restoreEmptyMessage"));
+        return;
+      }
+      applyCustomerInfo(customerInfo);
       Alert.alert(t("accountScreen.restoreSuccess"), t("accountScreen.restoreSuccessMessage"));
-    } catch {
-      Alert.alert(t("accountScreen.restoreError"), t("accountScreen.restoreErrorMessage"));
+    } catch (err) {
+      if (err instanceof RevenueCatNotInitializedError) {
+        Alert.alert(t("accountScreen.restoreError"), t("accountScreen.restoreUnavailableMessage"));
+      } else {
+        Alert.alert(t("accountScreen.restoreError"), t("accountScreen.restoreErrorMessage"));
+      }
     } finally {
       setRestoring(false);
     }

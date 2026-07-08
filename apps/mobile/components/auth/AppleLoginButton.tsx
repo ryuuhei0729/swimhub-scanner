@@ -7,7 +7,8 @@ interface AppleLoginButtonProps {
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-  label?: string;
+  /** ボタンに表示するラベル。呼び出し側で i18n 済みの文字列を渡す */
+  label: string;
 }
 
 const AppleLogo: React.FC = () => (
@@ -23,7 +24,7 @@ export const AppleLoginButton: React.FC<AppleLoginButtonProps> = ({
   onPress,
   loading = false,
   disabled = false,
-  label = "Appleでログイン",
+  label,
 }) => {
   if (Platform.OS !== "ios") {
     return null;

@@ -6,8 +6,24 @@ import { captureRef } from "react-native-view-shot";
 import XLSX from "xlsx";
 import { useTranslation } from "react-i18next";
 import { useScanResultStore } from "@/stores/scanResultStore";
-import { formatTime, averageTime, fastestTime, slowestTime } from "@swimhub-scanner/shared";
+import {
+  formatTime,
+  averageTime,
+  fastestTime,
+  slowestTime,
+  formatCircleTime,
+} from "@swimhub-scanner/shared";
 import { colors, spacing, radius, fontSize } from "@/theme";
+
+/**
+ * CSV セルとして安全な文字列に変換する。
+ * - ダブルクォートは `""` にエスケープする
+ * - 表計算ソフトが数式と誤認する先頭文字（=+-@）にはシングルクォートを付与する（CSVインジェクション対策）
+ */
+const escapeCsvValue = (value: string): string => {
+  const guarded = /^[=+\-@]/.test(value) ? `'${value}` : value;
+  return `"${guarded.replace(/"/g, '""')}"`;
+};
 
 const getDateString = () => {
   const now = new Date();
@@ -71,11 +87,11 @@ export const ExportSheet: React.FC = () => {
     try {
       const { headers, rows } = buildRows();
       const csvContent = [
-        headers.join(","),
-        ...rows.map((r) => r.map((v) => `"${v}"`).join(",")),
+        headers.map(escapeCsvValue).join(","),
+        ...rows.map((r) => r.map(escapeCsvValue).join(",")),
       ].join("\n");
 
-      const fileName = `タイム記録_${getDateString()}.csv`;
+      const fileName = `${t("export.timeRecord")}_${getDateString()}.csv`;
       const fileUri = FileSystem.documentDirectory + fileName;
       await FileSystem.writeAsStringAsync(fileUri, "\uFEFF" + csvContent, {
         encoding: FileSystem.EncodingType.UTF8,
@@ -121,7 +137,7 @@ export const ExportSheet: React.FC = () => {
         [t("export.distance"), `${menu.distance}m`],
         [t("export.repCount"), `${menu.repCount}${t("result.repShort")}`],
         [t("export.setCount"), `${menu.setCount}${t("result.set")}`],
-        [t("export.circle"), menu.circle ? `${menu.circle}${t("result.circleSeconds", { seconds: "" }).trim()}` : "—"],
+        [t("export.circle"), menu.circle ? formatCircleTime(menu.circle) : "—"],
       ];
       const menuWs = XLSX.utils.aoa_to_sheet(menuData);
       XLSX.utils.book_append_sheet(wb, menuWs, t("export.menuSheet"));
@@ -132,7 +148,7 @@ export const ExportSheet: React.FC = () => {
       XLSX.utils.book_append_sheet(wb, timeWs, t("export.timeRecord"));
 
       const wbout = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
-      const fileName = `タイム記録_${getDateString()}.xlsx`;
+      const fileName = `${t("export.timeRecord")}_${getDateString()}.xlsx`;
       const fileUri = FileSystem.documentDirectory + fileName;
       await FileSystem.writeAsStringAsync(fileUri, wbout, {
         encoding: FileSystem.EncodingType.Base64,
@@ -149,11 +165,7 @@ export const ExportSheet: React.FC = () => {
     }
   };
 
-  const circleLabel = menu.circle
-    ? menu.circle >= 60
-      ? `${Math.floor(menu.circle / 60)}分${menu.circle % 60 > 0 ? `${menu.circle % 60}秒` : ""}`
-      : `${menu.circle}秒`
-    : null;
+  const circleLabel = menu.circle ? formatCircleTime(menu.circle) : null;
 
   return (
     <View style={styles.container}>

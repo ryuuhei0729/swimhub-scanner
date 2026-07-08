@@ -2,12 +2,13 @@
  * Apple認証フック
  * expo-apple-authenticationを使用してネイティブのApple認証を実行
  */
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import * as AppleAuthentication from "expo-apple-authentication";
 import * as Crypto from "expo-crypto";
 import { Platform } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { localizeSupabaseAuthError } from "@/utils/authErrorLocalizer";
+import i18n from "@/lib/i18n";
 
 export interface AppleAuthResult {
   success: boolean;
@@ -34,27 +35,40 @@ export interface UseAppleAuthReturn {
 export const useAppleAuth = (): UseAppleAuthReturn => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // タイムアウト後に遅れて届いた signInAsync の結果（または古い試行）を無視するための識別子
+  const requestIdRef = useRef(0);
 
   const isAvailable = Platform.OS === "ios";
 
   const signInWithApple = useCallback(async (): Promise<AppleAuthResult> => {
     if (!isAvailable) {
-      setError("Apple認証はiOSでのみ利用可能です");
-      return { success: false, error: new Error("Apple認証はiOSでのみ利用可能です") };
+      const message = i18n.t("auth.errors.appleIosOnly");
+      setError(message);
+      return { success: false, error: new Error(message) };
     }
 
     if (!supabase) {
-      setError("Supabaseクライアントが初期化されていません");
-      return { success: false, error: new Error("Supabaseクライアントが初期化されていません") };
+      const message = i18n.t("auth.errors.supabaseNotConfigured");
+      setError(message);
+      return { success: false, error: new Error(message) };
     }
+
+    const requestId = ++requestIdRef.current;
+    const isCurrentRequest = () => requestIdRef.current === requestId;
 
     setLoading(true);
     setError(null);
 
     const APPLE_AUTH_TIMEOUT_MS = 60000;
     const timeoutId = setTimeout(() => {
+      if (!isCurrentRequest()) return;
+      // requestId を進め、この後 signInAsync が遅れて成功しても isCurrentRequest() が
+      // false になるようにする。これが無いとタイムアウト後の遅延成功時に
+      // isCurrentRequest() が true のままとなり、失敗表示済みの画面で無言ログインが
+      // 成立してしまう（このタイムアウトが本来防ぐべき挙動）。
+      requestIdRef.current++;
       setLoading(false);
-      setError("認証がタイムアウトしました。もう一度お試しください。");
+      setError(i18n.t("auth.errors.appleTimeout"));
     }, APPLE_AUTH_TIMEOUT_MS);
 
     try {
@@ -68,8 +82,9 @@ export const useAppleAuth = (): UseAppleAuthReturn => {
         (Platform as unknown as { isPad?: boolean }).isPad,
       );
       if (!isAppleAuthAvailable) {
-        setError("このデバイスではApple認証を利用できません");
-        return { success: false, error: new Error("このデバイスではApple認証を利用できません") };
+        const message = i18n.t("auth.errors.appleUnavailableOnDevice");
+        setError(message);
+        return { success: false, error: new Error(message) };
       }
 
       // nonce生成（リプレイ攻撃防止）
@@ -83,7 +98,7 @@ export const useAppleAuth = (): UseAppleAuthReturn => {
         hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, rawNonce);
       } catch (cryptoError) {
         console.error("[AppleAuth] Nonce generation failed:", cryptoError);
-        setError("認証の初期化に失敗しました。アプリを再起動してお試しください。");
+        setError(i18n.t("auth.errors.appleNonceFailed"));
         return { success: false, error: new Error("Nonce generation failed") };
       }
 
@@ -102,13 +117,21 @@ export const useAppleAuth = (): UseAppleAuthReturn => {
         credential.user ? "present" : "null",
       );
 
+      // タイムアウト表示後（または新しい試行が始まった後）に遅れて届いた結果は無視する。
+      // ここで処理を続けると、既に失敗表示済みの画面に無言でログイン成功させてしまい、
+      // ユーザーに誤解を与える（またはネイティブダイアログの二重起動と競合する）。
+      if (!isCurrentRequest()) {
+        console.warn("[AppleAuth] Ignoring stale signInAsync result (already timed out)");
+        return { success: false, error: new Error(i18n.t("auth.errors.appleTimeout")) };
+      }
+
       if (!credential.identityToken) {
         console.error(
           "[AppleAuth] identityToken is null. credential keys:",
           Object.keys(credential),
         );
-        setError("Apple認証トークンが取得できませんでした。もう一度お試しください。");
-        return { success: false, error: new Error("Apple認証トークンが取得できませんでした") };
+        setError(i18n.t("auth.errors.appleTokenMissing"));
+        return { success: false, error: new Error(i18n.t("auth.errors.appleTokenMissing")) };
       }
 
       const fullName = credential.fullName;
@@ -150,8 +173,8 @@ export const useAppleAuth = (): UseAppleAuthReturn => {
       // iPad では ERR_REQUEST_UNKNOWN のメッセージが異なる場合があるため、
       // code だけでもキャンセル扱いとする
       if (err.code === "ERR_REQUEST_CANCELED" || err.code === "ERR_REQUEST_UNKNOWN") {
-        setError("認証がキャンセルされました。もう一度お試しください。");
-        return { success: false, error: new Error("認証がキャンセルされました") };
+        if (isCurrentRequest()) setError(i18n.t("auth.errors.appleCancelled"));
+        return { success: false, error: new Error(i18n.t("auth.errors.cancelled")) };
       }
 
       if (
@@ -159,17 +182,19 @@ export const useAppleAuth = (): UseAppleAuthReturn => {
         err.code === "ERR_REQUEST_FAILED" ||
         err.code === "ERR_REQUEST_INVALID"
       ) {
-        setError("Apple認証に失敗しました。しばらく待ってからもう一度お試しください。");
+        if (isCurrentRequest()) setError(i18n.t("auth.errors.appleRequestFailed"));
         return { success: false, error: err };
       }
 
-      const rawMessage = err.message || "不明なエラーが発生しました";
+      const rawMessage = err.message || i18n.t("auth.errors.unknown");
       const localizedMessage = localizeSupabaseAuthError({ message: rawMessage });
-      setError(localizedMessage);
+      if (isCurrentRequest()) setError(localizedMessage);
       return { success: false, error: err };
     } finally {
       clearTimeout(timeoutId);
-      setLoading(false);
+      if (isCurrentRequest()) {
+        setLoading(false);
+      }
     }
   }, [isAvailable]);
 

@@ -7,6 +7,7 @@ import * as WebBrowser from "expo-web-browser";
 import { getRedirectUri, extractTokensFromUrl } from "@/lib/google-auth";
 import { supabase } from "@/lib/supabase";
 import { localizeSupabaseAuthError } from "@/utils/authErrorLocalizer";
+import i18n from "@/lib/i18n";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -28,8 +29,9 @@ export const useGoogleAuth = (): UseGoogleAuthReturn => {
 
   const signInWithGoogle = useCallback(async (): Promise<GoogleAuthResult> => {
     if (!supabase) {
-      setError("Supabaseクライアントが初期化されていません");
-      return { success: false, error: new Error("Supabaseクライアントが初期化されていません") };
+      const message = i18n.t("auth.errors.supabaseNotConfigured");
+      setError(message);
+      return { success: false, error: new Error(message) };
     }
 
     setLoading(true);
@@ -50,9 +52,9 @@ export const useGoogleAuth = (): UseGoogleAuthReturn => {
       if (oauthError || !data.url) {
         const errorMessage = oauthError
           ? localizeSupabaseAuthError(oauthError)
-          : "OAuth URLの生成に失敗しました";
+          : i18n.t("auth.errors.oauthUrlFailed");
         setError(errorMessage);
-        return { success: false, error: oauthError || new Error("OAuth URLの生成に失敗しました") };
+        return { success: false, error: oauthError || new Error(errorMessage) };
       }
 
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri, {
@@ -67,6 +69,23 @@ export const useGoogleAuth = (): UseGoogleAuthReturn => {
           return { success: false, error: new Error(tokens.error) };
         }
 
+        // Supabase クライアントは flowType: "pkce" で構成されているため、
+        // コールバックは通常クエリパラメータ `?code=...` で返る。
+        // まずこちらを優先して exchangeCodeForSession でセッションを確立する。
+        if (tokens.code) {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(
+            tokens.code,
+          );
+
+          if (exchangeError) {
+            setError(localizeSupabaseAuthError(exchangeError));
+            return { success: false, error: exchangeError };
+          }
+
+          return { success: true };
+        }
+
+        // フォールバック: implicit flow (#access_token=...) で返ってきた場合
         if (tokens.accessToken && tokens.refreshToken) {
           const { error: sessionError } = await supabase.auth.setSession({
             access_token: tokens.accessToken,
@@ -81,24 +100,24 @@ export const useGoogleAuth = (): UseGoogleAuthReturn => {
           return { success: true };
         }
 
-        setError("認証トークンが取得できませんでした");
-        return { success: false, error: new Error("認証トークンが取得できませんでした") };
+        setError(i18n.t("auth.errors.tokenMissing"));
+        return { success: false, error: new Error(i18n.t("auth.errors.tokenMissing")) };
       }
 
       if (result.type === "cancel") {
-        setError("認証がキャンセルされました");
-        return { success: false, error: new Error("認証がキャンセルされました") };
+        setError(i18n.t("auth.errors.cancelled"));
+        return { success: false, error: new Error(i18n.t("auth.errors.cancelled")) };
       }
 
       if (result.type === "dismiss") {
-        setError("認証が中断されました");
-        return { success: false, error: new Error("認証が中断されました") };
+        setError(i18n.t("auth.errors.authDismissed"));
+        return { success: false, error: new Error(i18n.t("auth.errors.authDismissed")) };
       }
 
-      setError("認証に失敗しました");
-      return { success: false, error: new Error("認証に失敗しました") };
+      setError(i18n.t("auth.errors.authFailed"));
+      return { success: false, error: new Error(i18n.t("auth.errors.authFailed")) };
     } catch (err) {
-      const rawMessage = err instanceof Error ? err.message : "不明なエラーが発生しました";
+      const rawMessage = err instanceof Error ? err.message : i18n.t("auth.errors.unknown");
       const localizedMessage = localizeSupabaseAuthError({ message: rawMessage });
       setError(localizedMessage);
       return { success: false, error: err instanceof Error ? err : new Error(rawMessage) };

@@ -51,6 +51,7 @@ export const colors = {
   // Accent
   violet: "#7C3AED",
   green: "#059669",
+  greenLight: "#ECFDF5",
 } as const;
 
 export const spacing = {

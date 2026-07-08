@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Noto_Sans_JP, Noto_Sans_KR, Noto_Sans_SC } from "next/font/google";
+import { Inter, Noto_Sans_JP, Noto_Sans_KR, Noto_Sans_SC, Chakra_Petch } from "next/font/google";
 import { notFound } from "next/navigation";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { I18nProvider } from "@/components/I18nProvider";
@@ -42,6 +42,12 @@ const notoSansSC = Noto_Sans_SC({
   variable: "--font-noto-sans-sc",
   weight: ["400", "500", "700"],
   preload: false,
+});
+
+const chakraPetch = Chakra_Petch({
+  subsets: ["latin"],
+  variable: "--font-chakra-petch",
+  weight: ["600", "700"],
 });
 
 export async function generateMetadata({
@@ -142,7 +148,7 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} className="h-full">
       <body
-        className={`${inter.variable} ${notoSansJP.variable} ${notoSansKR.variable} ${notoSansSC.variable} font-sans`}
+        className={`${inter.variable} ${notoSansJP.variable} ${notoSansKR.variable} ${notoSansSC.variable} ${chakraPetch.variable} font-sans`}
       >
         <I18nProvider locale={locale}>
           <AuthProvider>

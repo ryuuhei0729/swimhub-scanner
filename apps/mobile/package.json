@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.51.1",
+    "@expo-google-fonts/chakra-petch": "^0.4.1",
     "@expo/vector-icons": "^15.1.1",
     "@react-native-async-storage/async-storage": "^2.1.0",
     "@supabase/supabase-js": "^2.80.0",

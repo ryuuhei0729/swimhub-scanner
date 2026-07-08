@@ -124,6 +124,15 @@ const de: TranslationShape = {
       unexpectedError: "Ein unerwarteter Fehler ist aufgetreten",
       submit: "Anmelden",
       passwordPlaceholder: "Passwort",
+      forgotPassword: "Passwort vergessen?",
+      resetEmailRequiredTitle: "E-Mail-Adresse erforderlich",
+      resetEmailRequired:
+        "Bitte geben Sie die E-Mail-Adresse ein, an die der Link zum Zurücksetzen des Passworts gesendet werden soll",
+      resetSuccessTitle: "E-Mail gesendet",
+      resetSuccessMessage:
+        "Falls für diese E-Mail-Adresse ein Konto existiert, haben wir einen Link zum Zurücksetzen des Passworts gesendet. Bitte folgen Sie den Anweisungen in der E-Mail.",
+      resetFailed:
+        "Die E-Mail zum Zurücksetzen des Passworts konnte nicht gesendet werden. Bitte versuchen Sie es später erneut",
     },
     emailSignupScreen: {
       title: "Mit E-Mail registrieren",
@@ -137,6 +146,19 @@ const de: TranslationShape = {
       signupFailed: "Registrierung fehlgeschlagen. Bitte prüfen Sie Ihre Eingabe",
       unexpectedError: "Ein unerwarteter Fehler ist aufgetreten",
       submit: "Registrieren",
+    },
+    resetPasswordScreen: {
+      title: "Neues Passwort festlegen",
+      subtitle: "Geben Sie ein neues Passwort für Ihr Konto ein",
+      newPasswordLabel: "Neues Passwort",
+      confirmPasswordLabel: "Neues Passwort bestätigen",
+      confirmPasswordPlaceholder: "Passwort erneut eingeben",
+      passwordRequired: "Bitte geben Sie ein neues Passwort ein",
+      passwordTooShort: "Das Passwort muss mindestens 6 Zeichen lang sein",
+      passwordMismatch: "Die Passwörter stimmen nicht überein",
+      submit: "Passwort aktualisieren",
+      updateFailed: "Passwort konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut",
+      unexpectedError: "Ein unerwarteter Fehler ist aufgetreten",
     },
     errors: {
       invalidCredentials: "Ungültige E-Mail oder Passwort",
@@ -160,6 +182,25 @@ const de: TranslationShape = {
       fallback: "Ein Authentifizierungsfehler ist aufgetreten. Bitte versuchen Sie es erneut",
       fallbackDev: "Authentifizierungsfehler: {{message}}",
       logoutFailed: "Abmeldung fehlgeschlagen",
+      unknown: "Ein unbekannter Fehler ist aufgetreten",
+      supabaseNotConfigured: "Supabase-Client ist nicht initialisiert",
+      oauthUrlFailed: "Erstellen der Authentifizierungs-URL fehlgeschlagen",
+      tokenMissing: "Authentifizierungstoken konnte nicht abgerufen werden",
+      authDismissed: "Authentifizierung wurde abgebrochen",
+      authFailed: "Authentifizierung fehlgeschlagen",
+      appleIosOnly: "Anmeldung mit Apple ist nur unter iOS verfügbar",
+      appleTimeout: "Zeitüberschreitung bei der Authentifizierung. Bitte versuchen Sie es erneut",
+      appleUnavailableOnDevice: "Anmeldung mit Apple ist auf diesem Gerät nicht verfügbar",
+      appleNonceFailed:
+        "Initialisierung der Authentifizierung fehlgeschlagen. Bitte starten Sie die App neu und versuchen Sie es erneut",
+      appleTokenMissing:
+        "Apple-Authentifizierungstoken konnte nicht abgerufen werden. Bitte versuchen Sie es erneut",
+      appleCancelled: "Authentifizierung wurde abgebrochen. Bitte versuchen Sie es erneut",
+      appleRequestFailed:
+        "Anmeldung mit Apple fehlgeschlagen. Bitte warten Sie einen Moment und versuchen Sie es erneut",
+      deepLinkFailed:
+        "Verarbeitung des Authentifizierungslinks fehlgeschlagen. Bitte versuchen Sie es erneut.",
+      urlParseFailed: "Die URL konnte nicht analysiert werden",
     },
   },
   scanner: {
@@ -174,6 +215,7 @@ const de: TranslationShape = {
     step2Short: "KI-Scan",
     step3Short: "Ergebnisse",
     templateToggle: "Vorlagen ansehen",
+    templateImage: "Bild",
     step1Title: "Schritt 1: Bild hochladen",
     step3Title: "Schritt 3: Ergebnisse prüfen & bearbeiten",
     scan: "Analysieren",
@@ -186,6 +228,7 @@ const de: TranslationShape = {
     resultHeader: "Ergebnisse",
     printTemplate: "Zeitenlisten-Vorlage drucken",
     templateLabel: "Zeitenlisten-Vorlage",
+    templateFileName: "Team-Zeitenlisten-Vorlage",
     output: "Exportieren",
     selectImage: "Bild auswählen",
     selectImageDesc: "Fotografieren Sie eine Zeitenliste\noder wählen Sie aus Ihrer Mediathek",
@@ -195,6 +238,8 @@ const de: TranslationShape = {
     cameraPermissionError: "Kamerazugriff ist nicht erlaubt",
     cameraPermissionTitle: "Berechtigungsfehler",
     registerForMore: "Konto erstellen, um mehr zu scannen",
+    noSwimmersTitle: "Keine Schwimmer",
+    noSwimmersMessage: "Sie haben alle Schwimmer entfernt. Bitte starten Sie einen neuen Scan.",
     createFreeAccount: "Kostenloses Konto erstellen",
     registerAccount: "Konto erstellen",
     dailyLimitGuest:
@@ -205,6 +250,8 @@ const de: TranslationShape = {
       "Sie haben Ihr heutiges Scan-Limit erreicht. Wird täglich um Mitternacht (JST) zurückgesetzt.",
     dailyLimitRegisterLink: "Konto erstellen, um mehr zu scannen →",
     dailyLimitUpgradeLink: "Auf Premium upgraden →",
+    statusFetchError: "Nutzungsstatus konnte nicht geladen werden. Bitte überprüfen Sie Ihre Verbindung.",
+    statusFetchRetry: "Zum Wiederholen tippen →",
     swimmerLimitExceeded: "Der kostenlose Tarif erlaubt bis zu 6 Schwimmer pro Scan",
     swimmerLimitScan: "Maximal 8 Schwimmer pro Scan",
     parseError:
@@ -333,7 +380,7 @@ const de: TranslationShape = {
     monthly: "Monatstarif",
     year: "Jahr",
     month: "Monat",
-    perMonth: "~{{price}} {{currency}}/Monat",
+    perMonth: "~{{price}}/Monat",
     savePercent: "{{percent}} % sparen",
     subscribe: "Premium starten",
     startTrial: "7-tägige kostenlose Testphase starten",
@@ -352,6 +399,8 @@ const de: TranslationShape = {
     restoreEmpty: "Nichts wiederherzustellen",
     restoreEmptyMessage: "Keine wiederherstellbaren Käufe gefunden.",
     restoreFailed: "Käufe konnten nicht wiederhergestellt werden.",
+    restoreUnavailableMessage:
+      "Diese Funktion ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.",
     alreadyPremium: "Sie nutzen bereits den Premium-Tarif",
     cancelNote:
       "Sie können Ihr Abonnement jederzeit kündigen.\nVerwalten Sie es in Ihren App-Store-Einstellungen.",
@@ -389,6 +438,10 @@ const de: TranslationShape = {
     restoreSuccessMessage: "Ihre Käufe wurden wiederhergestellt.",
     restoreError: "Wiederherstellungsfehler",
     restoreErrorMessage: "Käufe konnten nicht wiederhergestellt werden.",
+    restoreEmpty: "Nichts wiederherzustellen",
+    restoreEmptyMessage: "Keine wiederherstellbaren Käufe gefunden.",
+    restoreUnavailableMessage:
+      "Diese Funktion ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.",
     logoutTitle: "Abmelden",
     logoutConfirm: "Möchten Sie sich wirklich abmelden?",
     logoutFailed: "Abmeldung fehlgeschlagen",
