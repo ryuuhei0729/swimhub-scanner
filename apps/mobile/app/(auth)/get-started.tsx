@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet, ActivityIndicator, Linking, Image } from "react-native";
+import { View, Text, Pressable, StyleSheet, ActivityIndicator, Linking, Image, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -67,7 +67,11 @@ export default function GetStartedScreen() {
         </Pressable>
       </View>
 
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.titleContainer}>
           <Image source={require("@/assets/icon.png")} style={styles.appIcon} />
           <Text style={styles.title}>{t("auth.getStarted.title")}</Text>
@@ -139,7 +143,7 @@ export default function GetStartedScreen() {
             </Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
 
       <View style={styles.legalContainer}>
         <Text style={styles.legalText}>
@@ -178,8 +182,13 @@ const styles = StyleSheet.create({
   backButton: {
     padding: spacing.sm,
   },
-  content: {
+  scroll: {
     flex: 1,
+  },
+  content: {
+    // flexGrow (not flex) keeps the center layout on tall screens while
+    // letting short screens scroll to reach the bottom buttons
+    flexGrow: 1,
     paddingHorizontal: spacing.xl,
     justifyContent: "center",
   },

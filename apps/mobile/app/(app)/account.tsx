@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert, StyleSheet, Linking, Platform } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, StyleSheet, Linking, Platform, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
@@ -125,7 +125,7 @@ export default function AccountScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
-      <View style={styles.content}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         {/* アカウント情報（メール + プラン） */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("accountScreen.accountInfo")}</Text>
@@ -280,7 +280,7 @@ export default function AccountScreen() {
         <View style={styles.footer}>
           <Text style={styles.footerText}>SwimHub Scanner v{appVersion}</Text>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -290,8 +290,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surfaceSecondary,
   },
-  content: {
+  scroll: {
     flex: 1,
+  },
+  content: {
+    // flexGrow (not flex) so the footer's marginTop:"auto" still bottom-pins
+    // on tall screens while short screens can scroll
+    flexGrow: 1,
     padding: spacing.lg,
   },
   section: {
