@@ -105,6 +105,19 @@ function AuthGate() {
     async (url: string | null) => {
       if (!url || !supabase) return;
 
+      // expo-linking の parse は独自スキームを authority ベースで解釈するため、
+      // `scheme://auth/callback` は hostname:"auth" / path:"callback" に、
+      // `scheme://reset-password` は hostname:"reset-password" / path:null になる。
+      const { hostname, path, queryParams } = Linking.parse(url);
+
+      // Google OAuth コールバックは useGoogleAuth 側が処理するため、code の有無や
+      // エラー情報（キャンセル時の error=access_denied 等）に関わらずここでは無視する
+      // （エラー Alert の重複・誤表示防止）。エラー抽出より先に判定すること。
+      const isOAuthCallback = hostname === "auth" && path === "callback";
+      if (isOAuthCallback) {
+        return;
+      }
+
       const deepLinkError = extractDeepLinkError(url);
       if (deepLinkError) {
         console.error("認証リンクにエラーが含まれています:", deepLinkError);
@@ -112,17 +125,8 @@ function AuthGate() {
         return;
       }
 
-      // expo-linking の parse は独自スキームを authority ベースで解釈するため、
-      // `scheme://auth/callback` は hostname:"auth" / path:"callback" に、
-      // `scheme://reset-password` は hostname:"reset-password" / path:null になる。
-      const { hostname, path, queryParams } = Linking.parse(url);
       const code = queryParams?.code;
       if (typeof code !== "string" || code.length === 0) return;
-
-      const isOAuthCallback = hostname === "auth" && path === "callback";
-      if (isOAuthCallback) {
-        return;
-      }
 
       // 同一 code の二重交換を防ぐ（getInitialURL の再実行や複数リスナーからの重複呼び出し対策）
       if (processedCodesRef.current.has(code)) return;

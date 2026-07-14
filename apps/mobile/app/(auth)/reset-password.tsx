@@ -111,7 +111,13 @@ export default function ResetPasswordScreen() {
       // signOut 完了後に解放・遷移する。先に pendingRecoveryCheck を false に戻すと、
       // signOut のネットワーク待ちと transitioning の自動解除 (400ms) が競合し、
       // 一瞬 (app) へ遷移し得る窓が開くため、signOut → 解放 → 遷移の順序を守る。
-      await signOut();
+      const { error: signOutError } = await signOut();
+      if (signOutError) {
+        // サインアウトできていないのに認証ガードだけ解除すると、recovery セッションの
+        // ままアプリ内へ遷移し得るため、失敗時はこの画面に留まる。
+        setError(t("auth.resetPasswordScreen.unexpectedError"));
+        return;
+      }
       setPendingRecoveryCheck(false);
       router.replace("/(auth)/login-method");
     } finally {
@@ -185,6 +191,8 @@ export default function ResetPasswordScreen() {
                 ]}
                 onPress={handleSubmit}
                 disabled={loading}
+                accessibilityRole="button"
+                accessibilityLabel={t("auth.resetPasswordScreen.submit")}
               >
                 {loading ? (
                   <ActivityIndicator color={colors.white} />
@@ -199,6 +207,8 @@ export default function ResetPasswordScreen() {
                 style={styles.cancelButton}
                 onPress={handleCancel}
                 disabled={cancelling || loading}
+                accessibilityRole="button"
+                accessibilityLabel={t("auth.backToLogin")}
               >
                 {cancelling ? (
                   <ActivityIndicator color={colors.primary} size="small" />

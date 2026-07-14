@@ -48,9 +48,11 @@ async function apiRequest<T>(
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
+      // Authorization はここで付与する最新トークンを常に優先する
+      // (呼び出し元の headers に古いトークンが混ざっても 401 リトライ時に上書きされないように)
+      ...options.headers,
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      ...options.headers,
     },
   });
 

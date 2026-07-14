@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { colors, spacing, radius, fontSize } from "@/theme";
+import { isValidEmail } from "@/utils/validateEmail";
 
 export default function EmailLoginScreen() {
   const { t } = useTranslation();
@@ -32,8 +33,7 @@ export default function EmailLoginScreen() {
       setError(t("auth.emailLoginScreen.emailRequired"));
       return false;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!isValidEmail(email)) {
       setError(t("auth.emailLoginScreen.emailInvalid"));
       return false;
     }
@@ -82,9 +82,8 @@ export default function EmailLoginScreen() {
   };
 
   const handleForgotPassword = async () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const trimmedEmail = email.trim();
-    if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+    if (!trimmedEmail || !isValidEmail(trimmedEmail)) {
       Alert.alert(
         t("auth.emailLoginScreen.resetEmailRequiredTitle"),
         t("auth.emailLoginScreen.resetEmailRequired"),

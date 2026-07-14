@@ -635,7 +635,9 @@ export default function ScannerScreen() {
               <Text style={styles.limitBannerLink}>{t("scanner.statusFetchRetry")}</Text>
             </Pressable>
           ) : (
-            !canScan && (
+            // ステータス取得中は userStatus が null で canScan=false になるため、
+            // ロード完了までは「上限到達」バナーを出さない（誤表示防止）
+            !canScan && !statusLoading && (
               <Pressable
                 style={styles.limitBanner}
                 onPress={() => {

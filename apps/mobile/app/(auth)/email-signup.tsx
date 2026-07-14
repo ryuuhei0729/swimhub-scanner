@@ -19,6 +19,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthProvider";
 import { colors, spacing, radius, fontSize } from "@/theme";
 import { validatePassword, type PasswordChecks } from "@/utils/validatePassword";
+import { isValidEmail } from "@/utils/validateEmail";
 
 export default function EmailSignupScreen() {
   const { t } = useTranslation();
@@ -42,8 +43,7 @@ export default function EmailSignupScreen() {
       setError(t("auth.emailSignupScreen.emailRequired"));
       return false;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!isValidEmail(email)) {
       setError(t("auth.emailSignupScreen.emailInvalid"));
       return false;
     }
