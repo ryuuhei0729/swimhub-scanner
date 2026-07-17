@@ -14,17 +14,24 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import type { PurchasesPackage } from "react-native-purchases";
 import { useTranslation } from "react-i18next";
-import { getOfferings, purchasePackage, restorePurchases } from "@/lib/revenucat";
+import {
+  getOfferings,
+  purchasePackage,
+  restorePurchases,
+  RevenueCatNotInitializedError,
+  PREMIUM_ENTITLEMENT_ID,
+} from "@/lib/revenucat";
 import { useAuth } from "@/contexts/AuthProvider";
 import { checkIsPremium } from "@swimhub-scanner/shared";
 import { PlanComparisonTable } from "@/components/plan/PlanComparisonTable";
+import { colors } from "@/theme";
 
 type BillingPeriod = "monthly" | "annual";
 
 export default function PaywallScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { subscription, refreshSubscription, isGuest, isAuthenticated } = useAuth();
+  const { subscription, applyCustomerInfo, isGuest, isAuthenticated } = useAuth();
 
   const [loadingOfferings, setLoadingOfferings] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
@@ -98,8 +105,8 @@ export default function PaywallScreen() {
     try {
       const customerInfo = await purchasePackage(pkg);
       if (customerInfo) {
-        // 購入成功 → サブスクリプション情報を更新して戻る
-        await refreshSubscription();
+        // 購入成功 → CustomerInfo を一次ソースに即時反映（Webhook 反映待ちしない）
+        applyCustomerInfo(customerInfo);
         Alert.alert(t("paywall.purchaseSuccess"), t("paywall.purchaseSuccessMessage"), [
           { text: "OK", onPress: () => router.back() },
         ]);
@@ -121,13 +128,22 @@ export default function PaywallScreen() {
     }
     setRestoring(true);
     try {
-      await restorePurchases();
-      await refreshSubscription();
+      const customerInfo = await restorePurchases();
+      const hasPremium = !!customerInfo.entitlements.active[PREMIUM_ENTITLEMENT_ID];
+      if (!hasPremium) {
+        Alert.alert(t("paywall.restoreEmpty"), t("paywall.restoreEmptyMessage"));
+        return;
+      }
+      applyCustomerInfo(customerInfo);
       Alert.alert(t("paywall.restoreSuccess"), t("paywall.restoreSuccessMessage"), [
         { text: "OK", onPress: () => router.back() },
       ]);
     } catch (err) {
-      Alert.alert(t("common.error"), t("paywall.restoreFailed"));
+      if (err instanceof RevenueCatNotInitializedError) {
+        Alert.alert(t("common.error"), t("paywall.restoreUnavailableMessage"));
+      } else {
+        Alert.alert(t("common.error"), t("paywall.restoreFailed"));
+      }
       console.error("リストアエラー:", err);
     } finally {
       setRestoring(false);
@@ -138,7 +154,7 @@ export default function PaywallScreen() {
     return (
       <SafeAreaView style={styles.container} edges={["bottom"]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2563EB" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -150,10 +166,10 @@ export default function PaywallScreen() {
     return (
       <SafeAreaView style={styles.container} edges={["bottom"]}>
         <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
-          <Feather name="x" size={24} color="#374151" />
+          <Feather name="x" size={24} color={colors.textSecondary} />
         </TouchableOpacity>
         <View style={styles.loadingContainer}>
-          <Text style={{ fontSize: 16, color: "#374151" }}>{t("paywall.alreadyPremium")}</Text>
+          <Text style={{ fontSize: 16, color: colors.textSecondary }}>{t("paywall.alreadyPremium")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -163,13 +179,13 @@ export default function PaywallScreen() {
     <SafeAreaView style={styles.container} edges={["bottom"]}>
       {/* 閉じるボタン */}
       <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
-        <Feather name="x" size={24} color="#374151" />
+        <Feather name="x" size={24} color={colors.textSecondary} />
       </TouchableOpacity>
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* ヘッダー */}
         <View style={styles.header}>
-          <Feather name="zap" size={40} color="#F59E0B" />
+          <Feather name="zap" size={40} color={colors.warningIcon} />
           <Text style={styles.title}>{t("paywall.title")}</Text>
           <Text style={styles.subtitle}>{t("paywall.subtitle")}</Text>
         </View>
@@ -177,7 +193,7 @@ export default function PaywallScreen() {
         {/* トライアル中の表示 */}
         {isTrialing && (
           <View style={styles.trialBanner}>
-            <Feather name="clock" size={16} color="#059669" />
+            <Feather name="clock" size={16} color={colors.green} />
             <Text style={styles.trialBannerText}>
               {t("paywall.trialRemaining", { days: trialDaysRemaining })}
             </Text>
@@ -198,7 +214,7 @@ export default function PaywallScreen() {
         {/* プラン選択 */}
         {!loadingOfferings && !hasPackages && (
           <View style={styles.noPackagesContainer}>
-            <Feather name="alert-circle" size={24} color="#9CA3AF" />
+            <Feather name="alert-circle" size={24} color={colors.mutedLight} />
             <Text style={styles.noPackagesText}>
               {offeringsError
                 ? t("paywall.offeringsError")
@@ -238,12 +254,11 @@ export default function PaywallScreen() {
                   <Text style={styles.planPrice}>
                     {annualPackage.product.priceString} / {t("paywall.year")}
                   </Text>
-                  <Text style={styles.planSubprice}>
-                    {t("paywall.perMonth", {
-                      price: (annualPackage.product.price / 12).toFixed(0),
-                      currency: annualPackage.product.currencyCode,
-                    })}
-                  </Text>
+                  {annualPackage.product.pricePerMonthString && (
+                    <Text style={styles.planSubprice}>
+                      {t("paywall.perMonth", { price: annualPackage.product.pricePerMonthString })}
+                    </Text>
+                  )}
                 </View>
               </View>
             </TouchableOpacity>
@@ -290,7 +305,7 @@ export default function PaywallScreen() {
               disabled={purchasing}
             >
               {purchasing ? (
-                <ActivityIndicator color="#ffffff" />
+                <ActivityIndicator color={colors.white} />
               ) : (
                 <Text style={styles.purchaseButtonText}>
                   {!hasTrialed ? t("paywall.startTrial") : t("paywall.subscribe")}
@@ -314,7 +329,7 @@ export default function PaywallScreen() {
             disabled={restoring}
           >
             {restoring ? (
-              <ActivityIndicator color="#2563EB" size="small" />
+              <ActivityIndicator color={colors.primary} size="small" />
             ) : (
               <Text style={styles.restoreButtonText}>{t("paywall.restore")}</Text>
             )}
@@ -345,7 +360,7 @@ export default function PaywallScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: colors.surfaceSecondary,
   },
   loadingContainer: {
     flex: 1,
@@ -360,7 +375,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.surfaceRaised,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -375,12 +390,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#111827",
+    color: colors.text,
     marginTop: 12,
   },
   subtitle: {
     fontSize: 15,
-    color: "#6B7280",
+    color: colors.muted,
     marginTop: 8,
     textAlign: "center",
   },
@@ -388,7 +403,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#ECFDF5",
+    backgroundColor: colors.greenLight,
     borderRadius: 8,
     padding: 10,
     marginBottom: 16,
@@ -396,7 +411,7 @@ const styles = StyleSheet.create({
   },
   trialBannerText: {
     fontSize: 14,
-    color: "#059669",
+    color: colors.green,
     fontWeight: "600",
   },
   comparisonSection: {
@@ -407,15 +422,15 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   planCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 2,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
   },
   planCardSelected: {
-    borderColor: "#2563EB",
-    backgroundColor: "#EFF6FF",
+    borderColor: colors.primary,
+    backgroundColor: colors.background,
   },
   planHeader: {
     flexDirection: "row",
@@ -427,7 +442,7 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: "#D1D5DB",
+    borderColor: colors.borderLight,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -435,7 +450,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: "#2563EB",
+    backgroundColor: colors.primary,
   },
   planInfo: {
     flex: 1,
@@ -448,10 +463,10 @@ const styles = StyleSheet.create({
   planTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#111827",
+    color: colors.text,
   },
   savingsBadge: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: colors.warningBackground,
     borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -459,21 +474,21 @@ const styles = StyleSheet.create({
   savingsBadgeText: {
     fontSize: 12,
     fontWeight: "bold",
-    color: "#92400E",
+    color: colors.amber,
   },
   planPrice: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#111827",
+    color: colors.text,
     marginTop: 2,
   },
   planSubprice: {
     fontSize: 13,
-    color: "#6B7280",
+    color: colors.muted,
     marginTop: 2,
   },
   purchaseButton: {
-    backgroundColor: "#2563EB",
+    backgroundColor: colors.primary,
     height: 52,
     borderRadius: 12,
     justifyContent: "center",
@@ -484,13 +499,13 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   purchaseButtonText: {
-    color: "#ffffff",
+    color: colors.white,
     fontSize: 17,
     fontWeight: "bold",
   },
   trialNote: {
     fontSize: 12,
-    color: "#9CA3AF",
+    color: colors.mutedLight,
     textAlign: "center",
     lineHeight: 18,
     marginBottom: 16,
@@ -501,13 +516,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   restoreButtonText: {
-    color: "#2563EB",
+    color: colors.primary,
     fontSize: 14,
     fontWeight: "600",
   },
   cancelNote: {
     fontSize: 12,
-    color: "#9CA3AF",
+    color: colors.mutedLight,
     textAlign: "center",
     lineHeight: 18,
     marginBottom: 16,
@@ -521,12 +536,12 @@ const styles = StyleSheet.create({
   },
   legalLink: {
     fontSize: 12,
-    color: "#2563EB",
+    color: colors.primary,
     fontWeight: "500",
   },
   legalDivider: {
     fontSize: 12,
-    color: "#D1D5DB",
+    color: colors.borderLight,
   },
   noPackagesContainer: {
     alignItems: "center",
@@ -535,7 +550,7 @@ const styles = StyleSheet.create({
   },
   noPackagesText: {
     fontSize: 14,
-    color: "#6B7280",
+    color: colors.muted,
     textAlign: "center",
   },
   retryButton: {
@@ -543,15 +558,15 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#2563EB",
+    borderColor: colors.primary,
   },
   retryButtonText: {
-    color: "#2563EB",
+    color: colors.primary,
     fontSize: 14,
     fontWeight: "600",
   },
   loginCtaButton: {
-    backgroundColor: "#2563EB",
+    backgroundColor: colors.primary,
     height: 52,
     borderRadius: 12,
     justifyContent: "center",
@@ -559,7 +574,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   loginCtaButtonText: {
-    color: "#ffffff",
+    color: colors.white,
     fontSize: 17,
     fontWeight: "bold",
   },

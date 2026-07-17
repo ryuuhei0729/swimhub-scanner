@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert, StyleSheet, Linking } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, StyleSheet, Linking, Platform, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
@@ -7,13 +7,17 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthProvider";
 import { checkIsPremium } from "@swimhub-scanner/shared";
 import { deleteAccount, ApiError } from "@/lib/api-client";
-import { restorePurchases } from "@/lib/revenucat";
+import {
+  restorePurchases,
+  RevenueCatNotInitializedError,
+  PREMIUM_ENTITLEMENT_ID,
+} from "@/lib/revenucat";
 import { colors, spacing, radius, fontSize } from "@/theme";
 import { PlanFeatureList } from "@/components/plan/PlanFeatureList";
 
 export default function AccountScreen() {
-  const { t } = useTranslation();
-  const { user, signOut, subscription, refreshSubscription } = useAuth();
+  const { t, i18n } = useTranslation();
+  const { user, signOut, subscription, applyCustomerInfo } = useAuth();
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
   const [restoring, setRestoring] = useState(false);
@@ -33,18 +37,27 @@ export default function AccountScreen() {
   const renewalDateFormatted = (() => {
     if (!subscription?.premiumExpiresAt) return null;
     const date = new Date(subscription.premiumExpiresAt);
-    return date.toLocaleDateString("ja-JP");
+    return date.toLocaleDateString(i18n.language);
   })();
 
   // リストア処理
   const handleRestore = async () => {
     setRestoring(true);
     try {
-      await restorePurchases();
-      await refreshSubscription();
+      const customerInfo = await restorePurchases();
+      const hasPremium = !!customerInfo.entitlements.active[PREMIUM_ENTITLEMENT_ID];
+      if (!hasPremium) {
+        Alert.alert(t("accountScreen.restoreEmpty"), t("accountScreen.restoreEmptyMessage"));
+        return;
+      }
+      applyCustomerInfo(customerInfo);
       Alert.alert(t("accountScreen.restoreSuccess"), t("accountScreen.restoreSuccessMessage"));
-    } catch {
-      Alert.alert(t("accountScreen.restoreError"), t("accountScreen.restoreErrorMessage"));
+    } catch (err) {
+      if (err instanceof RevenueCatNotInitializedError) {
+        Alert.alert(t("accountScreen.restoreError"), t("accountScreen.restoreUnavailableMessage"));
+      } else {
+        Alert.alert(t("accountScreen.restoreError"), t("accountScreen.restoreErrorMessage"));
+      }
     } finally {
       setRestoring(false);
     }
@@ -112,7 +125,7 @@ export default function AccountScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
-      <View style={styles.content}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         {/* アカウント情報（メール + プラン） */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("accountScreen.accountInfo")}</Text>
@@ -235,7 +248,13 @@ export default function AccountScreen() {
         {/* サブスクリプション管理 */}
         <TouchableOpacity
           style={styles.manageSubButton}
-          onPress={() => Linking.openURL("https://apps.apple.com/account/subscriptions")}
+          onPress={() =>
+            Linking.openURL(
+              Platform.OS === "android"
+                ? "https://play.google.com/store/account/subscriptions"
+                : "https://apps.apple.com/account/subscriptions",
+            )
+          }
         >
           <Text style={styles.manageSubText}>{t("accountScreen.manageSubscription")}</Text>
         </TouchableOpacity>
@@ -261,7 +280,7 @@ export default function AccountScreen() {
         <View style={styles.footer}>
           <Text style={styles.footerText}>SwimHub Scanner v{appVersion}</Text>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -271,8 +290,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surfaceSecondary,
   },
-  content: {
+  scroll: {
     flex: 1,
+  },
+  content: {
+    // flexGrow (not flex) so the footer's marginTop:"auto" still bottom-pins
+    // on tall screens while short screens can scroll
+    flexGrow: 1,
     padding: spacing.lg,
   },
   section: {

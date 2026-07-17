@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Noto_Sans_JP } from "next/font/google";
+import { Inter, Noto_Sans_JP, Noto_Sans_KR, Noto_Sans_SC, Chakra_Petch } from "next/font/google";
 import { notFound } from "next/navigation";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { I18nProvider } from "@/components/I18nProvider";
@@ -8,7 +8,6 @@ import {
   supportedLocales,
   i18nResources,
   isSupportedLocale,
-  type SupportedLocale,
 } from "@swimhub-scanner/i18n";
 
 const siteUrl = "https://scanner.swim-hub.app";
@@ -26,6 +25,29 @@ const notoSansJP = Noto_Sans_JP({
   subsets: ["latin"],
   variable: "--font-noto-sans-jp",
   weight: ["400", "500", "700"],
+});
+
+// 韓国語 (ハングル) / 簡体字中国語のグリフ用。日本語フォントには無い字形を補う。
+// globals.css の html:lang(ko) / html:lang(zh) でそれぞれ優先する。
+// preload: false — :lang() で条件適用のため全ユーザーへの preload は不要
+const notoSansKR = Noto_Sans_KR({
+  subsets: ["latin"],
+  variable: "--font-noto-sans-kr",
+  weight: ["400", "500", "700"],
+  preload: false,
+});
+
+const notoSansSC = Noto_Sans_SC({
+  subsets: ["latin"],
+  variable: "--font-noto-sans-sc",
+  weight: ["400", "500", "700"],
+  preload: false,
+});
+
+const chakraPetch = Chakra_Petch({
+  subsets: ["latin"],
+  variable: "--font-chakra-petch",
+  weight: ["600", "700"],
 });
 
 export async function generateMetadata({
@@ -46,8 +68,7 @@ export async function generateMetadata({
     metadataBase: new URL(siteUrl),
     alternates: {
       languages: {
-        ja: "/ja",
-        en: "/en",
+        ...Object.fromEntries(supportedLocales.map((l) => [l, `/${l}`])),
         "x-default": "/ja",
       },
     },
@@ -126,7 +147,9 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} className="h-full">
-      <body className={`${inter.variable} ${notoSansJP.variable} font-sans`}>
+      <body
+        className={`${inter.variable} ${notoSansJP.variable} ${notoSansKR.variable} ${notoSansSC.variable} ${chakraPetch.variable} font-sans`}
+      >
         <I18nProvider locale={locale}>
           <AuthProvider>
             <KeyboardScrollProvider>

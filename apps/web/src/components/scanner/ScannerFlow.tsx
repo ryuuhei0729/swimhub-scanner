@@ -185,7 +185,7 @@ export function ScannerFlow({ onStepChange }: { onStepChange?: (step: Step) => v
         {step === "upload" && (
           <div className="flex flex-col items-center gap-1 text-center">
             <Image src="/icon.png" alt="SwimHub Scanner" width={100} height={100} />
-            <h1 className="text-3xl font-bold tracking-tight">SwimHub Scanner</h1>
+            <h1 className="text-3xl font-bold tracking-tight font-(family-name:--font-chakra-petch)">SwimHub Scanner</h1>
             <p className="text-sm text-muted-foreground">{t("scanner.heroSubtitle")}</p>
           </div>
         )}

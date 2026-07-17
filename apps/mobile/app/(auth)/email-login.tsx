@@ -5,6 +5,7 @@ import {
   TextInput,
   Pressable,
   ActivityIndicator,
+  Alert,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
@@ -13,7 +14,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthProvider";
+import { supabase } from "@/lib/supabase";
 import { colors, spacing, radius, fontSize } from "@/theme";
+import { isValidEmail } from "@/utils/validateEmail";
 
 export default function EmailLoginScreen() {
   const { t } = useTranslation();
@@ -22,6 +25,7 @@ export default function EmailLoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const validateForm = (): boolean => {
@@ -29,8 +33,7 @@ export default function EmailLoginScreen() {
       setError(t("auth.emailLoginScreen.emailRequired"));
       return false;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!isValidEmail(email)) {
       setError(t("auth.emailLoginScreen.emailInvalid"));
       return false;
     }
@@ -75,6 +78,57 @@ export default function EmailLoginScreen() {
       setError(t("auth.emailLoginScreen.unexpectedError"));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !isValidEmail(trimmedEmail)) {
+      Alert.alert(
+        t("auth.emailLoginScreen.resetEmailRequiredTitle"),
+        t("auth.emailLoginScreen.resetEmailRequired"),
+      );
+      return;
+    }
+
+    if (!supabase) {
+      Alert.alert(t("common.error"), t("auth.emailLoginScreen.resetFailed"));
+      return;
+    }
+
+    setResetting(true);
+    try {
+      // reset-password 画面へ直接戻せるよう、パス付きの redirectTo を指定する
+      // (_layout.tsx のグローバル deep link ハンドラがこのパスで recovery と判別する)。
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+        redirectTo: "swimhub-scanner://reset-password",
+      });
+
+      if (resetError) {
+        // 存在しないメールアドレスの場合、Supabase はメール列挙対策としてエラーを
+        // 返さず成功と同じ扱いにする。ここに来るのはレート制限や設定不備など、
+        // 実際にメール送信が行われなかったケースのみなので、失敗として伝える。
+        const message = resetError.message?.toLowerCase() ?? "";
+        const isRateLimited =
+          message.includes("rate limit") || message.includes("too many requests");
+        Alert.alert(
+          t("common.error"),
+          isRateLimited
+            ? t("auth.emailLoginScreen.rateLimited")
+            : t("auth.emailLoginScreen.resetFailed"),
+        );
+        return;
+      }
+
+      // アカウントの有無に関わらず同じメッセージを表示する（メール列挙対策）
+      Alert.alert(
+        t("auth.emailLoginScreen.resetSuccessTitle"),
+        t("auth.emailLoginScreen.resetSuccessMessage"),
+      );
+    } catch {
+      Alert.alert(t("common.error"), t("auth.emailLoginScreen.resetFailed"));
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -145,6 +199,20 @@ export default function EmailLoginScreen() {
                   <ActivityIndicator color={colors.white} />
                 ) : (
                   <Text style={styles.submitButtonText}>{t("auth.emailLoginScreen.submit")}</Text>
+                )}
+              </Pressable>
+
+              <Pressable
+                style={styles.forgotPasswordButton}
+                onPress={handleForgotPassword}
+                disabled={resetting}
+              >
+                {resetting ? (
+                  <ActivityIndicator color={colors.primary} size="small" />
+                ) : (
+                  <Text style={styles.forgotPasswordText}>
+                    {t("auth.emailLoginScreen.forgotPassword")}
+                  </Text>
                 )}
               </Pressable>
             </View>
@@ -247,5 +315,15 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: fontSize.lg,
     fontWeight: "600",
+  },
+  forgotPasswordButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: spacing.sm,
+  },
+  forgotPasswordText: {
+    color: colors.primary,
+    fontSize: fontSize.md,
+    fontWeight: "500",
   },
 });

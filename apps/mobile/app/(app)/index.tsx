@@ -37,15 +37,15 @@ import {
   validateImageMimeType,
   validateImageSize,
   estimateBase64Size,
+  formatCircleTime,
 } from "@swimhub-scanner/shared";
 import type { UserStatusResponse } from "@swimhub-scanner/shared";
 import { ResultTable } from "@/components/scanner/ResultTable";
 import { ExportSheet } from "@/components/scanner/ExportSheet";
 import {
-  createRewardedAdController,
-  type AdState,
-  type RewardedAdController,
-} from "@/lib/ads/rewarded-ad";
+  createInterstitialAdController,
+  type InterstitialAdController,
+} from "@/lib/ads/interstitial-ad";
 import { colors, spacing, radius, fontSize } from "@/theme";
 import { UsageIndicator } from "@/components/plan/UsageIndicator";
 
@@ -65,6 +65,7 @@ export default function ScannerScreen() {
   const [guestTodayCount, setGuestTodayCount] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
+  const [statusError, setStatusError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [templatePreviewVisible, setTemplatePreviewVisible] = useState(false);
   const [templateSectionOpen, setTemplateSectionOpen] = useState(false);
@@ -78,10 +79,8 @@ export default function ScannerScreen() {
   const savedTranslateY = useSharedValue(0);
 
   // --- Ad state ---
-  const adControllerRef = useRef<RewardedAdController | null>(null);
-  const [_adState, setAdState] = useState<AdState>("idle");
+  const adControllerRef = useRef<InterstitialAdController | null>(null);
   const [adUnavailable, setAdUnavailable] = useState(false);
-  const scanTriggeredRef = useRef(false);
 
   const { menu, swimmers, setResult, reset: resetResult } = useScanResultStore();
 
@@ -90,6 +89,7 @@ export default function ScannerScreen() {
 
   const fetchStatus = useCallback(async () => {
     setStatusLoading(true);
+    setStatusError(false);
     try {
       if (isGuest) {
         const canScan = await canGuestScanToday();
@@ -109,6 +109,8 @@ export default function ScannerScreen() {
       }
     } catch (err) {
       console.error("ステータスの取得に失敗:", err);
+      // 取得失敗を「上限到達」と混同しないよう区別する（誤って上限バナーを出さない）
+      setStatusError(true);
     } finally {
       setStatusLoading(false);
     }
@@ -128,21 +130,15 @@ export default function ScannerScreen() {
   useEffect(() => {
     if (!imageBase64 || isPremium) return;
 
-    const controller = createRewardedAdController();
+    const controller = createInterstitialAdController();
     if (!controller) {
       setAdUnavailable(true);
       return;
     }
     adControllerRef.current = controller;
-
-    const unsubscribe = controller.onStateChange((state) => {
-      setAdState(state);
-    });
-
     controller.load();
 
     return () => {
-      unsubscribe();
       controller.dispose();
     };
   }, [imageBase64, isPremium]);
@@ -241,14 +237,16 @@ export default function ScannerScreen() {
     const mimeType = asset.mimeType || "image/jpeg";
 
     // バリデーション
-    if (!validateImageMimeType(mimeType)) {
+    const mimeCheck = validateImageMimeType(mimeType);
+    if (!mimeCheck.valid) {
       setError(t("uploader.invalidFormat"));
       return;
     }
 
     if (asset.base64) {
       const size = estimateBase64Size(asset.base64);
-      if (!validateImageSize(size)) {
+      const sizeCheck = validateImageSize(size);
+      if (!sizeCheck.valid) {
         setError(t("uploader.tooLarge"));
         return;
       }
@@ -274,7 +272,6 @@ export default function ScannerScreen() {
 
     setStep("scanning");
     setError(null);
-    scanTriggeredRef.current = true;
 
     // --- Start API scan (広告は解析成功後に表示) ---
     try {
@@ -357,8 +354,6 @@ export default function ScannerScreen() {
             setImageBase64(null);
             setError(null);
             resetResult();
-            scanTriggeredRef.current = false;
-            setAdState("idle");
             setAdUnavailable(false);
             adControllerRef.current?.dispose();
             adControllerRef.current = null;
@@ -389,7 +384,7 @@ export default function ScannerScreen() {
     }
   };
 
-  // canScan の判定
+  // canScan の判定（サーバーの canScan を正とする。tokensRemaining は表示専用）
   const canScan = (() => {
     // Premium（active / trialing）は常にOK
     if (isPremium) return true;
@@ -397,8 +392,7 @@ export default function ScannerScreen() {
       return guestCanScan;
     }
     if (userStatus) {
-      if (userStatus.tokensRemaining === null) return false;
-      return userStatus.tokensRemaining > 0;
+      return userStatus.canScan;
     }
     return false;
   })();
@@ -430,7 +424,7 @@ export default function ScannerScreen() {
   }
 
   // Step 3: 結果確認
-  if (step === "result" && menu && swimmers.length > 0) {
+  if (step === "result" && menu) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.resultHeader}>
@@ -454,18 +448,24 @@ export default function ScannerScreen() {
               <Text style={styles.menuDetail}>{t("result.setCount")}: {menu.setCount}{t("result.set")}</Text>
               {menu.circle && (
                 <Text style={styles.menuDetail}>
-                  {t("result.circle")}:{" "}
-                  {menu.circle >= 60
-                    ? t("result.circleMinutesSeconds", { minutes: Math.floor(menu.circle / 60), seconds: menu.circle % 60 > 0 ? menu.circle % 60 : undefined }).replace(/ $/, "")
-                    : t("result.circleSeconds", { seconds: menu.circle })}
+                  {t("result.circle")}: {formatCircleTime(menu.circle)}
                 </Text>
               )}
             </View>
           </View>
 
-          <ResultTable />
-
-          <ExportSheet />
+          {swimmers.length > 0 ? (
+            <>
+              <ResultTable />
+              <ExportSheet />
+            </>
+          ) : (
+            <View style={styles.emptyResultContainer}>
+              <Feather name="users" size={36} color={colors.mutedLight} />
+              <Text style={styles.emptyResultTitle}>{t("scanner.noSwimmersTitle")}</Text>
+              <Text style={styles.emptyResultMessage}>{t("scanner.noSwimmersMessage")}</Text>
+            </View>
+          )}
 
           <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
             <Text style={styles.resetButtonText}>{t("scanner.newScanReset")}</Text>
@@ -581,6 +581,8 @@ export default function ScannerScreen() {
                   onPress={() => {
                     setImageUri(null);
                     setImageBase64(null);
+                    setImageMimeType("image/jpeg");
+                    setError(null);
                   }}
                 >
                   <Feather name="x" size={16} color={colors.white} />
@@ -626,25 +628,34 @@ export default function ScannerScreen() {
             </View>
           )}
 
-          {/* Limit warning */}
-          {!canScan && (
-            <Pressable
-              style={styles.limitBanner}
-              onPress={() => {
-                if (isGuest) {
-                  router.push("/(auth)/get-started");
-                } else {
-                  router.push("/(app)/paywall");
-                }
-              }}
-            >
-              <Text style={styles.limitBannerText}>
-                {t("scanner.dailyLimitReached")}
-              </Text>
-              <Text style={styles.limitBannerLink}>
-                {isGuest ? t("scanner.dailyLimitRegisterLink") : t("scanner.dailyLimitUpgradeLink")}
-              </Text>
+          {/* Limit warning / ステータス取得エラー */}
+          {!canScan && statusError ? (
+            <Pressable style={styles.limitBanner} onPress={fetchStatus}>
+              <Text style={styles.limitBannerText}>{t("scanner.statusFetchError")}</Text>
+              <Text style={styles.limitBannerLink}>{t("scanner.statusFetchRetry")}</Text>
             </Pressable>
+          ) : (
+            // ステータス取得中は userStatus が null で canScan=false になるため、
+            // ロード完了までは「上限到達」バナーを出さない（誤表示防止）
+            !canScan && !statusLoading && (
+              <Pressable
+                style={styles.limitBanner}
+                onPress={() => {
+                  if (isGuest) {
+                    router.push("/(auth)/get-started");
+                  } else {
+                    router.push("/(app)/paywall");
+                  }
+                }}
+              >
+                <Text style={styles.limitBannerText}>
+                  {t("scanner.dailyLimitReached")}
+                </Text>
+                <Text style={styles.limitBannerLink}>
+                  {isGuest ? t("scanner.dailyLimitRegisterLink") : t("scanner.dailyLimitUpgradeLink")}
+                </Text>
+              </Pressable>
+            )
           )}
         </View>
 
@@ -691,7 +702,7 @@ export default function ScannerScreen() {
                 activeOpacity={0.7}
               >
                 <Feather name="image" size={14} color={colors.primary} />
-                <Text style={styles.templateButtonText}>画像</Text>
+                <Text style={styles.templateButtonText}>{t("scanner.templateImage")}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -1127,6 +1138,23 @@ const styles = StyleSheet.create({
     borderRadius: radius.xs,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
+  },
+  // Result: empty state (全選手削除後)
+  emptyResultContainer: {
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.xxl,
+  },
+  emptyResultTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
+  emptyResultMessage: {
+    fontSize: fontSize.sm,
+    color: colors.muted,
+    textAlign: "center",
+    paddingHorizontal: spacing.xl,
   },
   resetButton: {
     backgroundColor: colors.surfaceRaised,

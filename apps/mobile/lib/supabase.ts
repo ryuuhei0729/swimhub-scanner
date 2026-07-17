@@ -21,6 +21,9 @@ if (supabaseUrl && supabaseAnonKey) {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false,
+        // メール確認リンクなどの deep link を PKCE の code パラメータで受け取り、
+        // exchangeCodeForSession で交換する（アクセストークンを URL 直渡ししない）
+        flowType: "pkce",
       },
     });
   } catch (error) {

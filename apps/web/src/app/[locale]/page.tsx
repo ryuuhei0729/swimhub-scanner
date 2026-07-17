@@ -59,7 +59,7 @@ export default function HomePage() {
                 height={40}
                 className="w-10 h-10 object-contain"
               />
-              <span className="text-lg font-bold tracking-tight">SwimHub Scanner</span>
+              <span className="text-lg font-bold tracking-tight font-(family-name:--font-chakra-petch)">SwimHub Scanner</span>
             </div>
             <StepIndicator currentStep={currentStep} />
           </div>

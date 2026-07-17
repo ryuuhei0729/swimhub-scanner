@@ -38,19 +38,34 @@ async function getAccessToken(): Promise<string> {
   return session.access_token;
 }
 
-async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function apiRequest<T>(
+  path: string,
+  options: RequestInit = {},
+  isRetry = false,
+): Promise<T> {
   const token = await getAccessToken();
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
+      // Authorization はここで付与する最新トークンを常に優先する
+      // (呼び出し元の headers に古いトークンが混ざっても 401 リトライ時に上書きされないように)
+      ...options.headers,
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-      ...options.headers,
     },
   });
 
   if (!response.ok) {
+    // 401 はセッション期限切れの可能性があるため、リフレッシュして1回だけリトライする
+    // (バックグラウンド復帰直後などで access_token の自動更新が間に合っていないケースの対策)
+    if (response.status === 401 && !isRetry && supabase) {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (!error && data.session) {
+        return apiRequest<T>(path, options, true);
+      }
+    }
+
     let errorBody: ApiErrorResponse;
     try {
       errorBody = (await response.json()) as ApiErrorResponse;

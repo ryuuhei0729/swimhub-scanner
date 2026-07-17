@@ -1,14 +1,22 @@
 import "../lib/i18n";
-import { useEffect, useRef } from "react";
-import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
+import { useEffect, useRef, useCallback } from "react";
+import { View, Text, ActivityIndicator, StyleSheet, Alert } from "react-native";
 import { Slot, useRouter, useSegments } from "expo-router";
+import * as Linking from "expo-linking";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useTranslation } from "react-i18next";
+import * as Font from "expo-font";
+import { ChakraPetch_700Bold } from "@expo-google-fonts/chakra-petch";
 import { AuthProvider, useAuth } from "../contexts/AuthProvider";
 import { supabase } from "../lib/supabase";
+import { extractDeepLinkError } from "../lib/auth-deep-link";
 import { colors, fontSize } from "../theme";
+
+// ChakraPetch_700Bold is preloaded for the brand wordmark (see MEMORY: brand font unification).
+// Best-effort: failures fall back to the system font.
+Font.loadAsync({ ChakraPetch_700Bold }).catch(() => {});
 
 /**
  * Supabase未初期化時のエラー画面
@@ -31,12 +39,24 @@ function SupabaseErrorScreen() {
  * （スキャン機能はアカウント不要なので、get-started にゲスト利用ボタンを用意する）
  */
 function AuthGate() {
-  const { user, isAuthenticated, isGuest, loading, transitioning } = useAuth();
+  const {
+    user,
+    isAuthenticated,
+    isGuest,
+    loading,
+    transitioning,
+    pendingRecoveryCheck,
+    setPendingRecoveryCheck,
+  } = useAuth();
+  const { t } = useTranslation();
   const segments = useSegments();
   const router = useRouter();
   const redirectDone = useRef(false);
   const prevAuthStateRef = useRef({ user: !!user, isGuest });
   const prevSegmentsRef = useRef<string | undefined>(segments[0]);
+  // 同一 code を重複処理しない（getInitialURL が `t` 等の依存変化で再実行された場合や、
+  // addEventListener と getInitialURL の両方から同じ URL が渡された場合の二重交換を防ぐ）
+  const processedCodesRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (loading || transitioning) return;
@@ -61,11 +81,97 @@ function AuthGate() {
     if (!isAuthenticated && !isGuest && !inAuthGroup) {
       redirectDone.current = true;
       router.replace("/(auth)/get-started");
-    } else if (!!user && inAuthGroup) {
+    } else if (!!user && inAuthGroup && !pendingRecoveryCheck) {
       redirectDone.current = true;
       router.replace("/(app)");
     }
-  }, [user, isAuthenticated, isGuest, loading, transitioning, segments, router]);
+  }, [user, isAuthenticated, isGuest, loading, transitioning, pendingRecoveryCheck, segments, router]);
+
+  // メール確認・パスワードリセット・Google OAuth など、Supabase/OAuth プロバイダから
+  // 戻ってくる deep link を処理する。PKCE の `code` パラメータを検出したら
+  // exchangeCodeForSession でセッションを確立する（onAuthStateChange 経由で
+  // AuthProvider に自動反映される）。
+  //
+  // 種別は URL のパスマーカーで判別する（旧実装は exchangeCodeForSession の戻り値の
+  // `redirectType` に依存していたが、公開の型定義に無いランタイム専用フィールドの
+  // cast 読み取りであり supabase-js の更新で壊れうるため廃止）:
+  //   - `swimhub-scanner://auth/callback` … Google OAuth のコールバック
+  //     （useGoogleAuth 側の WebBrowser.openAuthSessionAsync が直接処理するため、
+  //     ここでは無視する。Android では同じ URL がこのグローバルハンドラにも届き、
+  //     処理すると同一 code を二重に交換して偽のエラー Alert が出てしまう）
+  //   - `swimhub-scanner://reset-password` … パスワードリセット (recovery)
+  //   - それ以外（`swimhub-scanner://` 単体など）… メール確認 (signUp) 由来
+  const handleAuthDeepLink = useCallback(
+    async (url: string | null) => {
+      if (!url || !supabase) return;
+
+      // expo-linking の parse は独自スキームを authority ベースで解釈するため、
+      // `scheme://auth/callback` は hostname:"auth" / path:"callback" に、
+      // `scheme://reset-password` は hostname:"reset-password" / path:null になる。
+      const { hostname, path, queryParams } = Linking.parse(url);
+
+      // Google OAuth コールバックは useGoogleAuth 側が処理するため、code の有無や
+      // エラー情報（キャンセル時の error=access_denied 等）に関わらずここでは無視する
+      // （エラー Alert の重複・誤表示防止）。エラー抽出より先に判定すること。
+      const isOAuthCallback = hostname === "auth" && path === "callback";
+      if (isOAuthCallback) {
+        return;
+      }
+
+      const deepLinkError = extractDeepLinkError(url);
+      if (deepLinkError) {
+        console.error("認証リンクにエラーが含まれています:", deepLinkError);
+        Alert.alert(t("common.error"), t("auth.errors.deepLinkFailed"));
+        return;
+      }
+
+      const code = queryParams?.code;
+      if (typeof code !== "string" || code.length === 0) return;
+
+      // 同一 code の二重交換を防ぐ（getInitialURL の再実行や複数リスナーからの重複呼び出し対策）
+      if (processedCodesRef.current.has(code)) return;
+      processedCodesRef.current.add(code);
+
+      const isRecovery = hostname === "reset-password";
+      if (isRecovery) {
+        // AuthGate の「ログイン済みなら (app) へ」自動遷移を抑止しておく
+        // （実行順序に依存しないよう、await の前に同期的にセットする）。
+        setPendingRecoveryCheck(true);
+      }
+
+      try {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          console.error("認証リンクのセッション確立に失敗:", error);
+          if (isRecovery) setPendingRecoveryCheck(false);
+          Alert.alert(t("common.error"), t("auth.errors.deepLinkFailed"));
+          return;
+        }
+
+        if (isRecovery) {
+          router.replace("/(auth)/reset-password");
+        }
+      } catch (err) {
+        console.error("認証リンクのセッション確立で例外が発生:", err);
+        if (isRecovery) setPendingRecoveryCheck(false);
+        Alert.alert(t("common.error"), t("auth.errors.deepLinkFailed"));
+      }
+    },
+    [router, t, setPendingRecoveryCheck],
+  );
+
+  // メール確認リンクなどで、アプリが起動していない状態から開かれた場合
+  useEffect(() => {
+    Linking.getInitialURL().then(handleAuthDeepLink);
+  }, [handleAuthDeepLink]);
+
+  // アプリがバックグラウンド/フォアグラウンドの状態で deep link を受け取った場合
+  useEffect(() => {
+    const subscription = Linking.addEventListener("url", ({ url }) => {
+      handleAuthDeepLink(url);
+    });
+    return () => subscription.remove();
+  }, [handleAuthDeepLink]);
 
   if (!supabase) {
     return <SupabaseErrorScreen />;

@@ -51,6 +51,34 @@ export function slowestTime(times: (number | null)[]): number | null {
 }
 
 /**
+ * Parse a displayed time string back into seconds.
+ * Accepts both the "m:ss.s" format (e.g. "1:05.2") and the plain "ss.s"
+ * format (e.g. "36.4") used when the time is under a minute.
+ * Returns null for empty, negative, or otherwise invalid input instead of
+ * silently truncating it (unlike `parseFloat`, which would parse "1:05.2" as 1).
+ */
+export function parseDisplayTime(value: string): number | null {
+  const trimmed = value.trim();
+  if (trimmed === "") return null;
+
+  if (trimmed.includes(":")) {
+    const parts = trimmed.split(":");
+    if (parts.length !== 2) return null;
+    const [minutesPart, secondsPart] = parts as [string, string];
+    if (!/^\d+$/.test(minutesPart) || !/^\d+(\.\d+)?$/.test(secondsPart)) return null;
+    const minutes = parseInt(minutesPart, 10);
+    const seconds = parseFloat(secondsPart);
+    if (isNaN(minutes) || isNaN(seconds)) return null;
+    return minutes * 60 + seconds;
+  }
+
+  if (!/^\d+(\.\d+)?$/.test(trimmed)) return null;
+  const seconds = parseFloat(trimmed);
+  if (isNaN(seconds)) return null;
+  return seconds;
+}
+
+/**
  * Format circle time in minutes/seconds notation.
  * e.g., 60 -> 1'00", 130 -> 2'10", 45 -> 45"
  */

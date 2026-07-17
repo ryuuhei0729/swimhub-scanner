@@ -5,6 +5,7 @@
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { Asset } from "expo-asset";
+import i18n from "@/lib/i18n";
 
 async function shareAsset(
   source: number,
@@ -21,7 +22,7 @@ async function shareAsset(
 
   await Sharing.shareAsync(destUri, {
     mimeType,
-    dialogTitle: "記録表テンプレート",
+    dialogTitle: i18n.t("scanner.templateLabel"),
     UTI: uti,
   });
 }
@@ -32,7 +33,7 @@ async function shareAsset(
 export async function shareTimesheetPdf(): Promise<void> {
   await shareAsset(
     require("../assets/timesheet-template.pdf"),
-    "チーム記録表テンプレート.pdf",
+    `${i18n.t("scanner.templateFileName")}.pdf`,
     "application/pdf",
     "com.adobe.pdf",
   );
@@ -44,7 +45,7 @@ export async function shareTimesheetPdf(): Promise<void> {
 export async function shareTimesheetImage(): Promise<void> {
   await shareAsset(
     require("../assets/timesheet-template.png"),
-    "チーム記録表テンプレート.png",
+    `${i18n.t("scanner.templateFileName")}.png`,
     "image/png",
     "public.png",
   );

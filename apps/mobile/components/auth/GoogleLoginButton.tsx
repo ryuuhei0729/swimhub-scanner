@@ -7,7 +7,8 @@ interface GoogleLoginButtonProps {
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-  label?: string;
+  /** ボタンに表示するラベル。呼び出し側で i18n 済みの文字列を渡す */
+  label: string;
 }
 
 const GoogleLogo: React.FC = () => (
@@ -35,7 +36,7 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   onPress,
   loading = false,
   disabled = false,
-  label = "Googleでログイン",
+  label,
 }) => {
   const isDisabled = disabled || loading;
 

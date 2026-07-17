@@ -13,7 +13,13 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useScanResultStore } from "@/stores/scanResultStore";
-import { formatTime, averageTime, fastestTime, slowestTime } from "@swimhub-scanner/shared";
+import {
+  formatTime,
+  parseDisplayTime,
+  averageTime,
+  fastestTime,
+  slowestTime,
+} from "@swimhub-scanner/shared";
 import type { SwimStroke } from "@swimhub-scanner/shared";
 import { colors, spacing, radius, fontSize } from "@/theme";
 
@@ -65,8 +71,17 @@ export const ResultTable: React.FC = () => {
     if (editingCell.field === "name") {
       updateSwimmerName(editingCell.swimmerNo, editValue);
     } else if (editingCell.field === "time" && editingCell.timeIndex !== undefined) {
-      const parsed = parseFloat(editValue);
-      updateTime(editingCell.swimmerNo, editingCell.timeIndex, isNaN(parsed) ? null : parsed);
+      const trimmed = editValue.trim();
+      if (trimmed === "") {
+        // 空欄への変更は「未読み取り」として明示的にクリアする
+        updateTime(editingCell.swimmerNo, editingCell.timeIndex, null);
+      } else {
+        const parsed = parseDisplayTime(trimmed);
+        // 不正な入力（NaN・負数など）は変更を破棄し、既存の値を保持する
+        if (parsed !== null) {
+          updateTime(editingCell.swimmerNo, editingCell.timeIndex, parsed);
+        }
+      }
     }
 
     setEditingCell(null);
@@ -275,7 +290,7 @@ export const ResultTable: React.FC = () => {
                         onPress={() =>
                           handleStartEdit(
                             { swimmerNo: swimmer.no, field: "time", timeIndex: i },
-                            time !== null ? time.toString() : "",
+                            time !== null ? formatTime(time) : "",
                           )
                         }
                       >

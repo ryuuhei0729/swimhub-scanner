@@ -2,7 +2,7 @@
  * Sprint Contract [C-1]〜[C-5]: scanner web sitemap 検証
  *
  * 検証観点:
- *   [C-1] sitemap() が 10 エントリを返す (supportedLocales 2 × 5 パス)
+ *   [C-1] sitemap() が (supportedLocales 数 × 5 パス) のエントリを返す
  *   [C-2] /en/* エントリが存在する
  *   [C-3] priority 値が仕様通りである
  *         - /ja (トップ): 1
@@ -19,7 +19,10 @@
 
 import { describe, it, expect, beforeEach } from "vitest";
 import sitemap from "@/app/sitemap";
+import { supportedLocales } from "@swimhub-scanner/i18n";
 import type { MetadataRoute } from "next";
+
+const PATHS_PER_LOCALE = 5;
 
 const BASE_URL = "https://scanner.swim-hub.app";
 
@@ -32,8 +35,20 @@ describe("scanner web sitemap", () => {
 
   // [C-1] エントリ数の検証
   describe("[C-1] エントリ数", () => {
-    it("ロケール 2 × パス 5 で合計 10 エントリを返す", () => {
-      expect(entries).toHaveLength(10);
+    it("ロケール数 × パス 5 のエントリを返す", () => {
+      expect(entries).toHaveLength(supportedLocales.length * PATHS_PER_LOCALE);
+    });
+  });
+
+  // [C-1b] 全サポートロケールの全パスが実際に生成されること
+  // (エントリ数だけでは特定ロケールの欠落を検出できないため、URL の実在を個別に検証する)
+  describe("[C-1b] 全ロケール × 全パスの URL 実在", () => {
+    const PATH_SUFFIXES = ["", "/login", "/privacy", "/terms", "/support"];
+    it.each(supportedLocales)("/%s の全パスが sitemap に含まれる", (locale) => {
+      const urls = entries.map((e) => e.url);
+      for (const suffix of PATH_SUFFIXES) {
+        expect(urls).toContain(`${BASE_URL}/${locale}${suffix}`);
+      }
     });
   });
 

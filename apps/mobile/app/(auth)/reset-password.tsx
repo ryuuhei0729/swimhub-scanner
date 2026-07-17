@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -9,51 +9,49 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
-  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthProvider";
+import { supabase } from "@/lib/supabase";
 import { colors, spacing, radius, fontSize } from "@/theme";
 import { validatePassword, type PasswordChecks } from "@/utils/validatePassword";
-import { isValidEmail } from "@/utils/validateEmail";
 
-export default function EmailSignupScreen() {
+/**
+ * パスワードリセット (recovery) の deep link から遷移してくる画面。
+ * `_layout.tsx` の AuthGate が exchangeCodeForSession の戻り値から
+ * PASSWORD_RECOVERY を検出し、この画面へ router.replace する。
+ * 遷移してきた時点で recovery セッションが確立済みのため、
+ * updateUser({ password }) だけで新しいパスワードを設定できる。
+ */
+export default function ResetPasswordScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { signUp } = useAuth();
+  const { signOut, setPendingRecoveryCheck } = useAuth();
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const passwordValidation = useMemo(() => validatePassword(password), [password]);
 
+  // Android バック / iOS スワイプなど、submit/cancel を経由せずにこの画面を離脱した場合に
+  // pendingRecoveryCheck が true のまま残ると、AuthGate の自動遷移ガードが以後ずっと
+  // 働き続け、ログインしても (app) へ遷移できなくなる。アンマウント時に必ず解放する。
+  useEffect(() => () => setPendingRecoveryCheck(false), [setPendingRecoveryCheck]);
+
   const validateForm = (): boolean => {
-    if (!name.trim()) {
-      setError(t("auth.nameRequired"));
-      return false;
-    }
-    if (!email.trim()) {
-      setError(t("auth.emailSignupScreen.emailRequired"));
-      return false;
-    }
-    if (!isValidEmail(email)) {
-      setError(t("auth.emailSignupScreen.emailInvalid"));
-      return false;
-    }
     if (!password) {
-      setError(t("auth.emailSignupScreen.passwordRequired"));
+      setError(t("auth.resetPasswordScreen.passwordRequired"));
       return false;
     }
     const checks = passwordValidation.checks;
     if (!checks.minLength) {
-      setError(t("auth.emailSignupScreen.passwordTooShort"));
+      setError(t("auth.resetPasswordScreen.passwordTooShort"));
       return false;
     }
     if (!checks.lowercase) {
@@ -72,46 +70,58 @@ export default function EmailSignupScreen() {
       setError(t("auth.passwordMissingSymbol"));
       return false;
     }
+    if (password !== confirmPassword) {
+      setError(t("auth.resetPasswordScreen.passwordMismatch"));
+      return false;
+    }
     return true;
-  };
-
-  const formatAuthError = (err: unknown): string => {
-    const errorObj = err && typeof err === "object" ? (err as Record<string, unknown>) : {};
-    const msg = typeof errorObj.message === "string" ? errorObj.message.toLowerCase() : "";
-
-    if (msg.includes("user already registered")) {
-      return t("auth.emailSignupScreen.alreadyRegistered");
-    }
-    if (msg.includes("too many requests") || msg.includes("rate limit")) {
-      return t("auth.emailSignupScreen.rateLimited");
-    }
-    if (msg.includes("network") || msg.includes("connection")) {
-      return t("auth.emailSignupScreen.networkError");
-    }
-    return t("auth.emailSignupScreen.signupFailed");
   };
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
+    if (!supabase) {
+      setError(t("auth.resetPasswordScreen.updateFailed"));
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      const { error: authError } = await signUp(email, password, name.trim());
-      if (authError) {
-        setError(formatAuthError(authError));
-      } else {
-        Alert.alert(
-          t("auth.confirmEmailSent"),
-          t("auth.confirmEmailDesc"),
-          [{ text: t("common.ok"), onPress: () => router.back() }],
-        );
+      const { error: updateError } = await supabase.auth.updateUser({ password });
+      if (updateError) {
+        setError(t("auth.resetPasswordScreen.updateFailed"));
+        return;
       }
+      // 完了: AuthGate の自動遷移抑止を解除してメイン画面へ
+      setPendingRecoveryCheck(false);
+      router.replace("/(app)");
     } catch {
-      setError(t("auth.emailSignupScreen.unexpectedError"));
+      setError(t("auth.resetPasswordScreen.unexpectedError"));
     } finally {
       setLoading(false);
+    }
+  };
+
+  // recovery セッションのまま留まりたくないユーザー向けの離脱導線
+  const handleCancel = async () => {
+    setCancelling(true);
+    try {
+      // signOut 完了後に解放・遷移する。先に pendingRecoveryCheck を false に戻すと、
+      // signOut のネットワーク待ちと transitioning の自動解除 (400ms) が競合し、
+      // 一瞬 (app) へ遷移し得る窓が開くため、signOut → 解放 → 遷移の順序を守る。
+      const { error: signOutError } = await signOut();
+      if (signOutError) {
+        // サインアウトできていないのに認証ガードだけ解除すると、recovery セッションの
+        // ままアプリ内へ遷移し得るため、失敗時はこの画面に留まる。
+        setError(t("auth.resetPasswordScreen.unexpectedError"));
+        return;
+      }
+      setPendingRecoveryCheck(false);
+      router.replace("/(auth)/login-method");
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -127,7 +137,8 @@ export default function EmailSignupScreen() {
         >
           <View style={styles.formContainer}>
             <View style={styles.titleSection}>
-              <Text style={styles.title}>{t("auth.emailSignupScreen.title")}</Text>
+              <Text style={styles.title}>{t("auth.resetPasswordScreen.title")}</Text>
+              <Text style={styles.subtitle}>{t("auth.resetPasswordScreen.subtitle")}</Text>
             </View>
 
             {error && (
@@ -138,37 +149,7 @@ export default function EmailSignupScreen() {
 
             <View style={styles.form}>
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>{t("auth.nameLabel")}</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder={t("auth.namePlaceholder")}
-                  placeholderTextColor={colors.mutedLight}
-                  value={name}
-                  onChangeText={setName}
-                  autoCapitalize="words"
-                  textContentType="name"
-                  editable={!loading}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>{t("auth.emailLabel")}</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="your@email.com"
-                  placeholderTextColor={colors.mutedLight}
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  keyboardType="email-address"
-                  textContentType="emailAddress"
-                  editable={!loading}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>{t("auth.passwordLabel")}</Text>
+                <Text style={styles.label}>{t("auth.resetPasswordScreen.newPasswordLabel")}</Text>
                 <TextInput
                   style={styles.input}
                   placeholder={t("auth.passwordPlaceholder")}
@@ -177,11 +158,29 @@ export default function EmailSignupScreen() {
                   onChangeText={setPassword}
                   secureTextEntry
                   autoCapitalize="none"
-                  autoComplete="password"
+                  autoComplete="password-new"
                   textContentType="newPassword"
                   editable={!loading}
                 />
                 <PasswordRequirementsList checks={passwordValidation.checks} />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>
+                  {t("auth.resetPasswordScreen.confirmPasswordLabel")}
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={t("auth.resetPasswordScreen.confirmPasswordPlaceholder")}
+                  placeholderTextColor={colors.mutedLight}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoComplete="password-new"
+                  textContentType="newPassword"
+                  editable={!loading}
+                />
               </View>
 
               <Pressable
@@ -192,34 +191,32 @@ export default function EmailSignupScreen() {
                 ]}
                 onPress={handleSubmit}
                 disabled={loading}
+                accessibilityRole="button"
+                accessibilityLabel={t("auth.resetPasswordScreen.submit")}
               >
                 {loading ? (
                   <ActivityIndicator color={colors.white} />
                 ) : (
-                  <Text style={styles.submitButtonText}>{t("auth.emailSignupScreen.submit")}</Text>
+                  <Text style={styles.submitButtonText}>
+                    {t("auth.resetPasswordScreen.submit")}
+                  </Text>
+                )}
+              </Pressable>
+
+              <Pressable
+                style={styles.cancelButton}
+                onPress={handleCancel}
+                disabled={cancelling || loading}
+                accessibilityRole="button"
+                accessibilityLabel={t("auth.backToLogin")}
+              >
+                {cancelling ? (
+                  <ActivityIndicator color={colors.primary} size="small" />
+                ) : (
+                  <Text style={styles.cancelButtonText}>{t("auth.backToLogin")}</Text>
                 )}
               </Pressable>
             </View>
-          </View>
-
-          <View style={styles.legalContainer}>
-            <Text style={styles.legalText}>
-              {t("auth.termsAgreement")}
-              <Text
-                style={styles.legalLink}
-                onPress={() => Linking.openURL("https://scanner.swim-hub.app/terms")}
-              >
-                {t("auth.terms")}
-              </Text>
-              {t("auth.and")}
-              <Text
-                style={styles.legalLink}
-                onPress={() => Linking.openURL("https://scanner.swim-hub.app/privacy")}
-              >
-                {t("auth.privacy")}
-              </Text>
-              {t("auth.termsAgreementEnd")}
-            </Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -297,6 +294,12 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: colors.text,
   },
+  subtitle: {
+    fontSize: fontSize.base,
+    color: colors.muted,
+    marginTop: spacing.sm,
+    textAlign: "center",
+  },
   errorContainer: {
     backgroundColor: colors.errorBackground,
     borderColor: colors.errorBorder,
@@ -349,19 +352,14 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     fontWeight: "600",
   },
-  legalContainer: {
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.sm,
+  cancelButton: {
     alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: spacing.sm,
   },
-  legalText: {
-    fontSize: fontSize.sm,
-    color: colors.mutedLight,
-    textAlign: "center",
-    lineHeight: 18,
-  },
-  legalLink: {
+  cancelButtonText: {
     color: colors.primary,
+    fontSize: fontSize.md,
     fontWeight: "500",
   },
   requirements: {
