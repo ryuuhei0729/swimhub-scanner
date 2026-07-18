@@ -65,7 +65,11 @@
       },
       "package": "app.swimhub.scanner",
       "versionCode": 20,
-      "permissions": ["android.permission.CAMERA"]
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED"
+      ]
     },
     "extra": {
       "router": {},

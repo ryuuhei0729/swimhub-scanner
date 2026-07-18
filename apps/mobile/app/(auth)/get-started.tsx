@@ -128,6 +128,7 @@ export default function GetStartedScreen() {
           </Pressable>
 
           <Pressable
+            testID="get-started-guest-button"
             style={({ pressed }) => [
               styles.guestButton,
               isLoading && styles.buttonDisabled,

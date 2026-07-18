@@ -1,0 +1,29 @@
+SwimHub Scanner ist eine App, mit der Sie handgeschriebene Schwimm-Zeitenlisten einfach mit der Kamera fotografieren und digitalisieren können.
+
+[Automatisches Auslesen per KI]
+Die KI analysiert das fotografierte Bild der Zeitenliste und extrahiert automatisch Namen, Menü, Schwimmart und alle Zeiten. Auch die Auswahl von Bildern aus der Mediathek wird unterstützt.
+
+[Erkennung der Menü-Informationen]
+Distanz, Wiederholungen, Sätze, Intervallzeiten und weitere Informationen zum Trainingsmenü werden ebenfalls mit ausgelesen.
+
+[Ergebnisse bearbeiten]
+Tippen Sie auf Schwimmernamen, Schwimmart (Fr / Br / Ba / Fly / IM) oder Zeiten, um sie einfach zu korrigieren. Schwimmer können auch hinzugefügt oder gelöscht werden.
+
+[Automatische Zeitstatistik]
+Durchschnitt, schnellste und langsamste Zeit werden automatisch berechnet. Die schnellste Zeit wird blau, die langsamste rot hervorgehoben – so erfassen Sie die Leistung auf einen Blick.
+
+[3 Exportformate]
+・Bild (PNG) — direkt in sozialen Netzwerken oder im Chat teilen
+・CSV — frei in Tabellenkalkulationen weiterverarbeiten
+・Excel — Menü-Informationen und Zeitenprotokoll in zwei Tabellenblättern
+
+[Empfohlen für]
+・Trainer, die die Zeiteneingabe nach dem Training effizienter gestalten möchten
+・Teams, die handschriftliche Aufzeichnungen behalten und zugleich digital verwalten möchten
+・Eltern und Betreuer, die Wettkampf- und Trainingszeiten in Excel organisieren möchten
+
+[Konto und Preise]
+Erstellen Sie einfach ein Konto mit Apple, Google oder Ihrer E-Mail-Adresse. Auch im kostenlosen Tarif können Sie jeden Tag scannen.
+
+Nutzungsbedingungen: https://scanner.swim-hub.app/terms
+Datenschutzerklärung: https://scanner.swim-hub.app/privacy

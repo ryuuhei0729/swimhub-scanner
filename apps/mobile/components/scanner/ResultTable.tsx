@@ -8,6 +8,7 @@ import {
   ActionSheetIOS,
   Platform,
   Alert,
+  Modal,
   StyleSheet,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
@@ -52,6 +53,7 @@ export const ResultTable: React.FC = () => {
 
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [stylePickerSwimmerNo, setStylePickerSwimmerNo] = useState<number | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
   if (swimmers.length === 0) return null;
@@ -102,14 +104,17 @@ export const ResultTable: React.FC = () => {
         },
       );
     } else {
-      Alert.alert(t("result.selectStyle"), "", [
-        ...STROKES.map((s) => ({
-          text: STROKE_LABELS[s],
-          onPress: () => updateSwimmerStyle(swimmerNo, s),
-        })),
-        { text: t("common.cancel"), style: "cancel" as const },
-      ]);
+      // Android の Alert.alert はボタンを先頭3件しか表示しないため
+      // 5種目+キャンセルを選択できる専用モーダルを使う
+      setStylePickerSwimmerNo(swimmerNo);
     }
+  };
+
+  const handleSelectStyle = (style: SwimStroke) => {
+    if (stylePickerSwimmerNo !== null) {
+      updateSwimmerStyle(stylePickerSwimmerNo, style);
+    }
+    setStylePickerSwimmerNo(null);
   };
 
   const handleRemoveSwimmer = (no: number, name: string) => {
@@ -333,6 +338,39 @@ export const ResultTable: React.FC = () => {
       <TouchableOpacity style={styles.addButton} onPress={addSwimmer}>
         <Text style={styles.addButtonText}>{t("result.addSwimmer")}</Text>
       </TouchableOpacity>
+
+      {/* Android 用種目選択モーダル (iOS は ActionSheetIOS を使用) */}
+      <Modal
+        visible={stylePickerSwimmerNo !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setStylePickerSwimmerNo(null)}
+      >
+        <TouchableOpacity
+          style={styles.pickerOverlay}
+          activeOpacity={1}
+          onPress={() => setStylePickerSwimmerNo(null)}
+        >
+          <TouchableOpacity style={styles.pickerCard} activeOpacity={1}>
+            <Text style={styles.pickerTitle}>{t("result.selectStyle")}</Text>
+            {STROKES.map((s) => (
+              <TouchableOpacity
+                key={s}
+                style={styles.pickerOption}
+                onPress={() => handleSelectStyle(s)}
+              >
+                <Text style={styles.pickerOptionText}>{STROKE_LABELS[s]}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={styles.pickerCancelButton}
+              onPress={() => setStylePickerSwimmerNo(null)}
+            >
+              <Text style={styles.pickerCancelText}>{t("common.cancel")}</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -531,5 +569,50 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: fontSize.md,
     fontWeight: "500",
+  },
+
+  // Android style picker modal
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+  pickerCard: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  pickerTitle: {
+    fontSize: fontSize.base,
+    fontWeight: "600",
+    color: colors.muted,
+    textAlign: "center",
+    marginBottom: spacing.md,
+  },
+  pickerOption: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  pickerOptionText: {
+    fontSize: fontSize.xl,
+    color: colors.primary,
+    textAlign: "center",
+    fontWeight: "600",
+  },
+  pickerCancelButton: {
+    marginTop: spacing.md,
+    paddingVertical: 14,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceRaised,
+  },
+  pickerCancelText: {
+    fontSize: fontSize.xl,
+    color: colors.textSecondary,
+    textAlign: "center",
+    fontWeight: "600",
   },
 });
