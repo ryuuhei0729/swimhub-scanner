@@ -1,0 +1,29 @@
+SwimHub Scanner digitizes handwritten swim time sheets — just photograph them with your camera.
+
+[AI-powered auto-reading]
+AI analyses the photo of your time sheet and automatically extracts names, menus, strokes, and every time. You can also pick an image from your photo library.
+
+[Menu recognition]
+Distance, reps, sets, circle time and other practice menu details are read together.
+
+[Edit the results]
+Tap to easily fix swimmer names, strokes (Fr / Br / Ba / Fly / IM) and times. You can add or remove swimmers too.
+
+[Automatic time stats]
+Average, fastest and slowest times are calculated automatically. The fastest is highlighted in blue and the slowest in red, so you can grasp performance at a glance.
+
+[Three export formats]
+- Image (PNG) — share directly on social media or chat
+- CSV — process freely in spreadsheet software
+- Excel — outputs menu details and time records in a two-sheet layout
+
+[Perfect for]
+- Coaches who want to speed up time entry after practice
+- Teams that keep handwritten records but also want digital management
+- Parents and managers who want to organise meet and practice records in Excel
+
+[Account and pricing]
+Create an account easily with Apple, Google or email. Scanning is available every day even on the free plan.
+
+Terms of Use: https://scanner.swim-hub.app/terms
+Privacy Policy: https://scanner.swim-hub.app/privacy

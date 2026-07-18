@@ -1,0 +1,69 @@
+# 共通ログインサブフロー (SwimHub Scanner)
+#
+# - 端末ロケールは launchApp の launch arguments (-AppleLanguages / -AppleLocale) で指定する。
+#   expo-localization はこの引数を尊重するため、シミュレータの言語設定を変えなくても
+#   アプリ全体が ${LOCALE} で表示される（swim-hub と同じ仕組み）。
+# - 既にログイン済み（AsyncStorage にセッションが残っている）場合は get-started 画面を
+#   スキップし、そのままホームの表示を待つ。
+# - scanner は未ログイン時 get-started 画面に誘導されるが、そこには「ログイン」導線が
+#   無い（新規登録 or ゲスト利用のみ）。そのため ゲスト利用 → ホームのログインチップ →
+#   メールログイン の順に進む。ログイン成功後の遷移先はナビゲーション状態に依存して
+#   揺れるため、最後にアプリを再起動してホーム表示に揃える（セッションは維持される）。
+#
+# 必要な env: APP_ID, LOCALE(例 ja/en), REGION(例 JP/US), APP_EMAIL, APP_PASSWORD
+appId: ${APP_ID}
+---
+- launchApp:
+    appId: ${APP_ID}
+    arguments:
+      "-AppleLanguages": "(${LOCALE})"
+      "-AppleLocale": "${LOCALE}_${REGION}"
+    clearState: false
+
+# 未ログインなら get-started → ゲスト利用 → ログインチップ → email ログイン
+- runFlow:
+    when:
+      visible:
+        id: "get-started-guest-button"
+    commands:
+      - tapOn:
+          id: "get-started-guest-button"
+      - extendedWaitUntil:
+          visible:
+            id: "home-login-chip"
+          timeout: 20000
+      - tapOn:
+          id: "home-login-chip"
+      - tapOn:
+          id: "login-email-method-button"
+      - tapOn:
+          id: "login-email-input"
+      - inputText: ${APP_EMAIL}
+      - tapOn:
+          id: "login-password-input"
+      - inputText: ${APP_PASSWORD}
+      # hideKeyboard は入れない: iPad で直後の submit タップを不安定にする。
+      - tapOn:
+          id: "login-submit-button"
+          optional: true
+      # ログイン通信完了（セッション保存）を待つ。iOS のパスワード保存ダイアログは
+      # Maestro から不可視なので閉じない。代わりに下の再起動で消す。
+      - extendedWaitUntil:
+          visible:
+            id: "home-account-chip"
+          timeout: 20000
+          optional: true
+      # ナビゲーション状態をリセットし、システムのパスワード保存ダイアログも消してホームに揃える
+      # （セッションは AsyncStorage に保存済み）
+      - launchApp:
+          appId: ${APP_ID}
+          arguments:
+            "-AppleLanguages": "(${LOCALE})"
+            "-AppleLocale": "${LOCALE}_${REGION}"
+          clearState: false
+
+# ホーム（ログイン済みのアカウントチップ）が出るまで待つ
+- extendedWaitUntil:
+    visible:
+      id: "home-account-chip"
+    timeout: 40000
