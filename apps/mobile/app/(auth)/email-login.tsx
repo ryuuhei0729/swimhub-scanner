@@ -157,6 +157,7 @@ export default function EmailLoginScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>{t("auth.emailLabel")}</Text>
                 <TextInput
+                  testID="login-email-input"
                   style={styles.input}
                   placeholder="your@email.com"
                   placeholderTextColor={colors.mutedLight}
@@ -173,6 +174,7 @@ export default function EmailLoginScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>{t("auth.passwordLabel")}</Text>
                 <TextInput
+                  testID="login-password-input"
                   style={styles.input}
                   placeholder={t("auth.emailLoginScreen.passwordPlaceholder")}
                   placeholderTextColor={colors.mutedLight}
@@ -187,6 +189,7 @@ export default function EmailLoginScreen() {
               </View>
 
               <Pressable
+                testID="login-submit-button"
                 style={({ pressed }) => [
                   styles.submitButton,
                   loading && styles.submitButtonDisabled,

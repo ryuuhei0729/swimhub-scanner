@@ -86,6 +86,7 @@ export default function LoginMethodScreen() {
           />
 
           <Pressable
+            testID="login-email-method-button"
             style={({ pressed }) => [
               styles.emailButton,
               isLoading && styles.buttonDisabled,

@@ -506,6 +506,7 @@ export default function ScannerScreen() {
         <View style={styles.topBar}>
           {isAuthenticated ? (
             <Pressable
+              testID="home-account-chip"
               style={styles.accountChip}
               onPress={() => router.push("/(app)/account")}
             >
@@ -518,6 +519,7 @@ export default function ScannerScreen() {
             <View style={styles.guestBar}>
               <Text style={styles.guestLabel}>{t("scanner.guestMode")}</Text>
               <Pressable
+                testID="home-login-chip"
                 style={styles.loginChip}
                 onPress={() => router.push("/(app)/login-method")}
               >
@@ -670,6 +672,7 @@ export default function ScannerScreen() {
         {/* Collapsible template section */}
         <View style={styles.templateSection}>
           <Pressable
+            testID="home-template-toggle"
             style={({ pressed }) => [
               styles.templateToggleRow,
               pressed && styles.templateTogglePressed,
@@ -697,6 +700,7 @@ export default function ScannerScreen() {
                 <Text style={styles.templateButtonText}>PDF</Text>
               </TouchableOpacity>
               <TouchableOpacity
+                testID="home-template-image-button"
                 style={styles.templateButton}
                 onPress={() => setTemplatePreviewVisible(true)}
                 activeOpacity={0.7}
