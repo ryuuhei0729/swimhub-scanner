@@ -33,6 +33,8 @@ const en: TranslationShape = {
     createAccount: "Create a new account",
     tagline: "Digitize handwritten time sheets with AI",
     loginFailed: "Login failed. Please try again.",
+    expiredOtp: "Your verification code has expired. Please try again.",
+    invalidOtp: "Your verification code is invalid.",
     googleLoginFailed: "Google login failed. Please try again.",
     appleLoginFailed: "Apple login failed. Please try again.",
     invalidCredentials: "Invalid email address or password.",

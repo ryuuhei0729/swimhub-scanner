@@ -11,7 +11,7 @@ import * as Font from "expo-font";
 import { ChakraPetch_700Bold } from "@expo-google-fonts/chakra-petch";
 import { AuthProvider, useAuth } from "../contexts/AuthProvider";
 import { supabase } from "../lib/supabase";
-import { extractDeepLinkError } from "../lib/auth-deep-link";
+import { extractDeepLinkError, extractTokenHash } from "../lib/auth-deep-link";
 import { colors, fontSize } from "../theme";
 
 // ChakraPetch_700Bold is preloaded for the brand wordmark (see MEMORY: brand font unification).
@@ -88,9 +88,11 @@ function AuthGate() {
   }, [user, isAuthenticated, isGuest, loading, transitioning, pendingRecoveryCheck, segments, router]);
 
   // メール確認・パスワードリセット・Google OAuth など、Supabase/OAuth プロバイダから
-  // 戻ってくる deep link を処理する。PKCE の `code` パラメータを検出したら
-  // exchangeCodeForSession でセッションを確立する（onAuthStateChange 経由で
-  // AuthProvider に自動反映される）。
+  // 戻ってくる deep link を処理する。
+  // Supabase メールテンプレートが `?token_hash=...&type=...` 形式になったため、
+  // まずこれを検出して verifyOtp でセッションを確立する。見つからない場合は
+  // 後方互換として PKCE の `code` パラメータを検出し exchangeCodeForSession を使う
+  // (onAuthStateChange 経由で AuthProvider に自動反映される)。
   //
   // 種別は URL のパスマーカーで判別する（旧実装は exchangeCodeForSession の戻り値の
   // `redirectType` に依存していたが、公開の型定義に無いランタイム専用フィールドの
@@ -99,7 +101,8 @@ function AuthGate() {
   //     （useGoogleAuth 側の WebBrowser.openAuthSessionAsync が直接処理するため、
   //     ここでは無視する。Android では同じ URL がこのグローバルハンドラにも届き、
   //     処理すると同一 code を二重に交換して偽のエラー Alert が出てしまう）
-  //   - `swimhub-scanner://reset-password` … パスワードリセット (recovery)
+  //   - `swimhub-scanner://reset-password` … パスワードリセット (recovery)。
+  //     token_hash 形式の場合は type=recovery でも判別できる
   //   - それ以外（`swimhub-scanner://` 単体など）… メール確認 (signUp) 由来
   const handleAuthDeepLink = useCallback(
     async (url: string | null) => {
@@ -122,6 +125,39 @@ function AuthGate() {
       if (deepLinkError) {
         console.error("認証リンクにエラーが含まれています:", deepLinkError);
         Alert.alert(t("common.error"), t("auth.errors.deepLinkFailed"));
+        return;
+      }
+
+      // 新形式: Supabase メールテンプレートの token_hash + type
+      // (code より先にチェックし、両方揃う場合は token_hash を優先する)
+      const tokenHashResult = extractTokenHash(url);
+      if (tokenHashResult) {
+        const { tokenHash, type } = tokenHashResult;
+        if (processedCodesRef.current.has(tokenHash)) return;
+        processedCodesRef.current.add(tokenHash);
+
+        const isRecovery = type === "recovery" || hostname === "reset-password";
+        if (isRecovery) {
+          setPendingRecoveryCheck(true);
+        }
+
+        try {
+          const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
+          if (error) {
+            console.error("認証リンクのセッション確立に失敗:", error);
+            if (isRecovery) setPendingRecoveryCheck(false);
+            Alert.alert(t("common.error"), t("auth.errors.deepLinkFailed"));
+            return;
+          }
+
+          if (isRecovery) {
+            router.replace("/(auth)/reset-password");
+          }
+        } catch (err) {
+          console.error("認証リンクのセッション確立で例外が発生:", err);
+          if (isRecovery) setPendingRecoveryCheck(false);
+          Alert.alert(t("common.error"), t("auth.errors.deepLinkFailed"));
+        }
         return;
       }
 

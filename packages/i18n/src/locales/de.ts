@@ -34,6 +34,8 @@ const de: TranslationShape = {
     createAccount: "Neues Konto erstellen",
     tagline: "Handgeschriebene Zeitenlisten mit KI digitalisieren",
     loginFailed: "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    expiredOtp: "Ihr Bestätigungscode ist abgelaufen. Bitte versuchen Sie es erneut.",
+    invalidOtp: "Ihr Bestätigungscode ist ungültig.",
     googleLoginFailed: "Google-Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.",
     appleLoginFailed: "Apple-Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.",
     invalidCredentials: "Ungültige E-Mail-Adresse oder Passwort.",

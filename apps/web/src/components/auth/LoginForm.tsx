@@ -18,9 +18,15 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const params = useParams();
   const locale = (params.locale as string) || "ja";
-  const [error, setError] = useState<string | null>(
-    searchParams.get("error") ? t("auth.loginFailed") : null,
-  );
+  const [error, setError] = useState<string | null>(() => {
+    const rawError = searchParams.get("error");
+    if (!rawError) return null;
+    // メール確認コールバック (token_hash + verifyOtp) の失敗時に返る実エラーコードのみ
+    // 意味の通るメッセージに変換する。それ以外は従来通り一律 loginFailed を表示する
+    if (rawError === "otp_expired") return t("auth.expiredOtp");
+    if (rawError === "otp_disabled") return t("auth.invalidOtp");
+    return t("auth.loginFailed");
+  });
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");

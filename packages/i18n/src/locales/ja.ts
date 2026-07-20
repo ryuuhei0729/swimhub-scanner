@@ -31,6 +31,8 @@ const ja = {
     createAccount: "新しいアカウントを作成",
     tagline: "手書きタイム記録表をAIで自動デジタル化",
     loginFailed: "ログインに失敗しました。もう一度お試しください。",
+    expiredOtp: "認証コードの有効期限が切れています。再度お試しください。",
+    invalidOtp: "認証コードが無効です。",
     googleLoginFailed: "Googleログインに失敗しました。もう一度お試しください。",
     appleLoginFailed: "Appleログインに失敗しました。もう一度お試しください。",
     invalidCredentials: "メールアドレスまたはパスワードが正しくありません。",
