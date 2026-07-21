@@ -8,6 +8,40 @@ function firstString(value: string | string[] | undefined): string | undefined {
 }
 
 /**
+ * Supabase メールテンプレートの `token_hash` 形式で使われる検証タイプ。
+ * `invite` は本アプリのフローで使わないため対象外とする。
+ */
+export type EmailOtpLinkType = "signup" | "recovery" | "email_change" | "email" | "magiclink";
+
+const EMAIL_OTP_LINK_TYPES: readonly EmailOtpLinkType[] = [
+  "signup",
+  "recovery",
+  "email_change",
+  "email",
+  "magiclink",
+];
+
+export function isEmailOtpLinkType(value: unknown): value is EmailOtpLinkType {
+  return typeof value === "string" && (EMAIL_OTP_LINK_TYPES as readonly string[]).includes(value);
+}
+
+/**
+ * deep link の URL から Supabase メールテンプレートの `token_hash`/`type` クエリを抽出する。
+ * 抽出できない、または `type` が想定外の値の場合は `null` を返す。
+ */
+export function extractTokenHash(url: string): { tokenHash: string; type: EmailOtpLinkType } | null {
+  try {
+    const { queryParams } = Linking.parse(url);
+    const tokenHash = firstString(queryParams?.token_hash);
+    const type = firstString(queryParams?.type);
+    if (!tokenHash || !isEmailOtpLinkType(type)) return null;
+    return { tokenHash, type };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * deep link の URL に含まれるエラー情報 (error_description を優先) を抽出する。
  * PKCE のエラーリダイレクト (query) と implicit flow (hash) のどちらの形式で
  * 返ってきても検出できるよう両方確認する。

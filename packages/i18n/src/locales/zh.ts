@@ -33,6 +33,8 @@ const zh: TranslationShape = {
     createAccount: "创建新账户",
     tagline: "用 AI 自动数字化手写计时记录表",
     loginFailed: "登录失败，请重试。",
+    expiredOtp: "验证码已过期，请重试。",
+    invalidOtp: "验证码无效。",
     googleLoginFailed: "Google 登录失败，请重试。",
     appleLoginFailed: "Apple 登录失败，请重试。",
     invalidCredentials: "邮箱地址或密码不正确。",

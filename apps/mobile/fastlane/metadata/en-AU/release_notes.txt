@@ -1,0 +1,5 @@
+- Guest mode: start scanning time sheets right away, no account needed
+- Smoother, more reliable sign-up and sign-in
+- More display languages to choose from
+- Redesigned home screen and improved accessibility
+- Various bug fixes and performance improvements

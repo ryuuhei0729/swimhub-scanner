@@ -8,6 +8,9 @@ ASC_ISSUER_ID = ENV["ASC_ISSUER_ID"] || "6a00eab9-1ee2-474d-82a1-6ec27420ef53"
 # 2026-07 に追加した新ロケール
 NEW_LANGUAGES = ["ko", "zh-Hans", "de-DE"]
 
+# 「最新情報 (What's New)」が未入力で審査提出できないロケール (2026-07-21)
+RELEASE_NOTES_LANGUAGES = ["de-DE", "en-CA", "en-AU", "en-GB"]
+
 def swimhub_api_key
   UI.user_error!("ASC キーが見つかりません: #{ASC_KEY_PATH}") unless File.exist?(ASC_KEY_PATH)
   app_store_connect_api_key(
@@ -30,6 +33,25 @@ platform :ios do
       skip_binary_upload: true,
       skip_screenshots: true,
       skip_app_version_update: true,
+      run_precheck_before_submit: false,
+      submit_for_review: false,
+      force: true
+    )
+  end
+
+  desc "編集中バージョンの「最新情報 (release_notes)」を App Store Connect に反映"
+  desc "options: languages (default: 最新情報が未入力の4ロケール)"
+  lane :upload_release_notes do |options|
+    languages = options[:languages] || RELEASE_NOTES_LANGUAGES
+    deliver(
+      api_key: swimhub_api_key,
+      app_identifier: "app.swim-hub.scanner",
+      metadata_path: File.expand_path("./metadata", __dir__),
+      languages: languages,
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      # release_notes はバージョン紐付けメタデータのため version 更新はスキップしない
+      skip_app_version_update: false,
       run_precheck_before_submit: false,
       submit_for_review: false,
       force: true

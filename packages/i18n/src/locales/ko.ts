@@ -33,6 +33,8 @@ const ko: TranslationShape = {
     createAccount: "새 계정 만들기",
     tagline: "손으로 쓴 기록표를 AI로 자동 디지털화",
     loginFailed: "로그인에 실패했습니다. 다시 시도해 주세요.",
+    expiredOtp: "인증 코드가 만료되었습니다. 다시 시도해 주세요.",
+    invalidOtp: "인증 코드가 유효하지 않습니다.",
     googleLoginFailed: "Google 로그인에 실패했습니다. 다시 시도해 주세요.",
     appleLoginFailed: "Apple 로그인에 실패했습니다. 다시 시도해 주세요.",
     invalidCredentials: "이메일 주소 또는 비밀번호가 올바르지 않습니다.",
