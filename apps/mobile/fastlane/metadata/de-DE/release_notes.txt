@@ -1,0 +1,5 @@
+- Gastmodus: Zeitenlisten sofort scannen, ganz ohne Konto
+- Reibungslosere und zuverlässigere Registrierung und Anmeldung
+- Mehr Anzeigesprachen zur Auswahl
+- Überarbeiteter Startbildschirm und verbesserte Barrierefreiheit
+- Verschiedene Fehlerbehebungen und Leistungsverbesserungen
