@@ -222,10 +222,18 @@ export async function POST(request: NextRequest) {
 
   // スキャン成功時のみ使用回数記録
   if (result.status === 200) {
-    await incrementScanCount(supabase, uid);
-    // Premium 以外はトークン消費ログを記録
-    if (!isPremium) {
-      await logTokenConsumption(supabase, uid, "scanner_scan");
+    try {
+      await incrementScanCount(supabase, uid);
+      // Premium 以外はトークン消費ログを記録
+      if (!isPremium) {
+        await logTokenConsumption(supabase, uid, "scanner_scan");
+      }
+    } catch (usageError) {
+      console.error("利用量記録に失敗しました:", usageError);
+      return NextResponse.json<ApiErrorResponse>(
+        { error: "利用状況の記録に失敗しました", code: "API_ERROR" },
+        { status: 500 },
+      );
     }
   }
 
