@@ -11,9 +11,10 @@ import { getClientIp } from "@/lib/client-ip";
 import { reserveGuestScan, rollbackGuestScanCount } from "@/lib/rate-limit";
 
 /**
- * ゲストリクエストかどうか判定
+ * クライアントが X-Guest-Mode: true を要求しているか
+ * (これ単体では信頼境界にしない。認証が実際に成立したかどうかと組み合わせて判定する)
  */
-function isGuestRequest(request: NextRequest): boolean {
+function isGuestModeRequested(request: NextRequest): boolean {
   return request.headers.get("X-Guest-Mode") === "true";
 }
 
@@ -96,61 +97,86 @@ async function performScan(
   return NextResponse.json<ScanTimesheetResponse>(parsed);
 }
 
-export async function POST(request: NextRequest) {
-  // === ゲストモード ===
-  if (isGuestRequest(request)) {
-    // IP ベースのレート制限 (KV による サーバーサイド強制)
-    const ip = getClientIp(request);
-    const { env } = await getCloudflareContext({ async: true });
-    const kv = env.RATE_LIMIT_KV;
+/**
+ * ゲスト経路: IP ベースのレート制限 (KV による サーバーサイド強制)
+ */
+async function handleGuestScan(
+  request: NextRequest,
+): Promise<NextResponse<ScanTimesheetResponse | ApiErrorResponse>> {
+  const ip = getClientIp(request);
+  const { env } = await getCloudflareContext({ async: true });
+  const kv = env.RATE_LIMIT_KV;
 
-    if (!kv) {
-      console.error("RATE_LIMIT_KV binding is not configured");
-      return NextResponse.json<ApiErrorResponse>(
-        { error: "サーバー設定エラーが発生しました", code: "API_ERROR" },
-        { status: 500 },
-      );
-    }
-
-    const { allowed } = await reserveGuestScan(kv, ip);
-    if (!allowed) {
-      return NextResponse.json<ApiErrorResponse>(
-        {
-          error: "本日の無料利用回数に達しました。アカウント登録で利用回数が増えます。",
-          code: "DAILY_LIMIT_EXCEEDED",
-        },
-        { status: 429 },
-      );
-    }
-
-    let body: ScanTimesheetRequest;
-    try {
-      body = await request.json();
-    } catch {
-      await rollbackGuestScanCount(kv, ip);
-      return NextResponse.json<ApiErrorResponse>(
-        { error: "リクエストの形式が不正です", code: "IMAGE_ERROR" },
-        { status: 400 },
-      );
-    }
-
-    // ゲストはguestプランの制限を適用（選手数上限）
-    const maxSwimmers = PLAN_LIMITS.guest.maxSwimmers;
-    const result = await performScan(body, maxSwimmers);
-
-    // スキャン失敗時はカウントをロールバック
-    if (result.status !== 200) {
-      await rollbackGuestScanCount(kv, ip);
-    }
-
-    return result;
+  if (!kv) {
+    console.error("RATE_LIMIT_KV binding is not configured");
+    return NextResponse.json<ApiErrorResponse>(
+      { error: "サーバー設定エラーが発生しました", code: "API_ERROR" },
+      { status: 500 },
+    );
   }
 
-  // === 認証済みユーザー ===
+  const { allowed } = await reserveGuestScan(kv, ip);
+  if (!allowed) {
+    return NextResponse.json<ApiErrorResponse>(
+      {
+        error: "本日の無料利用回数に達しました。アカウント登録で利用回数が増えます。",
+        code: "DAILY_LIMIT_EXCEEDED",
+      },
+      { status: 429 },
+    );
+  }
+
+  let body: ScanTimesheetRequest;
+  try {
+    body = await request.json();
+  } catch {
+    await rollbackGuestScanCount(kv, ip);
+    return NextResponse.json<ApiErrorResponse>(
+      { error: "リクエストの形式が不正です", code: "IMAGE_ERROR" },
+      { status: 400 },
+    );
+  }
+
+  // ゲストはguestプランの制限を適用（選手数上限）
+  const maxSwimmers = PLAN_LIMITS.guest.maxSwimmers;
+  const result = await performScan(body, maxSwimmers);
+
+  // スキャン失敗時はカウントをロールバック
+  if (result.status !== 200) {
+    await rollbackGuestScanCount(kv, ip);
+  }
+
+  return result;
+}
+
+export async function POST(request: NextRequest) {
+  // 信頼境界は「クライアントが自称するモード (X-Guest-Mode ヘッダー)」でも
+  // 「Authorization ヘッダーの有無」でもなく、「認証が実際に成立したか」に置く。
+  //
+  // verifyAuth は Bearer トークン (mobile) と Cookie セッション (web) の両方を
+  // カバーする (apps/web/src/lib/api-helpers.ts)。web クライアントは
+  // Authorization ヘッダーを送らず Cookie のみで認証されるため、
+  // 「Authorization ヘッダーの有無」を境界にすると、ログイン済み web ユーザーが
+  // X-Guest-Mode: true を1つ足すだけでアカウント単位の日次クォータを回避できて
+  // しまう (C-2)。そのため X-Guest-Mode の値に関わらず必ず verifyAuth を先に
+  // 試み、その成否のみで分岐する。
+  //
+  //   - 認証が成立した (Bearer/Cookie いずれでも) → X-Guest-Mode の値に関わらず
+  //     必ず認証済み経路 (アカウント単位の日次利用量を必ず消費させる)。
+  //   - 認証が成立しなかった (トークン無し/無効/期限切れ/Cookie無し等) →
+  //     X-Guest-Mode: true であればゲスト経路にフォールバックできる。
+  //     そうでなければ従来どおり認証エラーを返す。
+  const guestModeRequested = isGuestModeRequested(request);
   const authResult = await verifyAuth(request);
+
   if ("error" in authResult) {
+    if (guestModeRequested) {
+      return handleGuestScan(request);
+    }
     return authResult.error;
   }
+
+  // === 認証済みユーザー (Bearer/Cookie のいずれで成立した場合も必ずこちら) ===
   const {
     auth: { uid },
     supabase,
@@ -196,10 +222,18 @@ export async function POST(request: NextRequest) {
 
   // スキャン成功時のみ使用回数記録
   if (result.status === 200) {
-    await incrementScanCount(supabase, uid);
-    // Premium 以外はトークン消費ログを記録
-    if (!isPremium) {
-      await logTokenConsumption(supabase, uid, "scanner_scan");
+    try {
+      await incrementScanCount(supabase, uid);
+      // Premium 以外はトークン消費ログを記録
+      if (!isPremium) {
+        await logTokenConsumption(supabase, uid, "scanner_scan");
+      }
+    } catch (usageError) {
+      console.error("利用量記録に失敗しました:", usageError);
+      return NextResponse.json<ApiErrorResponse>(
+        { error: "利用状況の記録に失敗しました", code: "API_ERROR" },
+        { status: 500 },
+      );
     }
   }
 

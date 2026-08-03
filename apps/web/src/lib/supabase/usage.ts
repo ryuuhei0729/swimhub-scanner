@@ -86,6 +86,10 @@ export async function canUserScan(
 
 /**
  * Increment the scan count and daily tokens used for today.
+ *
+ * app_daily_usage への直接 INSERT/UPDATE は RLS で拒否される (直接書き込みは
+ * auth.uid() 検証込みの increment_daily_usage RPC に一本化済み)。エラーが
+ * 発生した場合は無料枠のカウントが記録されず実質無制限化するため、握りつぶさず throw する。
  */
 export async function incrementScanCount(supabase: SupabaseClient, uid: string): Promise<void> {
   // Mock mode
@@ -96,33 +100,16 @@ export async function incrementScanCount(supabase: SupabaseClient, uid: string):
 
   const today = getTodayJST();
 
-  // UPSERT: insert or update usage count and daily_tokens_used
-  const { data: existing } = await supabase
-    .from("app_daily_usage")
-    .select("id, usage_count, daily_tokens_used")
-    .eq("user_id", uid)
-    .eq("app", APP)
-    .eq("usage_date", today)
-    .single();
+  const { error } = await supabase.rpc("increment_daily_usage", {
+    p_user_id: uid,
+    p_app: APP,
+    p_usage_date: today,
+    p_last_used_at: new Date().toISOString(),
+  });
 
-  if (existing) {
-    await supabase
-      .from("app_daily_usage")
-      .update({
-        usage_count: existing.usage_count + 1,
-        daily_tokens_used: (existing.daily_tokens_used ?? 0) + 1,
-        last_used_at: new Date().toISOString(),
-      })
-      .eq("id", existing.id);
-  } else {
-    await supabase.from("app_daily_usage").insert({
-      user_id: uid,
-      app: APP,
-      usage_date: today,
-      usage_count: 1,
-      daily_tokens_used: 1,
-      last_used_at: new Date().toISOString(),
-    });
+  if (error) {
+    console.error("increment_daily_usage failed:", error);
+    throw error;
   }
 }
 
