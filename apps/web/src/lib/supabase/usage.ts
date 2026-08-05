@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getTodayJST } from "@swimhub-scanner/shared/utils";
 import { PLAN_LIMITS } from "@swimhub-scanner/shared/types";
 import type { PlanType, SubscriptionStatus } from "@swimhub-scanner/shared/types/api";
+import { createAdminClient } from "@/lib/supabase/server";
 
 const APP = "swimhub_scanner" as const;
 
@@ -110,6 +111,84 @@ export async function incrementScanCount(supabase: SupabaseClient, uid: string):
   if (error) {
     console.error("increment_daily_usage failed:", error);
     throw error;
+  }
+}
+
+export interface ReserveScanResult {
+  allowed: boolean;
+  isPremium: boolean;
+  tokensUsed: number;
+}
+
+/**
+ * 認証済みユーザーの日次スキャン枠を原子的に予約する (Gemini 呼び出しの前に呼ぶこと)。
+ *
+ * canUserScan (読み取り) → Gemini 呼び出し (数秒) → incrementScanCount (加算) と
+ * いう従来の構造では、読み取りと加算の間に競合窓があり、同一ユーザーが同時に
+ * 2リクエストを送ると両方が「まだ枠が残っている」と判定できてしまう (C-4)。
+ * このため service_role 限定の reserve_user_daily_usage RPC を使い、Premium
+ * 判定 (関数内部で user_subscriptions から導出。apps/shared/utils/premium.ts の
+ * checkIsPremium() と同一ロジック) と全アプリ横断の使用量加算を advisory lock で
+ * 直列化した単一トランザクションで行う。予約後に Gemini 呼び出し等が失敗した場合は
+ * releaseUserScan で解放すること。
+ *
+ * authenticated には EXECUTE 権限が無いため、ここでは anon key クライアントでは
+ * なく service_role の管理者クライアントを使う。
+ */
+export async function reserveUserScan(uid: string): Promise<ReserveScanResult> {
+  // Mock mode
+  if (process.env.SUPABASE_MOCK_MODE === "true") {
+    return { allowed: true, isPremium: false, tokensUsed: 0 };
+  }
+
+  const supabase = createAdminClient();
+  const today = getTodayJST();
+
+  const { data, error } = await supabase
+    .rpc("reserve_user_daily_usage", {
+      p_user_id: uid,
+      p_app: APP,
+      p_usage_date: today,
+    })
+    .single();
+
+  if (error) {
+    console.error("reserve_user_daily_usage failed:", error);
+    throw error;
+  }
+
+  const row = data as { allowed: boolean; is_premium: boolean; tokens_used: number } | null;
+  return {
+    allowed: row?.allowed ?? false,
+    isPremium: row?.is_premium ?? false,
+    tokensUsed: row?.tokens_used ?? 0,
+  };
+}
+
+/**
+ * reserveUserScan で加算した使用量を、Gemini 呼び出し失敗時に解放する。
+ * 呼び出し元は成否判定 1 回につき高々 1 回だけこれを呼ぶこと (二重解放は
+ * release_user_daily_usage 側で GREATEST(x-1, 0) により 0 未満にはならないが、
+ * 予約した以上に解放すると実質的な無料枠拡大になる)。
+ */
+export async function releaseUserScan(uid: string): Promise<void> {
+  // Mock mode
+  if (process.env.SUPABASE_MOCK_MODE === "true") {
+    console.log("[DEV] Mock: releaseUserScan for", uid);
+    return;
+  }
+
+  const supabase = createAdminClient();
+  const today = getTodayJST();
+
+  const { error } = await supabase.rpc("release_user_daily_usage", {
+    p_user_id: uid,
+    p_app: APP,
+    p_usage_date: today,
+  });
+
+  if (error) {
+    console.error("release_user_daily_usage failed:", error);
   }
 }
 
