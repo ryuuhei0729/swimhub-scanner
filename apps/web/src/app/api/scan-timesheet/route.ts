@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { verifyAuth, ensureUserDocument } from "@/lib/api-helpers";
-import { canUserScan, incrementScanCount, logTokenConsumption } from "@/lib/supabase/usage";
+import { reserveUserScan, releaseUserScan, logTokenConsumption } from "@/lib/supabase/usage";
 import { scanTimesheetWithGemini } from "@/lib/gemini/client";
 import { validateImageMimeType, validateImageSize, estimateBase64Size } from "@swimhub-scanner/shared/validation/image";
 import { validateScanResult } from "@swimhub-scanner/shared/validation/scan-result";
@@ -98,24 +97,17 @@ async function performScan(
 }
 
 /**
- * ゲスト経路: IP ベースのレート制限 (KV による サーバーサイド強制)
+ * ゲスト経路: IP ベースのレート制限
+ *
+ * Postgres の reserve_guest_scan RPC (service_role 限定) で単一 SQL 文により
+ * 原子的に予約する。詳細は lib/rate-limit.ts のコメント参照。
  */
 async function handleGuestScan(
   request: NextRequest,
 ): Promise<NextResponse<ScanTimesheetResponse | ApiErrorResponse>> {
   const ip = getClientIp(request);
-  const { env } = await getCloudflareContext({ async: true });
-  const kv = env.RATE_LIMIT_KV;
 
-  if (!kv) {
-    console.error("RATE_LIMIT_KV binding is not configured");
-    return NextResponse.json<ApiErrorResponse>(
-      { error: "サーバー設定エラーが発生しました", code: "API_ERROR" },
-      { status: 500 },
-    );
-  }
-
-  const { allowed } = await reserveGuestScan(kv, ip);
+  const { allowed } = await reserveGuestScan(ip);
   if (!allowed) {
     return NextResponse.json<ApiErrorResponse>(
       {
@@ -130,7 +122,7 @@ async function handleGuestScan(
   try {
     body = await request.json();
   } catch {
-    await rollbackGuestScanCount(kv, ip);
+    await rollbackGuestScanCount(ip);
     return NextResponse.json<ApiErrorResponse>(
       { error: "リクエストの形式が不正です", code: "IMAGE_ERROR" },
       { status: 400 },
@@ -141,9 +133,9 @@ async function handleGuestScan(
   const maxSwimmers = PLAN_LIMITS.guest.maxSwimmers;
   const result = await performScan(body, maxSwimmers);
 
-  // スキャン失敗時はカウントをロールバック
+  // スキャン失敗時はカウントをロールバック (この呼び出し1箇所のみ = 冪等)
   if (result.status !== 200) {
-    await rollbackGuestScanCount(kv, ip);
+    await rollbackGuestScanCount(ip);
   }
 
   return result;
@@ -196,46 +188,61 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // サブスクリプションステータスを取得
-  const { data: subData } = await supabase
-    .from("user_subscriptions")
-    .select("status")
-    .eq("id", uid)
-    .single();
-  const subscriptionStatus = subData?.status ?? null;
-
-  // 日次制限チェック
-  const planLimits = PLAN_LIMITS[userDoc.plan];
-  const canScan = await canUserScan(supabase, uid, userDoc.plan, subscriptionStatus, userDoc.premiumExpiresAt);
-  if (!canScan) {
+  // 無料枠を原子的に予約する (Gemini 呼び出しの前)。
+  // C-4: 読み取り→Gemini呼び出し→加算という従来の構造では、読み取りと加算の間の
+  // 競合窓で同一ユーザーの同時リクエストが両方「まだ枠がある」と判定できてしまう。
+  // reserveUserScan は service_role 限定の RPC 経由で Premium 判定 (関数内部で
+  // 導出。checkIsPremium() と同一ロジック) と使用量加算を1トランザクションで
+  // 直列化するため、この競合窓が閉じる。失敗時は releaseUserScan で解放する。
+  const reserveResult = await reserveUserScan(uid);
+  if (!reserveResult.allowed) {
     return NextResponse.json<ApiErrorResponse>(
       { error: "今日の利用回数に達しました", code: "DAILY_LIMIT_EXCEEDED" },
       { status: 429 },
     );
   }
 
-  // Premium は maxSwimmers 制限なし
-  const isPremium = subscriptionStatus === "active" || subscriptionStatus === "trialing";
+  // Premium は maxSwimmers 制限なし。isPremium は reserveUserScan (checkIsPremium
+  // と同一ロジック) の判定結果を単一の情報源として使う。
+  const planLimits = PLAN_LIMITS[userDoc.plan];
+  const isPremium = reserveResult.isPremium;
   const maxSwimmers = isPremium ? null : planLimits.maxSwimmers;
 
-  const result = await performScan(body, maxSwimmers);
+  // 予約成功後のあらゆる離脱経路 (performScan 失敗・想定外の例外) で、原子的に
+  // 予約した枠を解放する。scanSucceeded は成功レスポンスを返す直前にのみ true に
+  // するため、finally はそれ以外の全ての return / throw で解放を実行する
+  // (supabase/functions/scan-timesheet/index.ts と同じ try/finally パターン)。
+  // released フラグで releaseUserScan の呼び出しを高々1回に限定する (二重解放は
+  // 実質的な無料枠拡大になるため避ける)。
+  let scanSucceeded = false;
+  let released = false;
+  const releaseReservation = async () => {
+    if (released) return;
+    released = true;
+    await releaseUserScan(uid);
+  };
 
-  // スキャン成功時のみ使用回数記録
-  if (result.status === 200) {
-    try {
-      await incrementScanCount(supabase, uid);
-      // Premium 以外はトークン消費ログを記録
+  try {
+    const result = await performScan(body, maxSwimmers);
+
+    if (result.status === 200) {
+      scanSucceeded = true;
+      // Premium 以外はトークン消費ログ (監査用) を記録する。使用量そのものは
+      // reserveUserScan が既に記録済みのため、このログ insert が失敗しても
+      // クォータ判定には影響しない (握りつぶさずログのみ残す)。
       if (!isPremium) {
-        await logTokenConsumption(supabase, uid, "scanner_scan");
+        try {
+          await logTokenConsumption(supabase, uid, "scanner_scan");
+        } catch (logError) {
+          console.error("token_consumption_log の記録に失敗しました:", logError);
+        }
       }
-    } catch (usageError) {
-      console.error("利用量記録に失敗しました:", usageError);
-      return NextResponse.json<ApiErrorResponse>(
-        { error: "利用状況の記録に失敗しました", code: "API_ERROR" },
-        { status: 500 },
-      );
+    }
+
+    return result;
+  } finally {
+    if (!scanSucceeded) {
+      await releaseReservation();
     }
   }
-
-  return result;
 }

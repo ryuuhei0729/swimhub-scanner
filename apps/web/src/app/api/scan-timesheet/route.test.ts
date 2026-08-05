@@ -1,25 +1,26 @@
-// QA Phase A/B: /api/scan-timesheet の C-2 (ゲストモード判定バイパス) 検証。
+// QA Phase B: /api/scan-timesheet の検証。
 //
-// Sprint Contract 対応:
-//   - Deliverable 5: 「ゲストか否か」の分岐を、内部でどの関数を呼ぶか (verifyAuth の
-//     呼び出し有無など) ではなく、「認証が実際に成立したか」という観測可能な結果
-//     (canUserScan/incrementScanCount が呼ばれる = 認証済み経路 / reserveGuestScan が
-//     呼ばれる = ゲスト経路) で判定できているかを検証する。
+// 対象:
+//   - C-2 (既存 QA 資産): 「ゲストか否か」の分岐が「認証が実際に成立したか」という
+//     観測可能な結果で判定されているか。
+//   - C-4 (今回追加): 無料枠の原子的予約 (reserveUserScan) → Gemini → 失敗時解放
+//     (releaseUserScan) という制御フローが「観測可能な振る舞い」として機能しているか。
+//     内部の呼び出し順序そのものを仕様として固定しない (呼ばれる/呼ばれない、
+//     202/429 等の結果、解放が高々1回であることのみを検証する)。
+//   - 監査ログ (logTokenConsumption) の insert 失敗が 200 を握りつぶす方向に働くかの確認。
 //
-// PM 実測・裁定 (2026-08-01, Phase A→B 間の修正指示):
+// PM 実測・裁定 (2026-08-01, Phase A→B 間の修正指示 - C-2 に関して):
 //   - web クライアントは Cookie 認証 (Authorization ヘッダー無し) が正規の認証方式
 //     (components/scanner/ScannerFlow.tsx / lib/api-helpers.ts の verifyAuth は
 //     Bearer が無ければ Cookie 認証にフォールバックする)。
 //   - よって「Authorization ヘッダーの有無」を信頼境界にする実装は誤り。
 //     本命の攻撃ケースは「有効なセッション Cookie を持つ (Authorization ヘッダーは
 //     無い) ユーザーが X-Guest-Mode: true を送った場合」であり、これが C-2 の中核。
-//   - このファイルは「verifyAuth が呼ばれたか」という内部呼び出し順序を一切
-//     アサートしない。verifyAuth (=認証解決) の結果をモックで作り込み、
-//     その結果に応じてどちらの経路 (認証済み/ゲスト) を通ったかだけを検証する。
 //
 // トートロジー回避: route.ts のロジックを再実装せず実ハンドラ (POST) を import し、
 // 依存 (verifyAuth / usage.ts / gemini client / cloudflare context / rate-limit) の
-// みを vi.mock で差し替える。
+// みを vi.mock で差し替える。内部呼び出し順序 (reserve→Gemini→release) は
+// アサートせず、観測可能な結果 (レスポンス status / 各関数が呼ばれた回数) のみを見る。
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
@@ -30,12 +31,12 @@ vi.mock("@/lib/api-helpers", () => ({
   ensureUserDocument: (...args: unknown[]) => ensureUserDocument(...args),
 }));
 
-const canUserScan = vi.fn();
-const incrementScanCount = vi.fn();
+const reserveUserScan = vi.fn();
+const releaseUserScan = vi.fn();
 const logTokenConsumption = vi.fn();
 vi.mock("@/lib/supabase/usage", () => ({
-  canUserScan: (...args: unknown[]) => canUserScan(...args),
-  incrementScanCount: (...args: unknown[]) => incrementScanCount(...args),
+  reserveUserScan: (...args: unknown[]) => reserveUserScan(...args),
+  releaseUserScan: (...args: unknown[]) => releaseUserScan(...args),
   logTokenConsumption: (...args: unknown[]) => logTokenConsumption(...args),
 }));
 
@@ -93,11 +94,7 @@ const UNAUTHENTICATED_RESULT = {
 function mockAuthenticatedSession(): void {
   const fakeSupabase = {
     from: vi.fn().mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({ data: { status: "active" }, error: null }),
-        }),
-      }),
+      insert: vi.fn().mockResolvedValue({ data: null, error: null }),
     }),
   };
   verifyAuth.mockResolvedValue({
@@ -123,15 +120,18 @@ beforeEach(() => {
     createdAt: new Date(),
     updatedAt: new Date(),
   });
-  canUserScan.mockResolvedValue(true);
+  reserveUserScan.mockResolvedValue({ allowed: true, isPremium: false, tokensUsed: 1 });
+  releaseUserScan.mockResolvedValue(undefined);
+  logTokenConsumption.mockResolvedValue(undefined);
   scanTimesheetWithGemini.mockResolvedValue(JSON.stringify(VALID_SCAN_RESULT));
   getClientIp.mockReturnValue("203.0.113.1");
   reserveGuestScan.mockResolvedValue({ allowed: true, remaining: 0 });
+  rollbackGuestScanCount.mockResolvedValue(undefined);
   getCloudflareContext.mockResolvedValue({ env: { RATE_LIMIT_KV: FAKE_KV } });
 });
 
 describe("POST /api/scan-timesheet — C-2: X-Guest-Mode ヘッダーだけでゲスト経路に落とせない", () => {
-  it("C-2 中核: 有効なセッション Cookie を持つユーザー (Authorization ヘッダーは無い) が X-Guest-Mode: true を送っても、認証済み経路 (canUserScan/incrementScanCount) を通り、ゲスト経路 (reserveGuestScan) を経由しない", async () => {
+  it("C-2 中核: 有効なセッション Cookie を持つユーザー (Authorization ヘッダーは無い) が X-Guest-Mode: true を送っても、認証済み経路 (reserveUserScan) を通り、ゲスト経路 (reserveGuestScan) を経由しない", async () => {
     // 認証は Cookie 経由で成立している想定 (mockAuthenticatedSession, beforeEach 既定)。
     // web クライアントの正規の認証方式であり Authorization ヘッダーは付与しない。
     await POST(
@@ -141,9 +141,7 @@ describe("POST /api/scan-timesheet — C-2: X-Guest-Mode ヘッダーだけで�
       }),
     );
 
-    expect(canUserScan).toHaveBeenCalled();
-    expect(canUserScan.mock.calls[0]?.[1]).toBe(AUTH_UID);
-    expect(incrementScanCount).toHaveBeenCalledWith(expect.anything(), AUTH_UID);
+    expect(reserveUserScan).toHaveBeenCalledWith(AUTH_UID);
 
     // ゲスト経路 (IPベースのレート制限のみ・日次利用量を一切消費しない経路) が
     // 使われていないことの確認。これが呼ばれてしまっている = 無料枠バイパス (C-2)。
@@ -160,14 +158,7 @@ describe("POST /api/scan-timesheet — C-2: X-Guest-Mode ヘッダーだけで�
       }),
     );
 
-    expect(canUserScan).toHaveBeenCalledWith(
-      expect.anything(),
-      AUTH_UID,
-      expect.anything(),
-      expect.anything(),
-      null, // ensureUserDocument モックの premiumExpiresAt は null が正当値
-    );
-    expect(incrementScanCount).toHaveBeenCalledWith(expect.anything(), AUTH_UID);
+    expect(reserveUserScan).toHaveBeenCalledWith(AUTH_UID);
     expect(reserveGuestScan).not.toHaveBeenCalled();
     expect(getCloudflareContext).not.toHaveBeenCalled();
   });
@@ -183,8 +174,7 @@ describe("POST /api/scan-timesheet — C-2: X-Guest-Mode ヘッダーだけで�
     );
 
     expect(reserveGuestScan).toHaveBeenCalled();
-    expect(canUserScan).not.toHaveBeenCalled();
-    expect(incrementScanCount).not.toHaveBeenCalled();
+    expect(reserveUserScan).not.toHaveBeenCalled();
   });
 
   it("境界値: Authorization ヘッダーはあるがトークンが無効 (認証不成立) な場合は、X-Guest-Mode: true ならゲスト経路にフォールバックできる", async () => {
@@ -199,7 +189,7 @@ describe("POST /api/scan-timesheet — C-2: X-Guest-Mode ヘッダーだけで�
     );
 
     expect(reserveGuestScan).toHaveBeenCalled();
-    expect(incrementScanCount).not.toHaveBeenCalled();
+    expect(reserveUserScan).not.toHaveBeenCalled();
   });
 
   it("回帰: X-Guest-Mode ヘッダーが無く、Cookie 認証が成立している通常リクエストは、これまで通り認証済み経路を通る", async () => {
@@ -209,8 +199,7 @@ describe("POST /api/scan-timesheet — C-2: X-Guest-Mode ヘッダーだけで�
       }),
     );
 
-    expect(canUserScan).toHaveBeenCalled();
-    expect(incrementScanCount).toHaveBeenCalledWith(expect.anything(), AUTH_UID);
+    expect(reserveUserScan).toHaveBeenCalledWith(AUTH_UID);
     expect(reserveGuestScan).not.toHaveBeenCalled();
   });
 
@@ -224,8 +213,102 @@ describe("POST /api/scan-timesheet — C-2: X-Guest-Mode ヘッダーだけで�
     );
 
     expect(res.status).toBe(401);
-    expect(canUserScan).not.toHaveBeenCalled();
-    expect(incrementScanCount).not.toHaveBeenCalled();
+    expect(reserveUserScan).not.toHaveBeenCalled();
     expect(reserveGuestScan).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/scan-timesheet — C-4: 認証済みユーザーの原子的予約→解放", () => {
+  it("予約が拒否された場合 (無料枠使い切り) は 429 を返し、Gemini を一切呼ばない", async () => {
+    reserveUserScan.mockResolvedValue({ allowed: false, isPremium: false, tokensUsed: 1 });
+
+    const res = await POST(makeRequest({ "Content-Type": "application/json" }));
+
+    expect(res.status).toBe(429);
+    expect(scanTimesheetWithGemini).not.toHaveBeenCalled();
+    expect(releaseUserScan).not.toHaveBeenCalled();
+  });
+
+  it("予約成功後に Gemini がエラーを返す (2回とも失敗) 場合、releaseUserScan がちょうど1回呼ばれる", async () => {
+    scanTimesheetWithGemini.mockRejectedValue(new Error("gemini down"));
+
+    const res = await POST(makeRequest({ "Content-Type": "application/json" }));
+
+    expect(res.status).toBe(500);
+    expect(releaseUserScan).toHaveBeenCalledTimes(1);
+    expect(releaseUserScan).toHaveBeenCalledWith(AUTH_UID);
+  });
+
+  it("予約成功後にスキャンが成功した場合、releaseUserScan は呼ばれない", async () => {
+    const res = await POST(makeRequest({ "Content-Type": "application/json" }));
+
+    expect(res.status).toBe(200);
+    expect(releaseUserScan).not.toHaveBeenCalled();
+  });
+
+  it("Premium ユーザー (isPremium=true) はスキャン成功時に監査ログ (logTokenConsumption) を記録しない", async () => {
+    reserveUserScan.mockResolvedValue({ allowed: true, isPremium: true, tokensUsed: 5 });
+
+    const res = await POST(makeRequest({ "Content-Type": "application/json" }));
+
+    expect(res.status).toBe(200);
+    expect(logTokenConsumption).not.toHaveBeenCalled();
+  });
+
+  it("Free ユーザーはスキャン成功時に監査ログ (logTokenConsumption) を記録する", async () => {
+    const res = await POST(makeRequest({ "Content-Type": "application/json" }));
+
+    expect(res.status).toBe(200);
+    expect(logTokenConsumption).toHaveBeenCalledWith(expect.anything(), AUTH_UID, "scanner_scan");
+  });
+
+  it("監査ログ (logTokenConsumption) の insert が失敗しても、ユーザーには 200 が返る (Gemini 費用を払った結果を握りつぶさない)", async () => {
+    logTokenConsumption.mockRejectedValue(new Error("insert failed"));
+
+    const res = await POST(makeRequest({ "Content-Type": "application/json" }));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body).toEqual(VALID_SCAN_RESULT);
+    // 予約自体は成功しているため、失敗した監査ログのために解放してはならない
+    expect(releaseUserScan).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/scan-timesheet — C-3: ゲスト経路の原子的予約→解放 (回帰)", () => {
+  it("予約が拒否された場合 (ゲスト上限到達) は 429 を返し、Gemini を一切呼ばない", async () => {
+    verifyAuth.mockResolvedValue(UNAUTHENTICATED_RESULT);
+    reserveGuestScan.mockResolvedValue({ allowed: false, remaining: 0 });
+
+    const res = await POST(
+      makeRequest({ "Content-Type": "application/json", "X-Guest-Mode": "true" }),
+    );
+
+    expect(res.status).toBe(429);
+    expect(scanTimesheetWithGemini).not.toHaveBeenCalled();
+    expect(rollbackGuestScanCount).not.toHaveBeenCalled();
+  });
+
+  it("予約成功後に Gemini が失敗した場合、rollbackGuestScanCount がちょうど1回呼ばれる", async () => {
+    verifyAuth.mockResolvedValue(UNAUTHENTICATED_RESULT);
+    scanTimesheetWithGemini.mockRejectedValue(new Error("gemini down"));
+
+    const res = await POST(
+      makeRequest({ "Content-Type": "application/json", "X-Guest-Mode": "true" }),
+    );
+
+    expect(res.status).toBe(500);
+    expect(rollbackGuestScanCount).toHaveBeenCalledTimes(1);
+  });
+
+  it("予約成功後にスキャンが成功した場合、rollbackGuestScanCount は呼ばれない", async () => {
+    verifyAuth.mockResolvedValue(UNAUTHENTICATED_RESULT);
+
+    const res = await POST(
+      makeRequest({ "Content-Type": "application/json", "X-Guest-Mode": "true" }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(rollbackGuestScanCount).not.toHaveBeenCalled();
   });
 });
