@@ -53,9 +53,7 @@ describe("GET /api/auth/callback (scanner) — token_hash フロー (verifyOtp)"
   );
 
   it("未知の type (invite) は verifyOtp を呼ばずに invalid_request へ", async () => {
-    const res = await GET(
-      makeRequest(`${ORIGIN}/api/auth/callback?token_hash=abc123&type=invite`),
-    );
+    const res = await GET(makeRequest(`${ORIGIN}/api/auth/callback?token_hash=abc123&type=invite`));
     expect(verifyOtp).not.toHaveBeenCalled();
     expect(location(res)).toBe(`${ORIGIN}/ja/login?error=invalid_request`);
   });
@@ -86,9 +84,7 @@ describe("GET /api/auth/callback (scanner) — token_hash フロー (verifyOtp)"
 
   it("verifyOtp 成功でも session が無い場合は session_creation_failed へ", async () => {
     verifyOtp.mockResolvedValue({ data: { session: null }, error: null });
-    const res = await GET(
-      makeRequest(`${ORIGIN}/api/auth/callback?token_hash=abc123&type=signup`),
-    );
+    const res = await GET(makeRequest(`${ORIGIN}/api/auth/callback?token_hash=abc123&type=signup`));
     expect(location(res)).toBe(`${ORIGIN}/ja/login?error=session_creation_failed`);
   });
 
@@ -127,7 +123,10 @@ describe("GET /api/auth/callback (scanner) — V-07: token_hash と code が両�
 
 describe("GET /api/auth/callback (scanner) — code フロー (V-04: 既存 OAuth 回帰)", () => {
   it("token_hash が無く code のみの場合は exchangeCodeForSession が呼ばれ / へ", async () => {
-    exchangeCodeForSession.mockResolvedValue({ error: null });
+    exchangeCodeForSession.mockResolvedValue({
+      data: { session: { access_token: "mock-access-token" } },
+      error: null,
+    });
     const res = await GET(makeRequest(`${ORIGIN}/api/auth/callback?code=pkce-code`));
     expect(verifyOtp).not.toHaveBeenCalled();
     expect(exchangeCodeForSession).toHaveBeenCalledWith("pkce-code");
@@ -135,7 +134,10 @@ describe("GET /api/auth/callback (scanner) — code フロー (V-04: 既存 OAut
   });
 
   it("境界値: token_hash が空文字なら code 分岐にフォールバックする", async () => {
-    exchangeCodeForSession.mockResolvedValue({ error: null });
+    exchangeCodeForSession.mockResolvedValue({
+      data: { session: { access_token: "mock-access-token" } },
+      error: null,
+    });
     const res = await GET(makeRequest(`${ORIGIN}/api/auth/callback?token_hash=&code=pkce-code`));
     expect(verifyOtp).not.toHaveBeenCalled();
     expect(exchangeCodeForSession).toHaveBeenCalledWith("pkce-code");

@@ -3,8 +3,8 @@
  * タスク 1: scanner mobile paywall のゲストガード
  *
  * NOTE: このファイルはスケルトンのみ。
- * - 両モバイルアプリには Jest/Vitest が未セットアップのため、
- *   Phase B で Developer がテスト基盤を追加したのち実装する。
+ * - jest-expo は導入済み。中身は未実装なので it.todo で意図のみ宣言している
+ *   (空ボディの it() は常に green になり偽陽性になるため使わない)。
  * - React Native Testing Library (@testing-library/react-native) を想定。
  */
 
@@ -41,43 +41,35 @@
 
 describe("PaywallScreen (scanner) - ゲストガード", () => {
   describe("ゲスト状態 (isGuest === true)", () => {
-    it("should NOT render purchase button when isGuest is true", () => {
-      // [V-01] ゲスト時に購入ボタンが表示されないこと
-    });
+    // [V-01] ゲスト時に購入ボタンが表示されないこと
+    it.todo("should NOT render purchase button when isGuest is true");
 
-    it("should render login CTA when isGuest is true", () => {
-      // [V-02] ゲスト時にログイン CTA が表示されること
-    });
+    // [V-02] ゲスト時にログイン CTA が表示されること
+    it.todo("should render login CTA when isGuest is true");
 
-    it("should navigate to /(auth)/login-method when login CTA is pressed", () => {
-      // [V-03] ログイン CTA タップで /(auth)/login-method に遷移すること
-      // scanner は login-method へ遷移 (timer の get-started と異なる点)
-    });
+    // [V-03] ログイン CTA タップで /(auth)/login-method に遷移すること
+    // scanner は login-method へ遷移 (timer の get-started と異なる点)
+    it.todo("should navigate to /(auth)/login-method when login CTA is pressed");
 
-    it("should NOT call purchasePackage even if handlePurchase is triggered directly", () => {
-      // [V-04] handlePurchase の防御ガードが機能すること
-    });
+    // [V-04] handlePurchase の防御ガードが機能すること
+    it.todo("should NOT call purchasePackage even if handlePurchase is triggered directly");
   });
 
   describe("未認証・非ゲスト状態 (!isAuthenticated && !isGuest)", () => {
-    it("should NOT render purchase button", () => {
-      // [V-05] 認証状態が不明な場合も購入ボタンを表示しないこと
-    });
+    // [V-05] 認証状態が不明な場合も購入ボタンを表示しないこと
+    it.todo("should NOT render purchase button");
   });
 
   describe("Free ユーザー状態", () => {
-    it("should render purchase button for authenticated free user", () => {
-      // [V-06] Free ユーザーには購入ボタンが表示されること (回帰確認)
-    });
+    // [V-06] Free ユーザーには購入ボタンが表示されること (回帰確認)
+    it.todo("should render purchase button for authenticated free user");
 
-    it("should NOT render login CTA for authenticated user", () => {
-      // [V-07] 認証済みユーザーにはログイン CTA が表示されないこと
-    });
+    // [V-07] 認証済みユーザーにはログイン CTA が表示されないこと
+    it.todo("should NOT render login CTA for authenticated user");
   });
 
   describe("Premium ユーザー状態", () => {
-    it("should render already-premium message and NOT render purchase button", () => {
-      // [V-08] Premium ユーザーには購入ボタンが表示されないこと
-    });
+    // [V-08] Premium ユーザーには購入ボタンが表示されないこと
+    it.todo("should render already-premium message and NOT render purchase button");
   });
 });

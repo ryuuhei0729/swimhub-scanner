@@ -27,6 +27,17 @@ export default [
     },
   },
   {
+    // Test infra (jest.setup.js, __tests__/**) is the first real (non-skeleton) code to
+    // use live jest.* globals in this app; without this the `jest`/`describe`/`it` globals
+    // trip `no-undef` for any test that isn't just commented-out scaffolding.
+    files: ["jest.setup.js", "jest.config.js", "__tests__/**/*.{ts,tsx}"],
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+      },
+    },
+  },
+  {
     ignores: ["node_modules/", ".expo/", "ios/", "android/"],
   },
 ];

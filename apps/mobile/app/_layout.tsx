@@ -12,6 +12,7 @@ import { ChakraPetch_700Bold } from "@expo-google-fonts/chakra-petch";
 import { AuthProvider, useAuth } from "../contexts/AuthProvider";
 import { supabase } from "../lib/supabase";
 import { extractDeepLinkError, extractTokenHash } from "../lib/auth-deep-link";
+import { claimOAuthCode } from "../lib/google-auth";
 import { colors, fontSize } from "../theme";
 
 // ChakraPetch_700Bold is preloaded for the brand wordmark (see MEMORY: brand font unification).
@@ -26,9 +27,7 @@ function SupabaseErrorScreen() {
   return (
     <View style={styles.errorContainer}>
       <Text style={styles.errorTitle}>{t("settings.configError")}</Text>
-      <Text style={styles.errorMessage}>
-        {t("settings.configErrorMessage")}
-      </Text>
+      <Text style={styles.errorMessage}>{t("settings.configErrorMessage")}</Text>
     </View>
   );
 }
@@ -85,7 +84,16 @@ function AuthGate() {
       redirectDone.current = true;
       router.replace("/(app)");
     }
-  }, [user, isAuthenticated, isGuest, loading, transitioning, pendingRecoveryCheck, segments, router]);
+  }, [
+    user,
+    isAuthenticated,
+    isGuest,
+    loading,
+    transitioning,
+    pendingRecoveryCheck,
+    segments,
+    router,
+  ]);
 
   // メール確認・パスワードリセット・Google OAuth など、Supabase/OAuth プロバイダから
   // 戻ってくる deep link を処理する。
@@ -97,15 +105,22 @@ function AuthGate() {
   // 種別は URL のパスマーカーで判別する（旧実装は exchangeCodeForSession の戻り値の
   // `redirectType` に依存していたが、公開の型定義に無いランタイム専用フィールドの
   // cast 読み取りであり supabase-js の更新で壊れうるため廃止）:
-  //   - `swimhub-scanner://auth/callback` … Google OAuth のコールバック
-  //     （useGoogleAuth 側の WebBrowser.openAuthSessionAsync が直接処理するため、
-  //     ここでは無視する。Android では同じ URL がこのグローバルハンドラにも届き、
-  //     処理すると同一 code を二重に交換して偽のエラー Alert が出てしまう）
+  //   - `swimhub-scanner://auth/callback` … Google OAuth のコールバック。
+  //     通常は useGoogleAuth 側の WebBrowser.openAuthSessionAsync が直接処理する
+  //     ため、ここでは何もしない。ただしこのグローバルハンドラは同じ URL の
+  //     安全網でもある: Android で Custom Tabs 復帰が新規 Intent になった場合や、
+  //     ブラウザ表示中にアプリプロセスが kill されコールドスタートした場合、
+  //     openAuthSessionAsync が URL を返さずに解決してしまい useGoogleAuth 側の
+  //     処理が発火しないことがある。この安全網が無いとサインインが無症状に
+  //     失敗し、ユーザーに復旧手段が無くなる。同一 code が両経路 (useGoogleAuth
+  //     と本ハンドラ) に届いても、共有パッケージの claimOAuthCode が「最初に
+  //     処理した側だけが交換する」ことを保証するため、二重交換は起きない
+  //     (詳細は claimOAuthCode.ts のコメント参照)。
   //   - `swimhub-scanner://reset-password` … パスワードリセット (recovery)。
   //     token_hash 形式の場合は type=recovery でも判別できる
   //   - それ以外（`swimhub-scanner://` 単体など）… メール確認 (signUp) 由来
   const handleAuthDeepLink = useCallback(
-    async (url: string | null) => {
+    async (url: string | null, isColdStart: boolean = false) => {
       if (!url || !supabase) return;
 
       // expo-linking の parse は独自スキームを authority ベースで解釈するため、
@@ -113,11 +128,52 @@ function AuthGate() {
       // `scheme://reset-password` は hostname:"reset-password" / path:null になる。
       const { hostname, path, queryParams } = Linking.parse(url);
 
-      // Google OAuth コールバックは useGoogleAuth 側が処理するため、code の有無や
-      // エラー情報（キャンセル時の error=access_denied 等）に関わらずここでは無視する
+      // Google OAuth コールバックは通常 useGoogleAuth 側が処理するため、
+      // エラー情報（キャンセル時の error=access_denied 等）はここでは無視する
       // （エラー Alert の重複・誤表示防止）。エラー抽出より先に判定すること。
       const isOAuthCallback = hostname === "auth" && path === "callback";
       if (isOAuthCallback) {
+        const code = queryParams?.code;
+        if (typeof code !== "string" || code.length === 0) return;
+
+        // useGoogleAuth (warm path) が既にこの code を claim 済みなら claimed:false
+        // になる。その場合は「他所が処理中/処理済み」なのでここでは何もしない
+        // （二重交換・二重エラー表示の防止）。
+        const claim = claimOAuthCode(code);
+        if (!claim.claimed) return;
+
+        // claim に勝った = warm path が既に諦めた後にこの安全網だけが code を
+        // 見ている、という状況。session の有無まで確認する (error が無くても
+        // session が無いケースを失敗として扱わないと、claim の勝敗で挙動が
+        // 非対称になる)。
+        //
+        // 失敗時の通知は isColdStart (このハンドラが getInitialURL 経由=アプリ
+        // 起動時に呼ばれたか) で分岐する:
+        //   - warm (addEventListener 経由): useGoogleAuth の JS コンテキストが
+        //     生きており、warm path 側が既にエラー表示済みのはずなので通知しない
+        //     (通知すると宛先を失ったエラー表示が二重に出てしまう)。
+        //   - cold start (getInitialURL 経由): ブラウザ表示中にアプリが kill
+        //     されていた場合、warm path の JS コンテキストごと失われている。
+        //     無言で失敗するとユーザーは理由も分からずログイン画面に取り残される
+        //     ため、token_hash 経路と同じ方法で通知する。
+        // 失敗時も必ず claim.resolve を呼ぶこと（呼ばないと、この code の結果を
+        // 待っている負けた側が永久にハングする）。
+        try {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error || !data.session) {
+            claim.resolve({ success: false });
+            if (isColdStart) {
+              Alert.alert(t("common.error"), t("auth.errors.deepLinkFailed"));
+            }
+            return;
+          }
+          claim.resolve({ success: true });
+        } catch {
+          claim.resolve({ success: false });
+          if (isColdStart) {
+            Alert.alert(t("common.error"), t("auth.errors.deepLinkFailed"));
+          }
+        }
         return;
       }
 
@@ -196,12 +252,15 @@ function AuthGate() {
     [router, t, setPendingRecoveryCheck],
   );
 
-  // メール確認リンクなどで、アプリが起動していない状態から開かれた場合
+  // メール確認リンクなどで、アプリが起動していない状態から開かれた場合 (cold start)。
+  // isColdStart=true を渡し、OAuth コールバック安全網が失敗時にユーザーへ通知できるようにする
+  // (warm path の JS コンテキストが存在しないため)。
   useEffect(() => {
-    Linking.getInitialURL().then(handleAuthDeepLink);
+    Linking.getInitialURL().then((url) => handleAuthDeepLink(url, true));
   }, [handleAuthDeepLink]);
 
-  // アプリがバックグラウンド/フォアグラウンドの状態で deep link を受け取った場合
+  // アプリがバックグラウンド/フォアグラウンドの状態で deep link を受け取った場合 (warm)。
+  // isColdStart=false (既定) のままにし、warm path 側の既存のエラー表示との二重通知を防ぐ。
   useEffect(() => {
     const subscription = Linking.addEventListener("url", ({ url }) => {
       handleAuthDeepLink(url);
