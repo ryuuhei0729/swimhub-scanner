@@ -78,13 +78,9 @@ export async function DELETE(request: NextRequest) {
   try {
     const adminClient = createAdminClient();
 
-    // Delete user's usage data
-    await adminClient.from("app_daily_usage").delete().eq("user_id", uid);
-
-    // Delete user's subscription data
-    await adminClient.from("user_subscriptions").delete().eq("id", uid);
-
-    // ストレージ（画像・動画）削除。失敗したら中断し、孤児ストレージを防ぐ
+    // ストレージ（画像・動画）削除。失敗したら中断し、孤児ストレージを防ぐ。
+    // DB レコード削除より先に行う: 逆順だとストレージ削除の失敗時に
+    // 利用状況・購読データだけが失われ、アカウントは残るという不整合な状態になる。
     const storageResult = await invokeDeleteUserStorageWithRetry(adminClient, uid);
     if (!storageResult.success) {
       console.error("Storage deletion error (failed after retries):", storageResult.errors);
@@ -93,6 +89,12 @@ export async function DELETE(request: NextRequest) {
         { status: 500 },
       );
     }
+
+    // Delete user's usage data
+    await adminClient.from("app_daily_usage").delete().eq("user_id", uid);
+
+    // Delete user's subscription data
+    await adminClient.from("user_subscriptions").delete().eq("id", uid);
 
     // Delete the Supabase auth user
     const { error: deleteError } = await adminClient.auth.admin.deleteUser(uid);

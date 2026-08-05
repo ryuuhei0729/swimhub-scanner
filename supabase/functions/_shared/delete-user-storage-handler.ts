@@ -161,6 +161,7 @@ async function listAllR2Keys(
 ): Promise<string[]> {
   const allKeys: string[] = [];
   let continuationToken: string | null = null;
+  const seenContinuationTokens = new Set<string>();
 
   do {
     const url = new URL(`${endpoint}/${bucket}`);
@@ -181,6 +182,17 @@ async function listAllR2Keys(
     const { keys, isTruncated, nextContinuationToken } = parseListObjectsV2Xml(xml);
     allKeys.push(...keys);
     continuationToken = isTruncated ? nextContinuationToken : null;
+
+    // R2/中間層が同じ continuation token を繰り返し返すと do...while が終了せず
+    // Edge Function が応答不能になる。既出トークンを検出したら fail-closed で中断する。
+    if (continuationToken) {
+      if (seenContinuationTokens.has(continuationToken)) {
+        throw new Error(
+          `R2 ListObjectsV2 returned a repeated continuation token for bucket ${bucket} (prefix=${prefix})`,
+        );
+      }
+      seenContinuationTokens.add(continuationToken);
+    }
   } while (continuationToken);
 
   return allKeys;
@@ -247,9 +259,24 @@ function getR2Config(): R2ConfigResult {
   const accessKeyId = Deno.env.get("R2_ACCESS_KEY_ID");
   const secretAccessKey = Deno.env.get("R2_SECRET_ACCESS_KEY");
 
-  // 認証情報が一つも無ければ「R2 未使用環境」と判断し、Storage フォールバックに委ねる。
-  if (!accountId || !accessKeyId || !secretAccessKey) {
+  // 3つとも未設定なら「R2 未使用環境」と判断し、Storage フォールバックに委ねる。
+  if (!accountId && !accessKeyId && !secretAccessKey) {
     return { status: "not-configured" };
+  }
+
+  // 1つ・2つだけ設定されている状態は、設定漏れ・タイポによる部分設定である可能性が高い。
+  // これを「未使用環境」として Storage フォールバックに倒すと、R2 を実際に使う環境で
+  // R2 のオブジェクトが一切削除されないまま success:true を返すサイレント成功になる。
+  if (!accountId || !accessKeyId || !secretAccessKey) {
+    const missing = [
+      !accountId && "R2_ACCOUNT_ID",
+      !accessKeyId && "R2_ACCESS_KEY_ID",
+      !secretAccessKey && "R2_SECRET_ACCESS_KEY",
+    ].filter((v): v is string => Boolean(v));
+    return {
+      status: "misconfigured",
+      reason: `R2 credentials are partially configured (missing: ${missing.join(", ")}). Aborting instead of silently falling back to Storage.`,
+    };
   }
 
   // 画像バケット名は apps/web/lib/r2.ts の getImageBucketName() と同じ規約でデフォルト値を

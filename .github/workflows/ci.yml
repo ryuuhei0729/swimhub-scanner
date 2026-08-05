@@ -71,6 +71,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      # pnpm-workspace.yaml を検出した Deno は npm 互換モードで @types/node を
+      # node_modules から解決しようとするため、事前に依存関係をインストールしておく必要がある。
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       # ローカル検証で使用したバージョンとCIで揃えることで、
       # 「ローカルでは通るがCIでは挙動が違う」ドリフトを防ぐ。
       - name: Setup Deno

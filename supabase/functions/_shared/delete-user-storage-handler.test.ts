@@ -704,7 +704,7 @@ Deno.test("4-3: 一部プレフィックスのみ list 失敗した場合でも�
     onList: (url) => {
       const prefix = url.searchParams.get("prefix");
       if (prefix === failingPrefix) {
-        return new Response("server error", { status: 500 === 500 ? 404 : 404 });
+        return new Response("server error", { status: 404 });
       }
       if (prefix === okPrefix) {
         return new Response(buildListXml(["profile-images/userA/ok.jpg"]), { status: 200 });
