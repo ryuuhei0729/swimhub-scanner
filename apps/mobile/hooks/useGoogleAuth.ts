@@ -4,7 +4,7 @@
  */
 import { useState, useCallback } from "react";
 import * as WebBrowser from "expo-web-browser";
-import { getRedirectUri, extractTokensFromUrl } from "@/lib/google-auth";
+import { signInWithGoogle as sharedSignInWithGoogle, APP_SCHEME } from "@/lib/google-auth";
 import { supabase } from "@/lib/supabase";
 import { localizeSupabaseAuthError } from "@/utils/authErrorLocalizer";
 import i18n from "@/lib/i18n";
@@ -23,6 +23,42 @@ export interface UseGoogleAuthReturn {
   clearError: () => void;
 }
 
+/**
+ * 共有パッケージ (@ryuuhei0729/swimhub-oauth) はローカライズ済み文字列を返さず、
+ * 機械可読な固定コードを Error.message に入れて返す。まずこの表で完全一致を
+ * 試み (移行前と同じ文言を出すため、8コードそれぞれを移行前の分岐が使っていた
+ * キーに対応させている)、一致しない場合 (Supabase の生エラーメッセージ等、
+ * utils/authErrorLocalizer.ts の部分一致ロジックの対象) のみフォールバックする。
+ *
+ * - url_not_received  … 旧: signInWithOAuth 成功時に data.url が無い場合の
+ *                        "auth.errors.oauthUrlFailed"
+ * - auth_cancelled    … 旧: result.type === "cancel" の "auth.errors.cancelled"
+ * - auth_dismissed    … 旧: result.type === "dismiss" の "auth.errors.authDismissed"
+ *                        (auth_dismissed は authErrorLocalizer の部分一致に
+ *                        ヒットしないため、ここに無いと文言が変わってしまう)
+ * - auth_failed       … 旧: 上記いずれでもない result.type の "auth.errors.authFailed"
+ * - invalid_url       … 旧: extractTokensFromUrl の URL parse 失敗時の
+ *                        "auth.errors.urlParseFailed"
+ * - code_exchange_failed … claimOAuthCode で負けた側が、勝った側の交換失敗を
+ *                        検知した場合 (移行前は dedup 自体が無く該当なし)。
+ *                        汎用の "auth.errors.oauthError" を割り当てる
+ * - session_not_received … exchangeCodeForSession/setSession がエラー無しで
+ *                        session を返さなかった場合 (移行前は session 有無を
+ *                        見ておらず該当なし)。"auth.errors.sessionNotFound" を割り当てる
+ * - tokens_not_received  … 旧: code も access/refresh token も無かった場合の
+ *                        "auth.errors.tokenMissing"
+ */
+const ERROR_CODE_I18N_KEY: Readonly<Record<string, string>> = {
+  url_not_received: "auth.errors.oauthUrlFailed",
+  auth_cancelled: "auth.errors.cancelled",
+  auth_dismissed: "auth.errors.authDismissed",
+  auth_failed: "auth.errors.authFailed",
+  invalid_url: "auth.errors.urlParseFailed",
+  code_exchange_failed: "auth.errors.oauthError",
+  session_not_received: "auth.errors.sessionNotFound",
+  tokens_not_received: "auth.errors.tokenMissing",
+};
+
 export const useGoogleAuth = (): UseGoogleAuthReturn => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,89 +74,41 @@ export const useGoogleAuth = (): UseGoogleAuthReturn => {
     setError(null);
 
     try {
-      const redirectUri = getRedirectUri();
-
-      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: redirectUri,
-          scopes: "openid email profile",
-          skipBrowserRedirect: true,
-        },
+      // loading 状態管理と i18n ローカライズ以外のロジック (PKCE 交換・
+      // claimOAuthCode による二重処理ガード・implicit フォールバック等) は
+      // 全て共有パッケージ側の責務。signInWithGoogle は内部で例外を投げず、
+      // 常に {success, error?} で解決する契約になっている。
+      const result = await sharedSignInWithGoogle({
+        supabase,
+        scheme: APP_SCHEME,
+        // preferEphemeralSession を落とすと Cookie 分離の挙動が変わるため、
+        // 移行前と同じ値を browserOptions として引き継ぐ。
+        browserOptions: { preferEphemeralSession: true },
       });
 
-      if (oauthError || !data.url) {
-        const errorMessage = oauthError
-          ? localizeSupabaseAuthError(oauthError)
-          : i18n.t("auth.errors.oauthUrlFailed");
-        setError(errorMessage);
-        return { success: false, error: oauthError || new Error(errorMessage) };
+      if (!result.success) {
+        const code = result.error?.message ?? "";
+        const i18nKey = ERROR_CODE_I18N_KEY[code];
+        const localizedMessage = i18nKey
+          ? i18n.t(i18nKey, { defaultValue: i18nKey })
+          : localizeSupabaseAuthError({ message: code });
+        setError(localizedMessage);
+        return { success: false, error: result.error ?? new Error(localizedMessage) };
       }
 
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri, {
-        preferEphemeralSession: true,
-      });
-
-      if (result.type === "success" && result.url) {
-        const tokens = extractTokensFromUrl(result.url);
-
-        if (tokens.error) {
-          setError(tokens.error);
-          return { success: false, error: new Error(tokens.error) };
-        }
-
-        // Supabase クライアントは flowType: "pkce" で構成されているため、
-        // コールバックは通常クエリパラメータ `?code=...` で返る。
-        // まずこちらを優先して exchangeCodeForSession でセッションを確立する。
-        if (tokens.code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(
-            tokens.code,
-          );
-
-          if (exchangeError) {
-            setError(localizeSupabaseAuthError(exchangeError));
-            return { success: false, error: exchangeError };
-          }
-
-          return { success: true };
-        }
-
-        // フォールバック: implicit flow (#access_token=...) で返ってきた場合
-        if (tokens.accessToken && tokens.refreshToken) {
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token: tokens.accessToken,
-            refresh_token: tokens.refreshToken,
-          });
-
-          if (sessionError) {
-            setError(localizeSupabaseAuthError(sessionError));
-            return { success: false, error: sessionError };
-          }
-
-          return { success: true };
-        }
-
-        setError(i18n.t("auth.errors.tokenMissing"));
-        return { success: false, error: new Error(i18n.t("auth.errors.tokenMissing")) };
-      }
-
-      if (result.type === "cancel") {
-        setError(i18n.t("auth.errors.cancelled"));
-        return { success: false, error: new Error(i18n.t("auth.errors.cancelled")) };
-      }
-
-      if (result.type === "dismiss") {
-        setError(i18n.t("auth.errors.authDismissed"));
-        return { success: false, error: new Error(i18n.t("auth.errors.authDismissed")) };
-      }
-
-      setError(i18n.t("auth.errors.authFailed"));
-      return { success: false, error: new Error(i18n.t("auth.errors.authFailed")) };
-    } catch (err) {
-      const rawMessage = err instanceof Error ? err.message : i18n.t("auth.errors.unknown");
+      return { success: true };
+    } catch (unexpectedException) {
+      // 保険: signInWithGoogle は「内部で例外を投げず常に {success, error?} で
+      // 解決する」契約 (上のコメント参照) だが、将来のマイナーバージョン更新で
+      // この契約が破られた場合の唯一の防御層として薄い try/catch を残す。
+      const rawMessage =
+        unexpectedException instanceof Error ? unexpectedException.message : i18n.t("auth.errors.unknown");
       const localizedMessage = localizeSupabaseAuthError({ message: rawMessage });
       setError(localizedMessage);
-      return { success: false, error: err instanceof Error ? err : new Error(rawMessage) };
+      return {
+        success: false,
+        error: unexpectedException instanceof Error ? unexpectedException : new Error(rawMessage),
+      };
     } finally {
       setLoading(false);
     }
