@@ -120,14 +120,22 @@ jobs:
 
       # キャッシュミス時のみ CDN を叩く。ダウンロードだけをリトライ対象にすることで、
       # 「CDN の一時障害」は再試行し「テストの失敗」は再試行しない (flaky test を隠さない)。
+      #
+      # 対象はテスト対象グラフだけでなく supabase/functions/ 配下の全 .ts。
+      # deno.lock はデプロイされる Edge Function 全体の依存を固定すべきものであり、
+      # ここで --frozen を全ファイルに掛けることで「lock に無い依存が追加された」状態を
+      # CI で検知できる (以前は lock がテスト対象グラフしかカバーしていなかった)。
       - name: Warm Deno module cache
-        if: ${{ hashFiles('supabase/functions/**/*.test.ts', 'supabase/functions/**/*_test.ts') != '' }}
         run: |
-          test_files=()
-          while IFS= read -r f; do test_files+=("$f"); done \
-            < <(find supabase/functions \( -name '*.test.ts' -o -name '*_test.ts' \))
+          fn_files=()
+          while IFS= read -r f; do fn_files+=("$f"); done \
+            < <(find supabase/functions -name '*.ts' | sort)
+          if [ ${#fn_files[@]} -eq 0 ]; then
+            echo "supabase/functions 配下に .ts が無いためスキップ"
+            exit 0
+          fi
           for attempt in 1 2 3; do
-            if deno cache --frozen "${test_files[@]}"; then
+            if deno cache --frozen "${fn_files[@]}"; then
               exit 0
             fi
             echo "::warning::deno cache failed (attempt ${attempt}/3)"
