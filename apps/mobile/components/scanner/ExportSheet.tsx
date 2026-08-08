@@ -12,18 +12,9 @@ import {
   fastestTime,
   slowestTime,
   formatCircleTime,
+  escapeCsvValue,
 } from "@swimhub-scanner/shared";
 import { colors, spacing, radius, fontSize } from "@/theme";
-
-/**
- * CSV セルとして安全な文字列に変換する。
- * - ダブルクォートは `""` にエスケープする
- * - 表計算ソフトが数式と誤認する先頭文字（=+-@）にはシングルクォートを付与する（CSVインジェクション対策）
- */
-const escapeCsvValue = (value: string): string => {
-  const guarded = /^[=+\-@]/.test(value) ? `'${value}` : value;
-  return `"${guarded.replace(/"/g, '""')}"`;
-};
 
 const getDateString = () => {
   const now = new Date();

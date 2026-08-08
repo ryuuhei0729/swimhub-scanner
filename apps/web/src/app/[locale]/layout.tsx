@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Noto_Sans_JP, Noto_Sans_KR, Noto_Sans_SC, Chakra_Petch } from "next/font/google";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { I18nProvider } from "@/components/I18nProvider";
@@ -129,6 +130,10 @@ export default async function LocaleLayout({
 
   const t = i18nResources[locale].translation;
 
+  // CSP nonce (middleware.ts で生成 → リクエストヘッダーに載せて伝播)。
+  // JSON-LD の inline <script> をこの nonce で許可する ('unsafe-inline' は使わない)
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
@@ -153,7 +158,9 @@ export default async function LocaleLayout({
         <I18nProvider locale={locale}>
           <AuthProvider>
             <KeyboardScrollProvider>
-              <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+              <script type="application/ld+json" nonce={nonce}>
+                {JSON.stringify(jsonLd)}
+              </script>
               {children}
             </KeyboardScrollProvider>
           </AuthProvider>
