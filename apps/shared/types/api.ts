@@ -1,5 +1,5 @@
-import type { SubscriptionStatus } from "./auth";
-export type { SubscriptionStatus } from "./auth";
+import type { SubscriptionStatus, UserPlan } from "./auth";
+export type { SubscriptionStatus, UserPlan } from "./auth";
 
 // === Scan Timesheet API ===
 
@@ -45,7 +45,7 @@ export interface ScanTimesheetResponse {
 // === User Status API ===
 
 export interface UserStatusResponse {
-  plan: PlanType;
+  plan: UserPlan;
   premiumExpiresAt: string | null; // ISO 8601
   todayScanCount: number;
   dailyLimit: number | null; // null = unlimited
@@ -71,5 +71,3 @@ export interface ApiErrorResponse {
   error: string;
   code: ErrorCode;
 }
-
-export type PlanType = "guest" | "free" | "premium";

@@ -9,6 +9,7 @@ import {
   slowestTime,
   formatTime,
   formatCircleTime,
+  escapeCsvValue,
 } from "@swimhub-scanner/shared";
 import { Button } from "@/components/ui/Button";
 import type { TFunction } from "i18next";
@@ -64,7 +65,10 @@ export function ExportButtons({ data }: ExportButtonsProps) {
     const bom = "\uFEFF"; // UTF-8 BOM for Excel compatibility
     const csvContent =
       bom +
-      [headers.join(","), ...rows.map((row) => row.map((v) => `"${v}"`).join(","))].join("\n");
+      [
+        headers.map((v) => escapeCsvValue(String(v))).join(","),
+        ...rows.map((row) => row.map((v) => escapeCsvValue(String(v))).join(",")),
+      ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);

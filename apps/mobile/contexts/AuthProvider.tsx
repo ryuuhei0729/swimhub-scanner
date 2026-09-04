@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from "react";
 import type { CustomerInfo } from "react-native-purchases";
-import { supabase } from "@/lib/supabase";
+import { supabase, clearMmkvCaches } from "@/lib/supabase";
 import { getGuestTodayCount, clearGuestUsage } from "@/lib/guest-daily-limit";
 import {
   initRevenueCat,
@@ -308,6 +308,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } finally {
       setSubscription(null);
+      clearMmkvCaches();
 
       try {
         const { useScanResultStore } = await import("@/stores/scanResultStore");

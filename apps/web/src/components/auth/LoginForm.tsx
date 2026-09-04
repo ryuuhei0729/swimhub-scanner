@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -438,7 +439,14 @@ function PasswordRequirementsList({
                 met ? "text-emerald-600" : "text-gray-500"
               }`}
             >
-              <span aria-hidden="true">{met ? "✓" : "○"}</span>
+              {met ? (
+                <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className="h-4 w-4 shrink-0 rounded-full border border-gray-300"
+                />
+              )}
               <span>{label}</span>
             </li>
           );

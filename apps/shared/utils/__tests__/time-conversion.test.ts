@@ -42,29 +42,37 @@ describe("rawStringToSeconds", () => {
   });
 });
 
+// NOTE (Sprint: GitHub Issue #13 種目略称/タイム表示統一, PM裁定 2026-09-01):
+//   formatTime は CLAUDE.md のタイム表示規約 (分:秒.コンマ秒=小数第2位) に合わせて
+//   1桁から2桁表示に変更された。ただし元データの実測精度が変わったわけではない。
+//   Gemini OCR (apps/web/src/lib/gemini/prompt.ts) が読み取る手書きタイムシートは
+//   1/10秒精度でしか記録されていないため、小数第2位は常に末尾0埋め
+//   (例: 36.4秒 → "36.40"。"36.4X" のような実測2桁精度の値は入力として来ない)。
+//   次にこのファイルを触る担当者は、2桁になったことを「精度が上がった」と
+//   誤解しないこと — これは表示桁数の統一であり、OCRの実測精度は1/10秒のまま。
 describe("formatTime", () => {
-  it("formats seconds under 60 with one decimal", () => {
-    expect(formatTime(36.4)).toBe("36.4");
+  it("formats seconds under 60 with two decimals (元精度は1/10秒、末尾0埋め)", () => {
+    expect(formatTime(36.4)).toBe("36.40");
   });
 
   it("formats zero seconds", () => {
-    expect(formatTime(0)).toBe("0.0");
+    expect(formatTime(0)).toBe("0.00");
   });
 
   it("formats seconds at 60 boundary", () => {
-    expect(formatTime(60)).toBe("1:00.0");
+    expect(formatTime(60)).toBe("1:00.00");
   });
 
   it("formats minutes with padded seconds", () => {
-    expect(formatTime(65.2)).toBe("1:05.2");
+    expect(formatTime(65.2)).toBe("1:05.20");
   });
 
   it("formats large times", () => {
-    expect(formatTime(125.3)).toBe("2:05.3");
+    expect(formatTime(125.3)).toBe("2:05.30");
   });
 
   it("formats fractional seconds under 10", () => {
-    expect(formatTime(5.1)).toBe("5.1");
+    expect(formatTime(5.1)).toBe("5.10");
   });
 });
 
