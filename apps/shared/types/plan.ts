@@ -1,4 +1,4 @@
-import type { PlanType } from "./api";
+import type { UserPlan } from "./auth";
 
 /** ゲストユーザーの初期トークン数 */
 export const GUEST_INITIAL_TOKENS = 3;
@@ -9,7 +9,7 @@ export interface PlanLimits {
   showAds: boolean;
 }
 
-export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
+export const PLAN_LIMITS: Record<UserPlan, PlanLimits> = {
   guest: {
     dailyScanLimit: 1,
     maxSwimmers: 6,
