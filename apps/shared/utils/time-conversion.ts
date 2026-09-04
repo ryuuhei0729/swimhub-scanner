@@ -11,15 +11,19 @@ export function rawStringToSeconds(rawStr: string): number | null {
 
 /**
  * Format seconds to display string.
- * e.g., 36.4 -> "36.4", 65.2 -> "1:05.2"
+ * e.g., 36.4 -> "36.40", 65.2 -> "1:05.20"
+ *
+ * CLAUDE.md の表示規約（分:秒.コンマ秒＝小数第2位）に合わせて2桁表示にしているが、
+ * 元データは Gemini OCR (apps/web/src/lib/gemini/prompt.ts) が読み取る手書き
+ * タイムシートの 1/10 秒精度でしかない。小数第2位は測定精度ではなくゼロ埋め。
  */
 export function formatTime(seconds: number): string {
   if (seconds < 60) {
-    return seconds.toFixed(1);
+    return seconds.toFixed(2);
   }
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
-  return `${mins}:${secs.toFixed(1).padStart(4, "0")}`;
+  return `${mins}:${secs.toFixed(2).padStart(5, "0")}`;
 }
 
 /**

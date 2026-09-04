@@ -3,7 +3,13 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import type { ScanTimesheetResponse, SwimmerResult, SwimStroke } from "@swimhub-scanner/shared";
-import { averageTime, fastestTime, slowestTime, formatCircleTime } from "@swimhub-scanner/shared";
+import {
+  averageTime,
+  fastestTime,
+  slowestTime,
+  formatCircleTime,
+  formatTime,
+} from "@swimhub-scanner/shared";
 import { Button } from "@/components/ui/Button";
 import type { TFunction } from "i18next";
 
@@ -328,14 +334,14 @@ export function ResultTable({ data, onDataChange }: ResultTableProps) {
                               setEditingCell({ swimmerIdx: sIdx, field: "time", timeIdx: tIdx })
                             }
                           >
-                            {time !== null ? time.toFixed(1) : "-"}
+                            {time !== null ? formatTime(time) : "-"}
                           </span>
                         )}
                       </td>
                     );
                   })}
                   <td className="border-l px-2 py-2 text-center tabular-nums font-medium">
-                    {avg !== null ? avg.toFixed(1) : "-"}
+                    {avg !== null ? formatTime(avg) : "-"}
                   </td>
                   <td className="px-1 py-2 text-center">
                     <button

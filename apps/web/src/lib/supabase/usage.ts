@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getTodayJST } from "@swimhub-scanner/shared/utils";
 import { PLAN_LIMITS } from "@swimhub-scanner/shared/types";
-import type { PlanType, SubscriptionStatus } from "@swimhub-scanner/shared/types/api";
+import type { UserPlan, SubscriptionStatus } from "@swimhub-scanner/shared/types/api";
 import { createAdminClient } from "@/lib/supabase/server";
 
 const APP = "swimhub_scanner" as const;
@@ -62,7 +62,7 @@ export async function getTodayTokensUsed(supabase: SupabaseClient, uid: string):
 export async function canUserScan(
   supabase: SupabaseClient,
   uid: string,
-  plan: PlanType,
+  plan: UserPlan,
   subscriptionStatus: SubscriptionStatus,
   premiumExpiresAt?: Date | null,
 ): Promise<boolean> {
