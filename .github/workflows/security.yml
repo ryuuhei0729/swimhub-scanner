@@ -1,0 +1,105 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 2 * * 1' # Weekly on Monday at 2 AM
+
+permissions:
+  contents: read
+
+jobs:
+  security-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          # 読み取りにも認証が必要 (.npmrc が ${NODE_AUTH_TOKEN} を参照している)。
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+
+      - name: Run pnpm audit
+        run: pnpm audit --json > audit-report.json || true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+
+      - name: Check for high/critical vulnerabilities
+        run: |
+          if [ ! -f audit-report.json ]; then
+            echo '監査レポートが生成されませんでした。' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo '### pnpm audit summary' >> "$GITHUB_STEP_SUMMARY"
+          # pnpm audit JSON: advisories オブジェクトから high/critical を抽出
+          high_critical=$(jq '[.advisories // {} | to_entries[] | select(.value.severity == "high" or .value.severity == "critical")] | length' audit-report.json)
+          total=$(jq '[.advisories // {} | to_entries[]] | length' audit-report.json)
+          echo "- 検出された脆弱性: ${total} 件 (high/critical: ${high_critical} 件)" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$high_critical" -gt 0 ]; then
+            jq -r '.advisories // {} | to_entries[] | select(.value.severity == "high" or .value.severity == "critical") | "- \(.value.module_name): \(.value.severity) - \(.value.title)"' audit-report.json >> "$GITHUB_STEP_SUMMARY"
+            echo "❌ high/critical の脆弱性が ${high_critical} 件見つかりました"
+            exit 1
+          fi
+          echo '✅ high/critical の脆弱性はありません' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: アーティファクトとして監査結果を保存
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pnpm-audit-report
+          path: audit-report.json
+          if-no-files-found: ignore
+
+  trivy-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          # SARIF 出力時は既定で severity フィルタが無視され全件出るため明示する
+          limit-severities-for-sarif: true
+          exit-code: '0'
+
+      - name: Check if SARIF file exists
+        id: check-sarif-fs
+        if: always()
+        run: |
+          if [ -f trivy-results.sarif ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "SARIF file not generated (no vulnerabilities found or scan failed)"
+          fi
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@dd677812177e0c29f9c970a6c58d8607ae1bfefd # v4
+        if: always() && steps.check-sarif-fs.outputs.exists == 'true'
+        with:
+          sarif_file: 'trivy-results.sarif'
