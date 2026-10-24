@@ -17,3 +17,5 @@ packages:
 #   (端末上の実行時) に到達する。影響は不正なリンクを開いた端末での CPU 消費 (DoS) に限られ、query-string 7 が修正版 0.5.0 に
 #   未追従なので受け入れる。swim-hub と同じ扱い
 # - xlsx 0.18.5 (GHSA-4r6h / GHSA-5pgg): npm に修正版なし。mobile は書き出し専用 (XLSX.write) で脆弱な読み取り経路を使わない
+# - zod 3.25.76 (GHSA-mrhx): 修正版が 4.6.6 のみで 3.x 系に無く、@expo/cli 55 が zod@^3.25.76 を要求する。
+#   到達経路は expo CLI (開発時のみ) で、本番バンドルには入らない。アプリ自身が使う zod 4 は override で 4.6.6 以上に上げている

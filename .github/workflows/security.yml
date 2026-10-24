@@ -86,6 +86,8 @@ jobs:
           # SARIF 出力時は既定で severity フィルタが無視され全件出るため明示する
           limit-severities-for-sarif: true
           exit-code: '0'
+          # 上流に修正版がない / ビルド時のみ到達する脆弱性の抑止リスト (理由はファイル内のコメント)
+          trivyignores: '.trivyignore'
 
       - name: Check if SARIF file exists
         id: check-sarif-fs
