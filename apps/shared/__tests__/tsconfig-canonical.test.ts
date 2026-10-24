@@ -57,7 +57,10 @@ const CANONICAL_CORE = {
   isolatedModules: true,
 };
 
-describe("Sprint #14 tsconfig canonical values (swimhub-scanner, 変更対象外の回帰チェック)", () => {
+// 各 it が `npx tsc --showConfig` を子プロセスで起動する。温まっていれば 1 件 1.5 秒程度だが、
+// CI の cold start では最初の 1 件だけ npx + tsc の初期化を丸ごと被って vitest 既定の 5 秒を超える
+// (2026-10-24 の CI で 5690ms で timeout した)。このファイルだけ余裕を持たせる。
+describe("Sprint #14 tsconfig canonical values (swimhub-scanner, 変更対象外の回帰チェック)", { timeout: 30_000 }, () => {
   it("apps/web: 既に target ES2022 + canonical strictness + lib(dom,dom.iterable,es2022) + jsx/plugins", () => {
     const co = showConfig("../web/tsconfig.json");
     expect(co).toMatchObject({ ...CANONICAL_CORE, target: "es2022" });
