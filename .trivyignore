@@ -1,0 +1,19 @@
+# Trivy で抑止する脆弱性。pnpm audit 側の抑止 (package.json の pnpm.auditConfig.ignoreGhsas) と
+# 同じ判断を、CVE 番号で Trivy にも伝える。理由は pnpm-workspace.yaml のコメントに詳しく書いてある。
+# 上流に修正版が出たら override で上げて、ここから消すこと。
+
+# zod 3.25.76 (GHSA-mrhx-c7xc-m3w5): 修正版が 4.6.6 以上にしかなく、@expo/cli 55 が zod@^3.25.76 を要求する。
+# 到達経路は expo CLI (開発時のみ) で本番バンドルには入らない。アプリが使う zod 4 は override で 4.6.6 以上。
+CVE-2023-54404
+
+# xlsx 0.18.5 (GHSA-4r6h-8v6p-xvw6 / GHSA-5pgg-2g8v-p4x9): npm に修正版がない (SheetJS 公式配布のみ)。
+# mobile は書き出し専用 (XLSX.write) で、脆弱な読み取り経路を使わない。
+CVE-2023-30533
+CVE-2024-22363
+
+# node-forge 1.4.0: 最新版で、修正版がまだ出ていない。
+CVE-2026-85393
+
+# image-size 1.2.1: 修正版は 2.0.3 だが metro 0.83 が 1.x を要求する。バンドル時のみ動くビルドツール。
+CVE-2025-71329
+CVE-2025-71330

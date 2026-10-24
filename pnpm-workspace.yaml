@@ -1,3 +1,21 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# minimumReleaseAge (公開7日未満の版を解決しない) は swim-hub だけに入れている。
+# このリポは @ryuuhei0729/swimhub-oauth を GitHub Packages から取るが、7日ルールは全パッケージの
+# full metadata (公開日時) を要求し、private registry への取得は NODE_AUTH_TOKEN 無しだと 401 になる。
+# 手元のトークン無し運用 (.npmrc 参照) と両立しないため、代わりに apps/web/package.json 側で
+# デプロイ系の直接依存 (@opennextjs/cloudflare / wrangler) だけを公開7日以上経った版に固定している。
+# 推移的依存 (例: @opennextjs/cloudflare が範囲指定で引く @dotenvx/dotenvx) は対象外で、再解決のたびに最新へ流れる。
+
+# pnpm audit で抑止している GHSA (package.json の pnpm.auditConfig.ignoreGhsas) の理由:
+# - image-size ≤2.0.2 (GHSA-w3rx / GHSA-5p2g): Metro が 1.x を要求。ビルド時のみ
+# - braces ≤3.0.3 (GHSA-vfj7)、node-forge PKCS#1 (GHSA-86w9): 上流に修正版なし。jest / expo CLI 配下
+# - sprintf-js (GHSA-hp3w): 取り下げ済み advisory
+# - decode-uri-component 0.2.2 (GHSA-vcc3, medium): query-string 7 経由で @react-navigation/core と expo-router の deep link URL 解析
+#   (端末上の実行時) に到達する。影響は不正なリンクを開いた端末での CPU 消費 (DoS) に限られ、query-string 7 が修正版 0.5.0 に
+#   未追従なので受け入れる。swim-hub と同じ扱い
+# - xlsx 0.18.5 (GHSA-4r6h / GHSA-5pgg): npm に修正版なし。mobile は書き出し専用 (XLSX.write) で脆弱な読み取り経路を使わない
+# - zod 3.25.76 (GHSA-mrhx): 修正版が 4.6.6 のみで 3.x 系に無く、@expo/cli 55 が zod@^3.25.76 を要求する。
+#   到達経路は expo CLI (開発時のみ) で、本番バンドルには入らない。アプリ自身が使う zod 4 は override で 4.6.6 以上に上げている

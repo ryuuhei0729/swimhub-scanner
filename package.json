@@ -17,7 +17,60 @@
     "deploy": "turbo build --filter=!@swimhub-scanner/mobile && pnpm --filter @swimhub-scanner/web run deploy"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "sharp", "unrs-resolver"]
+    "onlyBuiltDependencies": ["esbuild", "sharp", "unrs-resolver"],
+    "overrides": {
+      "protobufjs": "^7.6.6",
+      "glob@10": "^10.5.0",
+      "jsdom": "^26.1.0",
+      "tar": "^7.5.21",
+      "js-yaml@3": "^3.15.2",
+      "js-yaml@4": "^4.3.2",
+      "flatted": "^3.4.2",
+      "browserslist": "^4.28.7",
+      "fast-xml-parser": "^5.7.0",
+      "fast-xml-builder": "^1.1.7",
+      "undici": ">=7.30.1 <8",
+      "body-parser@2": "^2.4.0",
+      "zod@4": "^4.6.6",
+      "ws": "^8.21.0",
+      "form-data": "^4.0.6",
+      "node-forge": "^1.4.0",
+      "router>path-to-regexp": "^8.4.0",
+      "picomatch@2": "2.3.2",
+      "picomatch@3": "3.0.2",
+      "picomatch@4": "4.0.4",
+      "@xmldom/xmldom": "^0.8.15",
+      "shell-quote": "^1.11.0",
+      "tmp": "^0.2.6",
+      "postcss": "^8.5.25",
+      "nanoid@3": "^3.3.17",
+      "proxy-addr": "^2.0.8",
+      "compression": "^1.8.2",
+      "source-map-js": "^1.2.2",
+      "uuid": "^14.0.0",
+      "exceljs>uuid": "^11.1.1",
+      "minimatch@3": "^3.1.5",
+      "minimatch@5": "^5.1.9",
+      "minimatch@8": "^8.0.7",
+      "minimatch@9": "^9.0.9",
+      "minimatch@10": "^10.2.3",
+      "brace-expansion@1": "^1.1.21",
+      "brace-expansion@2": "^2.1.7",
+      "brace-expansion@5": "^5.0.12"
+    },
+    "auditConfig": {
+      "ignoreGhsas": [
+        "GHSA-vfj7-8cjw-p6xm",
+        "GHSA-86w9-cpqp-85rv",
+        "GHSA-w3rx-r6r6-pgpr",
+        "GHSA-5p2g-fcmc-qvqq",
+        "GHSA-hp3w-g68c-fv3c",
+        "GHSA-vcc3-ghjq-m6fr",
+        "GHSA-4r6h-8v6p-xvw6",
+        "GHSA-5pgg-2g8v-p4x9",
+        "GHSA-mrhx-c7xc-m3w5"
+      ]
+    }
   },
   "devDependencies": {
     "turbo": "^2.6.0",
