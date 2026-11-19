@@ -54,17 +54,25 @@ export default function GetStartedScreen() {
 
   const displayError = error || googleError || appleError;
 
+  // 起動直後は AuthGate が router.replace でこの画面を表示するため戻り先が無い。
+  // その場合に戻るボタンを出すと押しても何も起きないので、戻り先がある時
+  // （スキャナー画面やログイン方法画面から push で来た時）だけ表示する。
+  const canGoBack = router.canGoBack();
+
   return (
     <SafeAreaView style={styles.container} edges={["top", "left", "right", "bottom"]}>
       <View style={styles.header}>
-        <Pressable
-          style={styles.backButton}
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel={t("common.back")}
-        >
-          <Feather name="arrow-left" size={24} color={colors.text} />
-        </Pressable>
+        {canGoBack && (
+          <Pressable
+            testID="get-started-back-button"
+            style={styles.backButton}
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel={t("common.back")}
+          >
+            <Feather name="arrow-left" size={24} color={colors.text} />
+          </Pressable>
+        )}
       </View>
 
       <ScrollView

@@ -14,6 +14,7 @@ import {
 } from "@/lib/revenucat";
 import { colors, spacing, radius, fontSize } from "@/theme";
 import { PlanFeatureList } from "@/components/plan/PlanFeatureList";
+import { AdPrivacyOptionsLink } from "@/components/ads/AdPrivacyOptionsLink";
 
 export default function AccountScreen() {
   const { t, i18n } = useTranslation();
@@ -275,6 +276,9 @@ export default function AccountScreen() {
             {t("accountScreen.privacyLink")}
           </Text>
         </View>
+
+        {/* 広告のプライバシー設定（EEA 等で必要な場合のみ表示） */}
+        {!isPremium && <AdPrivacyOptionsLink containerStyle={styles.legalLinks} />}
 
         {/* アプリ情報 */}
         <View style={styles.footer}>
