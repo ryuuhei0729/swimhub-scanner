@@ -95,6 +95,7 @@ const ja = {
       withApple: "Appleでログイン",
       withGoogle: "Googleでログイン",
       withEmail: "Emailでログイン",
+      lastUsed: "直近で利用",
     },
     getStarted: {
       title: "アカウント作成",

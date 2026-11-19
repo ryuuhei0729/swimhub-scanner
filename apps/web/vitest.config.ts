@@ -2,6 +2,11 @@ import path from "path";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  // コンポーネントテスト (.tsx) 用。tsconfig の jsx: preserve は Next.js 向けのため、
+  // テストでは React 17+ の automatic runtime で変換する
+  esbuild: {
+    jsx: "automatic",
+  },
   test: {
     globals: true,
     environment: "jsdom",

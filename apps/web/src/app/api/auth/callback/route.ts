@@ -1,5 +1,10 @@
 import { handleAuthCallback } from "@ryuuhei0729/swimhub-oauth/web";
 import type { NextRequest } from "next/server";
+import {
+  buildLastLoginMethodCookie,
+  isLoginMethod,
+  LOGIN_METHOD_QUERY_PARAM,
+} from "@/lib/lastLoginMethod";
 
 /**
  * OAuth (PKCE の code) / メール確認 (token_hash + type) の両コールバックを
@@ -13,12 +18,34 @@ import type { NextRequest } from "next/server";
  * 変更は、この移行とは別に意図的な挙動変更として扱うべき。
  * getDefaultRedirectForOtpType は defaultRedirectPath と同じ `/` を返す (両者を一致させないと
  * redirect_to 未指定時のフォールバック先が経路によって食い違ってしまう)。
+ *
+ * OAuth 開始時に redirectTo へ載せた login_method は、セッションが確立した (= ログイン成功)
+ * ときだけ「直近で利用」ラベル用の Cookie に記録する。
  */
 export async function GET(request: NextRequest) {
-  return handleAuthCallback({
+  const requestUrl = new URL(request.url);
+  const rawLoginMethod = requestUrl.searchParams.get(LOGIN_METHOD_QUERY_PARAM);
+  const loginMethod = isLoginMethod(rawLoginMethod) ? rawLoginMethod : null;
+  let loginSucceeded = false;
+
+  const response = await handleAuthCallback({
     request,
     defaultRedirectPath: "/",
     loginPath: "/ja/login",
     getDefaultRedirectForOtpType: () => "/",
+    onSessionEstablished: (_session, { flow }) => {
+      if (flow === "code") {
+        loginSucceeded = true;
+      }
+    },
   });
+
+  if (loginSucceeded && loginMethod) {
+    response.headers.append(
+      "Set-Cookie",
+      buildLastLoginMethodCookie(loginMethod, requestUrl.protocol === "https:"),
+    );
+  }
+
+  return response;
 }

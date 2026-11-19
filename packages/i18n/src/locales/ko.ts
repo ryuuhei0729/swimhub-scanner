@@ -97,6 +97,7 @@ const ko: TranslationShape = {
       withApple: "Apple로 로그인",
       withGoogle: "Google로 로그인",
       withEmail: "이메일로 로그인",
+      lastUsed: "최근 사용",
     },
     getStarted: {
       title: "계정 만들기",

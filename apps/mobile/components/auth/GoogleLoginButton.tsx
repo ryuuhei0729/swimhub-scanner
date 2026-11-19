@@ -9,6 +9,8 @@ interface GoogleLoginButtonProps {
   disabled?: boolean;
   /** ボタンに表示するラベル。呼び出し側で i18n 済みの文字列を渡す */
   label: string;
+  /** 読み上げ用ラベル（省略時は表示ラベル） */
+  accessibilityLabel?: string;
 }
 
 const GoogleLogo: React.FC = () => (
@@ -37,6 +39,7 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   loading = false,
   disabled = false,
   label,
+  accessibilityLabel,
 }) => {
   const isDisabled = disabled || loading;
 
@@ -50,7 +53,7 @@ export const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
       onPress={onPress}
       disabled={isDisabled}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: isDisabled }}
     >
       {loading ? (

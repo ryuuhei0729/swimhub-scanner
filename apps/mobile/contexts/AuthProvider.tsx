@@ -12,6 +12,7 @@ import {
 import type { ScannerMobileAuthContextType, SubscriptionInfo } from "@swimhub-scanner/shared/types/auth";
 import { useAuthState } from "@swimhub-scanner/shared/hooks";
 import { env } from "@/lib/env";
+import { saveLastLoginMethod } from "@/lib/lastLoginMethod";
 
 const API_BASE_URL = env.webApiUrl;
 
@@ -246,6 +247,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         return { error };
       }
+      await saveLastLoginMethod("email");
       setIsGuest(false);
       return { error: null };
     } catch (error) {

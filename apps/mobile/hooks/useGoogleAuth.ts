@@ -6,6 +6,7 @@ import { useState, useCallback } from "react";
 import * as WebBrowser from "expo-web-browser";
 import { signInWithGoogle as sharedSignInWithGoogle, APP_SCHEME } from "@/lib/google-auth";
 import { supabase } from "@/lib/supabase";
+import { saveLastLoginMethod } from "@/lib/lastLoginMethod";
 import { localizeSupabaseAuthError } from "@/utils/authErrorLocalizer";
 import i18n from "@/lib/i18n";
 
@@ -96,6 +97,7 @@ export const useGoogleAuth = (): UseGoogleAuthReturn => {
         return { success: false, error: result.error ?? new Error(localizedMessage) };
       }
 
+      await saveLastLoginMethod("google");
       return { success: true };
     } catch (unexpectedException) {
       // 保険: signInWithGoogle は「内部で例外を投げず常に {success, error?} で
