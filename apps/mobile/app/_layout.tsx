@@ -284,16 +284,9 @@ function AuthGate() {
   return <Slot />;
 }
 
+// 広告 SDK の初期化は起動時に一律で行わず、広告対象ユーザー（非 Premium）のスキャナー画面で
+// 同意取得 (UMP) の後に行う。lib/ads/ads-sdk.ts の prepareAdsSdk を参照。
 export default function RootLayout() {
-  useEffect(() => {
-    try {
-      const mobileAds = require("react-native-google-mobile-ads").default;
-      mobileAds().initialize();
-    } catch {
-      // Ad module not available (e.g., running in Expo Go)
-    }
-  }, []);
-
   return (
     <GestureHandlerRootView style={styles.gestureRoot}>
       <SafeAreaProvider>

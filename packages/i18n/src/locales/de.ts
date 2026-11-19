@@ -19,6 +19,7 @@ const de: TranslationShape = {
     loading: "Wird geladen",
     loadingApp: "Anwendung wird geladen...",
     language: "Sprache",
+    adPrivacyOptions: "Datenschutzeinstellungen für Werbung",
   },
   meta: {
     title: "SwimHub Scanner – Handgeschriebene Schwimm-Zeitenlisten mit KI digitalisieren",

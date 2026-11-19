@@ -19,6 +19,7 @@ const ko: TranslationShape = {
     loading: "불러오는 중",
     loadingApp: "애플리케이션을 불러오는 중...",
     language: "언어",
+    adPrivacyOptions: "광고 개인정보 설정",
   },
   meta: {
     title: "SwimHub Scanner - 손으로 쓴 수영 기록표를 AI로 자동 디지털화",

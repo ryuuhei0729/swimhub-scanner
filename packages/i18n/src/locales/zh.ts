@@ -19,6 +19,7 @@ const zh: TranslationShape = {
     loading: "加载中",
     loadingApp: "正在加载应用...",
     language: "语言",
+    adPrivacyOptions: "广告隐私设置",
   },
   meta: {
     title: "SwimHub Scanner - 用 AI 自动数字化手写游泳计时记录表",
