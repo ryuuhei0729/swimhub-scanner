@@ -1,0 +1,1 @@
+Zeitenliste einfach fotografieren: Die KI liest alle Zeiten und erstellt eine übersichtliche Tabelle als Bild für den Team-Chat. Export nach Excel oder CSV inklusive.

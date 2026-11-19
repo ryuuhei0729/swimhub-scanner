@@ -1,0 +1,1 @@
+SwimHub Scanner - 水泳記録表をAI読み取り

@@ -1,1 +1,1 @@
-swimming,swim,timesheet,handwriting,ocr,ai,scan,digitize,coach,team,excel,csv,times,record
+スイミングクラブ,スイミングスクール,マネージャー,選手,画像,表計算,スプレッドシート,自動入力,計測,ベスト,共有,チーム,中学,高校,大学,ジュニア,成績,分析,スイム,プール,タイム表,記録帳

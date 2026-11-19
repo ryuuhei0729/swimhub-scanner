@@ -1,1 +1,1 @@
-Scan swim time sheets with AI
+AI OCR: handwriting to Excel

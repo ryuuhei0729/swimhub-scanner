@@ -1,1 +1,1 @@
-SwimHub Scanner
+SwimHub Scanner - 游泳成绩表AI识别

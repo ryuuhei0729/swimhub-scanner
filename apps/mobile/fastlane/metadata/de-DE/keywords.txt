@@ -1,1 +1,1 @@
-schwimmen,zeitenliste,schwimmzeiten,handschrift,ocr,ki,training,trainer,verein,excel,csv,wettkampf
+schwimmen,schwimmer,schwimmzeiten,ocr,scannen,csv,tabelle,trainer,verein,wettkampf,texterkennung

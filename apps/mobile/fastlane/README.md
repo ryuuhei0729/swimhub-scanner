@@ -43,6 +43,20 @@ options: languages (default: 最新情報が未入力の4ロケール)
 
 options: languages (default: 新ロケールのみ)
 
+### ios upload_search_metadata
+
+```sh
+[bundle exec] fastlane ios upload_search_metadata
+```
+
+検索に効く項目 (名前・サブタイトル・キーワード) と宣伝文だけを更新する。概要などには触れない
+
+metadata/<locale>/{name,subtitle,keywords,promotional_text}.txt を読む
+
+名前・サブタイトル・キーワードは編集中のバージョンがあるときしか書き込めない。無いときは公開中の値と比べるだけ
+
+options: apply:true で実際に書き込む (既定は確認のみ)
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

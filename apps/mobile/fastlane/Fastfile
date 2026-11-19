@@ -78,4 +78,53 @@ platform :ios do
       force: true # HTML プレビューの確認をスキップ（CI/非対話実行用）
     )
   end
+
+  desc "検索に効く項目 (名前・サブタイトル・キーワード) と宣伝文だけを更新する。概要などには触れない"
+  desc "metadata/<locale>/{name,subtitle,keywords,promotional_text}.txt を読む"
+  desc "名前・サブタイトル・キーワードは編集中のバージョンがあるときしか書き込めない。無いときは公開中の値と比べるだけ"
+  desc "options: apply:true で実際に書き込む (既定は確認のみ)"
+  lane :upload_search_metadata do |options|
+    apply = options[:apply].to_s == "true"
+    limits = { "name" => 30, "subtitle" => 30, "keywords" => 100, "promotional_text" => 170 }
+
+    swimhub_api_key
+    app = Spaceship::ConnectAPI::App.find("app.swim-hub.scanner")
+    UI.user_error!("アプリが見つかりません: app.swim-hub.scanner") unless app
+    platform = Spaceship::ConnectAPI::Platform::IOS
+    info = app.fetch_edit_app_info
+    version = app.get_edit_app_store_version(platform: platform)
+    if apply && !(info && version)
+      UI.user_error!("編集中のバージョンがありません。App Store Connect で新しいバージョンを作ってから実行する")
+    end
+    UI.important("編集中のバージョンが無いので公開中の値と比べる") unless info && version
+    info ||= app.fetch_live_app_info
+    version ||= app.get_live_app_store_version(platform: platform)
+    UI.message("対象バージョン: #{version.version_string} (#{version.app_store_state})")
+
+    metadata_dir = File.expand_path("./metadata", __dir__)
+    read_field = lambda do |locale, field|
+      path = File.join(metadata_dir, locale, "#{field}.txt")
+      return nil unless File.exist?(path)
+      text = File.read(path).strip
+      UI.user_error!("#{locale}/#{field}: #{limits[field]} 文字を超えています (#{text.length})") if text.length > limits[field]
+      text.empty? ? nil : text
+    end
+
+    info.get_app_info_localizations.each do |loc|
+      attrs = { name: read_field.call(loc.locale, "name"), subtitle: read_field.call(loc.locale, "subtitle") }.compact
+      next UI.important("#{loc.locale}: name/subtitle が無いのでスキップ") if attrs.empty?
+      UI.message("#{loc.locale}: 名前「#{loc.name}」→「#{attrs[:name]}」 / サブタイトル「#{loc.subtitle}」→「#{attrs[:subtitle]}」")
+      loc.update(attributes: attrs) if apply
+    end
+
+    version.get_app_store_version_localizations.each do |loc|
+      attrs = { keywords: read_field.call(loc.locale, "keywords"), promotionalText: read_field.call(loc.locale, "promotional_text") }.compact
+      next UI.important("#{loc.locale}: keywords/promotional_text が無いのでスキップ") if attrs.empty?
+      UI.message("#{loc.locale}: キーワード「#{loc.keywords}」→「#{attrs[:keywords]}」(#{attrs[:keywords].to_s.length} 文字)")
+      UI.message("#{loc.locale}: 宣伝文「#{loc.promotional_text}」→「#{attrs[:promotionalText]}」") if attrs[:promotionalText]
+      loc.update(attributes: attrs) if apply
+    end
+
+    UI.success(apply ? "検索用メタデータを更新しました" : "確認のみ (書き込むには apply:true)")
+  end
 end
