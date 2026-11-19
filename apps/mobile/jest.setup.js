@@ -30,10 +30,29 @@ jest.mock("react-native-purchases", () => ({
   LOG_LEVEL: { DEBUG: "DEBUG" },
 }));
 
-jest.mock("react-native-google-mobile-ads", () => ({
-  __esModule: true,
-  default: () => ({ initialize: jest.fn() }),
-  RewardedAd: { createForAdRequest: jest.fn() },
-  RewardedAdEventType: {},
-  TestIds: {},
-}));
+// The mobileAds() instance is a shared singleton so tests can assert on
+// initialize / setRequestConfiguration calls. Tests needing specific ad behaviour
+// override InterstitialAd.createForAdRequest / AdsConsent.* per test.
+jest.mock("react-native-google-mobile-ads", () => {
+  const mobileAdsInstance = {
+    initialize: jest.fn(() => Promise.resolve([])),
+    setRequestConfiguration: jest.fn(() => Promise.resolve()),
+  };
+  return {
+    __esModule: true,
+    default: () => mobileAdsInstance,
+    InterstitialAd: { createForAdRequest: jest.fn() },
+    AdEventType: { LOADED: "loaded", ERROR: "error", OPENED: "opened", CLOSED: "closed", CLICKED: "clicked" },
+    RewardedAd: { createForAdRequest: jest.fn() },
+    RewardedAdEventType: {},
+    MaxAdContentRating: { G: "G", PG: "PG", T: "T", MA: "MA" },
+    AdsConsent: {
+      gatherConsent: jest.fn(() => Promise.resolve({ canRequestAds: true })),
+      getConsentInfo: jest.fn(() =>
+        Promise.resolve({ canRequestAds: true, privacyOptionsRequirementStatus: "NOT_REQUIRED" }),
+      ),
+      showPrivacyOptionsForm: jest.fn(() => Promise.resolve({})),
+    },
+    TestIds: { INTERSTITIAL: "ca-app-pub-3940256099942544/4411468910" },
+  };
+});

@@ -15,6 +15,7 @@ import {
   Modal,
   Dimensions,
   KeyboardAvoidingView,
+  AppState,
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -44,8 +45,12 @@ import { ResultTable } from "@/components/scanner/ResultTable";
 import { ExportSheet } from "@/components/scanner/ExportSheet";
 import {
   createInterstitialAdController,
+  isAdsConfigured,
   type InterstitialAdController,
 } from "@/lib/ads/interstitial-ad";
+import { prepareAdsSdk } from "@/lib/ads/ads-sdk";
+import { shouldShowAds } from "@/lib/ads/ad-eligibility";
+import { AdPrivacyOptionsLink } from "@/components/ads/AdPrivacyOptionsLink";
 import { colors, spacing, radius, fontSize } from "@/theme";
 import { UsageIndicator } from "@/components/plan/UsageIndicator";
 
@@ -80,7 +85,12 @@ export default function ScannerScreen() {
 
   // --- Ad state ---
   const adControllerRef = useRef<InterstitialAdController | null>(null);
-  const [adUnavailable, setAdUnavailable] = useState(false);
+  // 同意取得・SDK 初期化が済み、広告コントローラーが使える状態か
+  const [adsReady, setAdsReady] = useState(false);
+  // 同意取得・初期化の再試行用（初回起動がオフラインだった場合などに、画像選択を契機にやり直す）
+  const [adsInitAttempt, setAdsInitAttempt] = useState(0);
+  // 解析中にアプリがバックグラウンド等へ移ったか（復帰直後に突然広告を出さないため）
+  const leftAppDuringScanRef = useRef(false);
 
   const { menu, swimmers, setResult, reset: resetResult } = useScanResultStore();
 
@@ -126,22 +136,36 @@ export default function ScannerScreen() {
     fetchStatus();
   }, [fetchStatus]);
 
-  // Preload ad when user selects an image (premium users skip ads)
+  // 広告を出してよいユーザーか（プランが確定していない間は出さない）
+  const showAds = shouldShowAds({ isPremium, isGuest, isAuthenticated, userStatus });
+
+  // 広告対象ユーザーの場合のみ、同意取得 (UMP) → SDK 初期化 → コントローラー生成を行う。
+  // 画面表示時に行うことで、EEA 等の同意フォームが「画像選択の途中」に割り込まないようにする。
   useEffect(() => {
-    if (!imageBase64 || isPremium) return;
-
-    const controller = createInterstitialAdController();
-    if (!controller) {
-      setAdUnavailable(true);
-      return;
-    }
-    adControllerRef.current = controller;
-    controller.load();
-
+    if (!showAds || !isAdsConfigured()) return;
+    let cancelled = false;
+    prepareAdsSdk().then((ok) => {
+      if (cancelled || !ok) return;
+      const controller = createInterstitialAdController();
+      if (!controller) return;
+      adControllerRef.current = controller;
+      setAdsReady(true);
+    });
     return () => {
-      controller.dispose();
+      cancelled = true;
+      adControllerRef.current?.dispose();
+      adControllerRef.current = null;
+      setAdsReady(false);
     };
-  }, [imageBase64, isPremium]);
+  }, [showAds, adsInitAttempt]);
+
+  // 解析中にアプリを離れたかを記録する
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState !== "active") leftAppDuringScanRef.current = true;
+    });
+    return () => subscription.remove();
+  }, []);
 
   // Reset zoom when modal closes (JS thread)
   useEffect(() => {
@@ -272,6 +296,7 @@ export default function ScannerScreen() {
 
     setStep("scanning");
     setError(null);
+    leftAppDuringScanRef.current = false;
 
     // --- Start API scan (広告は解析成功後に表示) ---
     try {
@@ -285,19 +310,20 @@ export default function ScannerScreen() {
         await recordGuestScan();
       }
 
-      // --- 解析成功: 結果表示前に広告を表示（premium は広告なし） ---
-      if (!isPremium) {
-        const controller = adControllerRef.current;
-        if (controller && !adUnavailable) {
-          const currentState = controller.getState();
-          if (currentState === "loaded") {
-            try {
-              await controller.show();
-            } catch {
-              // 広告表示失敗は無視して結果表示へ
-            }
-          }
-        }
+      // --- 解析成功: 結果の上にインタースティシャル広告を表示（premium は広告なし） ---
+      // - 読み込みが間に合っていなければ待たずに結果へ進む
+      // - 解析中にアプリを離れていた場合は出さない（復帰直後の予期しない全画面広告は
+      //   AdMob ポリシー上 NG。Android 10+ ではバックグラウンドからの表示自体も制限される）
+      // show() は広告が画面に出た時点で解決するため、結果画面は広告の裏で描画され、
+      // 広告を閉じるとすぐに結果が見える。
+      const controller = adControllerRef.current;
+      if (
+        showAds &&
+        controller?.isReady() &&
+        !leftAppDuringScanRef.current &&
+        AppState.currentState === "active"
+      ) {
+        await controller.show();
       }
 
       setResult(response);
@@ -354,9 +380,6 @@ export default function ScannerScreen() {
             setImageBase64(null);
             setError(null);
             resetResult();
-            setAdUnavailable(false);
-            adControllerRef.current?.dispose();
-            adControllerRef.current = null;
           },
         },
       ],
@@ -396,6 +419,19 @@ export default function ScannerScreen() {
     }
     return false;
   })();
+
+  // 画像を選んだら広告を先読みする。読み込み済みなら再リクエストしない（選び直し対策）。
+  // 解析できない状態（上限到達など）では広告を出す機会が無いため読み込まない。
+  useEffect(() => {
+    if (!showAds || !imageBase64 || !canScan) return;
+    if (!adsReady) {
+      // 準備に失敗していた（同意情報を取得できなかった等）場合はここで再試行する。
+      // prepareAdsSdk はメモ化されているため、準備中であれば同じ処理を待つだけになる。
+      setAdsInitAttempt((n) => n + 1);
+      return;
+    }
+    adControllerRef.current?.ensureLoaded();
+  }, [showAds, adsReady, imageBase64, canScan]);
 
   // 表示用の残り回数
   const dailyLimit = PLAN_LIMITS.guest.dailyScanLimit ?? 1;
@@ -667,6 +703,11 @@ export default function ScannerScreen() {
             <Text style={styles.guestHintText}>{t("scanner.guestLimitHint")}</Text>
             <Text style={styles.guestHintSub}>{t("scanner.registerUnlockHint")}</Text>
           </View>
+        )}
+
+        {/* 広告のプライバシー設定（EEA 等で必要な場合のみ表示。ログインユーザーはアカウント画面から） */}
+        {isGuest && (
+          <AdPrivacyOptionsLink containerStyle={styles.guestHintRow} style={styles.guestHintSub} />
         )}
 
         {/* Collapsible template section */}

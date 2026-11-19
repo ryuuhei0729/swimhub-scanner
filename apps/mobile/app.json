@@ -37,7 +37,8 @@
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-4640414097368188~XXXXXXXXXX",
-          "iosAppId": "ca-app-pub-4640414097368188~6995328031"
+          "iosAppId": "ca-app-pub-4640414097368188~6995328031",
+          "skAdNetworkItems": ["cstr6suwn9.skadnetwork"]
         }
       ]
     ],
@@ -54,7 +55,6 @@
       "infoPlist": {
         "NSCameraUsageDescription": "タイム記録表を撮影するためにカメラを使用します",
         "NSPhotoLibraryUsageDescription": "タイム記録表の画像を選択するためにフォトライブラリを使用します",
-        "NSUserTrackingUsageDescription": "広告の品質向上のためにご利用状況を計測します。許可しない場合も非パーソナライズ広告が表示されます。",
         "ITSAppUsesNonExemptEncryption": false
       }
     },

@@ -17,6 +17,7 @@ const ja = {
     loading: "読み込み中",
     loadingApp: "アプリケーションを読み込み中...",
     language: "言語",
+    adPrivacyOptions: "広告のプライバシー設定",
   },
   meta: {
     title: "SwimHub Scanner - 手書きタイム記録表をAIで自動デジタル化",
