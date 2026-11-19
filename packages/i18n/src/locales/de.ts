@@ -100,6 +100,7 @@ const de: TranslationShape = {
       withApple: "Mit Apple anmelden",
       withGoogle: "Mit Google anmelden",
       withEmail: "Mit E-Mail anmelden",
+      lastUsed: "Zuletzt verwendet",
     },
     getStarted: {
       title: "Konto erstellen",

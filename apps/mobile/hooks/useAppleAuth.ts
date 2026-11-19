@@ -7,6 +7,7 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import * as Crypto from "expo-crypto";
 import { Platform } from "react-native";
 import { supabase } from "@/lib/supabase";
+import { saveLastLoginMethod } from "@/lib/lastLoginMethod";
 import { localizeSupabaseAuthError } from "@/utils/authErrorLocalizer";
 import i18n from "@/lib/i18n";
 
@@ -155,6 +156,8 @@ export const useAppleAuth = (): UseAppleAuthReturn => {
       }
 
       console.log("[AppleAuth] Sign in successful");
+      // ログインはここで成立している（後続の名前更新の成否に左右されないよう先に記録する）
+      await saveLastLoginMethod("apple");
       if (displayName) {
         await supabase.auth.updateUser({
           data: { name: displayName },

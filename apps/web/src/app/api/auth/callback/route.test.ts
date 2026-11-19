@@ -172,3 +172,55 @@ describe("GET /api/auth/callback (scanner) — V-15/V-16", () => {
     expect(location(res)).toBe(`${ORIGIN}/ja/login?error=missing_code`);
   });
 });
+
+describe("GET /api/auth/callback (scanner) — 「直近で利用」ログイン手法の記録", () => {
+  function lastLoginCookie(res: Response): string | undefined {
+    return res.headers.getSetCookie().find((c) => c.startsWith("swimhub_last_login_method="));
+  }
+
+  it("OAuth (code) でセッションが確立したら login_method を JS から読める Cookie に記録する", async () => {
+    exchangeCodeForSession.mockResolvedValue({
+      data: { session: { access_token: "mock-access-token" } },
+      error: null,
+    });
+    const res = await GET(
+      makeRequest(`${ORIGIN}/api/auth/callback?login_method=apple&code=pkce-code`),
+    );
+    const cookie = lastLoginCookie(res);
+    expect(cookie).toContain("swimhub_last_login_method=apple");
+    expect(cookie).toContain("Max-Age=31536000");
+    expect(cookie).not.toMatch(/HttpOnly/i);
+    expect(location(res)).toBe(`${ORIGIN}/`);
+  });
+
+  it("コード交換に失敗した (ログイン失敗) 場合は記録しない", async () => {
+    exchangeCodeForSession.mockResolvedValue({ data: { session: null }, error: { message: "boom" } });
+    const res = await GET(
+      makeRequest(`${ORIGIN}/api/auth/callback?login_method=google&code=bad-code`),
+    );
+    expect(lastLoginCookie(res)).toBeUndefined();
+  });
+
+  it("メール確認 (token_hash) フローでは login_method があっても記録しない", async () => {
+    verifyOtp.mockResolvedValue({ data: { session: { access_token: "t" } }, error: null });
+    const res = await GET(
+      makeRequest(
+        `${ORIGIN}/api/auth/callback?login_method=google&token_hash=abc123&type=signup`,
+      ),
+    );
+    expect(lastLoginCookie(res)).toBeUndefined();
+  });
+
+  it("login_method が無い・不正な場合は記録しない", async () => {
+    exchangeCodeForSession.mockResolvedValue({
+      data: { session: { access_token: "mock-access-token" } },
+      error: null,
+    });
+    const noParam = await GET(makeRequest(`${ORIGIN}/api/auth/callback?code=pkce-code`));
+    expect(lastLoginCookie(noParam)).toBeUndefined();
+    const invalid = await GET(
+      makeRequest(`${ORIGIN}/api/auth/callback?login_method=evil%3B%20Domain%3Dx&code=pkce-code`),
+    );
+    expect(lastLoginCookie(invalid)).toBeUndefined();
+  });
+});

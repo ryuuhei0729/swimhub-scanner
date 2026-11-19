@@ -9,6 +9,8 @@ interface AppleLoginButtonProps {
   disabled?: boolean;
   /** ボタンに表示するラベル。呼び出し側で i18n 済みの文字列を渡す */
   label: string;
+  /** 読み上げ用ラベル（省略時は表示ラベル） */
+  accessibilityLabel?: string;
 }
 
 const AppleLogo: React.FC = () => (
@@ -25,6 +27,7 @@ export const AppleLoginButton: React.FC<AppleLoginButtonProps> = ({
   loading = false,
   disabled = false,
   label,
+  accessibilityLabel,
 }) => {
   if (Platform.OS !== "ios") {
     return null;
@@ -42,7 +45,7 @@ export const AppleLoginButton: React.FC<AppleLoginButtonProps> = ({
       onPress={onPress}
       disabled={isDisabled}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: isDisabled }}
     >
       {loading ? (

@@ -96,6 +96,7 @@ const zh: TranslationShape = {
       withApple: "通过 Apple 登录",
       withGoogle: "通过 Google 登录",
       withEmail: "通过邮箱登录",
+      lastUsed: "最近使用",
     },
     getStarted: {
       title: "创建账户",

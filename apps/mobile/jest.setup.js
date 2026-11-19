@@ -56,3 +56,10 @@ jest.mock("react-native-google-mobile-ads", () => {
     TestIds: { INTERSTITIAL: "ca-app-pub-3940256099942544/4411468910" },
   };
 });
+
+// AsyncStorage の native module は jest には無い。AuthProvider 等が lib/lastLoginMethod 経由で
+// import するため、パッケージ公式の jest mock を全テスト共通で当てる
+// (個別に別の挙動が必要なテストはファイル内の jest.mock で上書きできる)。
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);

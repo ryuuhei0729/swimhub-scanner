@@ -99,6 +99,7 @@ const en: TranslationShape = {
       withApple: "Sign in with Apple",
       withGoogle: "Sign in with Google",
       withEmail: "Sign in with Email",
+      lastUsed: "Last used",
     },
     getStarted: {
       title: "Create Account",
