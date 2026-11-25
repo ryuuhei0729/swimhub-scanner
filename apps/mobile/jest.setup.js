@@ -57,6 +57,12 @@ jest.mock("react-native-google-mobile-ads", () => {
   };
 });
 
+// expo-store-review: ネイティブモジュールを読み込まない。既定は「使えない端末」
+jest.mock("expo-store-review", () => ({
+  isAvailableAsync: jest.fn(async () => false),
+  requestReview: jest.fn(async () => {}),
+}));
+
 // AsyncStorage の native module は jest には無い。AuthProvider 等が lib/lastLoginMethod 経由で
 // import するため、パッケージ公式の jest mock を全テスト共通で当てる
 // (個別に別の挙動が必要なテストはファイル内の jest.mock で上書きできる)。

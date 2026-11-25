@@ -6,6 +6,7 @@ import { captureRef } from "react-native-view-shot";
 import XLSX from "xlsx";
 import { useTranslation } from "react-i18next";
 import { useScanResultStore } from "@/stores/scanResultStore";
+import { requestStoreReviewOnce } from "@/lib/storeReview";
 import {
   formatTime,
   averageTime,
@@ -89,6 +90,7 @@ export const ExportSheet: React.FC = () => {
       });
 
       await Sharing.shareAsync(fileUri, { mimeType: "text/csv" });
+      void requestStoreReviewOnce();
     } catch (err) {
       Alert.alert(t("common.error"), t("export.csvError"));
       console.error("CSV export error:", err);
@@ -106,6 +108,7 @@ export const ExportSheet: React.FC = () => {
         quality: 1,
       });
       await Sharing.shareAsync(uri, { mimeType: "image/png" });
+      void requestStoreReviewOnce();
     } catch (err) {
       Alert.alert(t("common.error"), t("export.imageError"));
       console.error("Image export error:", err);
@@ -148,6 +151,7 @@ export const ExportSheet: React.FC = () => {
       await Sharing.shareAsync(fileUri, {
         mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
+      void requestStoreReviewOnce();
     } catch (err) {
       Alert.alert(t("common.error"), t("export.excelError"));
       console.error("Excel export error:", err);
