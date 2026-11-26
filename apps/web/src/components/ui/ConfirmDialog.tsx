@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -20,11 +21,12 @@ export default function ConfirmDialog({
   onCancel,
   title,
   message,
-  confirmLabel = "確認",
-  cancelLabel = "キャンセル",
+  confirmLabel,
+  cancelLabel,
   variant = "info",
   isConfirming = false,
 }: ConfirmDialogProps) {
+  const { t } = useTranslation();
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -103,7 +105,7 @@ export default function ConfirmDialog({
               onClick={onCancel}
               className="px-4 py-2 text-sm font-medium text-foreground bg-muted rounded-md hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-border"
             >
-              {cancelLabel}
+              {cancelLabel ?? t("common.cancel")}
             </button>
             <button
               ref={confirmButtonRef}
@@ -116,7 +118,7 @@ export default function ConfirmDialog({
                   : "bg-primary focus:ring-primary"
               }`}
             >
-              {isConfirming ? "処理中..." : confirmLabel}
+              {isConfirming ? t("common.processing") : (confirmLabel ?? t("common.confirm"))}
             </button>
           </div>
         </div>

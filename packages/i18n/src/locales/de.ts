@@ -4,6 +4,8 @@ const de: TranslationShape = {
   common: {
     appName: "SwimHub Scanner",
     processing: "Wird verarbeitet...",
+    confirm: "Bestätigen",
+    refreshing: "Wird aktualisiert",
     error: "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
     cancel: "Abbrechen",
     delete: "Löschen",
@@ -24,7 +26,7 @@ const de: TranslationShape = {
   meta: {
     title: "SwimHub Scanner – Handgeschriebene Schwimm-Zeitenlisten mit KI digitalisieren",
     description:
-      "Fotografieren Sie einfach Ihre handgeschriebenen Schwimm-Zeitenlisten und lassen Sie sie von der KI automatisch analysieren. In digitale Daten umwandeln für effizientes Datenmanagement.",
+      "Fotografieren Sie einfach Ihre handgeschriebenen Schwimm-Zeitenlisten – die KI analysiert sie automatisch und wandelt sie in digitale Daten um. So verwalten Sie Ihre Zeiten effizienter.",
     keywords:
       "Schwimmen,Zeitenliste,handgeschrieben,digitalisieren,KI,OCR,Schwimmzeit,Zeiterfassung",
     ogLocale: "de_DE",
@@ -296,7 +298,7 @@ const de: TranslationShape = {
     distance: "Distanz",
     repCount: "Wdh.",
     setCount: "Sätze",
-    circle: "Intervall",
+    circle: "Abgang",
     set: "Satz",
     name: "Name",
     style: "Schwimmart",
@@ -307,8 +309,8 @@ const de: TranslationShape = {
     deleteSwimmer: "Löschen",
     deleteSwimmerTitle: "Schwimmer löschen",
     deleteSwimmerConfirm: "{{name}} löschen?",
-    deleteConfirm: "Diesen Schwimmer löschen?",
-    thisSwimmer: "diesen Schwimmer",
+    deleteConfirm: " löschen?",
+    thisSwimmer: "Diesen Schwimmer",
     addSwimmer: "+ Schwimmer hinzufügen",
     rep: "Wdh.",
     repShort: "",
@@ -341,7 +343,7 @@ const de: TranslationShape = {
     distance: "Distanz",
     repCount: "Wdh.",
     setCount: "Sätze",
-    circle: "Intervall",
+    circle: "Abgang",
   },
   subscription: {
     title: "Abonnement",
@@ -351,7 +353,7 @@ const de: TranslationShape = {
     premium: "Premium",
     free: "Kostenlos",
     nextRenewal: "Nächste Verlängerung: {{date}}",
-    cancelScheduled: "Kündigung geplant (wechselt am Ende des Zeitraums zu Kostenlos)",
+    cancelScheduled: "Kündigung geplant (wechselt am Ende des Zeitraums zum kostenlosen Tarif)",
     monthlyPlan: "Monatstarif",
     yearlyPlan: "Jahrestarif",
     monthlyPrice: "¥500",
@@ -387,7 +389,7 @@ const de: TranslationShape = {
     perMonth: "~{{price}}/Monat",
     savePercent: "{{percent}} % sparen",
     subscribe: "Premium starten",
-    startTrial: "7-tägige kostenlose Testphase starten",
+    startTrial: "7 Tage kostenlos testen",
     trialRemaining: "Noch {{days}} Tage in der Testphase",
     trialNote:
       "Nach der 7-tägigen kostenlosen Testphase wird Ihnen automatisch eine Gebühr berechnet.\nSie können jederzeit kündigen.",
@@ -498,7 +500,7 @@ const de: TranslationShape = {
     termsOfService: "Nutzungsbedingungen",
     support: "Support",
     contact: "Kontakt",
-    commercialLaw: "Gesetz über kommerzielle Transaktionen",
+    commercialLaw: "Angaben gemäß dem japanischen Gesetz über kommerzielle Transaktionen",
     serviceList: "SwimHub-Dienste",
     currentlyUsing: "Aktuell",
     swimhubDesc: "Schwimmteam-Verwaltung",
