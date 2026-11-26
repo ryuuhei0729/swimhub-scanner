@@ -292,7 +292,7 @@ const zh: TranslationShape = {
     deleteSwimmer: "删除",
     deleteSwimmerTitle: "删除泳者",
     deleteSwimmerConfirm: "删除 {{name}}？",
-    deleteConfirm: "删除这名泳者？",
+    deleteConfirm: "将被删除，确定吗？",
     thisSwimmer: "这名泳者",
     addSwimmer: "+ 添加泳者",
     rep: "趟",
