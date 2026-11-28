@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 
 interface PullToRefreshProps {
@@ -10,6 +11,7 @@ interface PullToRefreshProps {
 }
 
 export function PullToRefresh({ onRefresh, disabled = false, children }: PullToRefreshProps) {
+  const { t } = useTranslation();
   const { containerRef, pullDistance, isRefreshing } = usePullToRefresh({
     onRefresh,
     disabled,
@@ -37,7 +39,7 @@ export function PullToRefresh({ onRefresh, disabled = false, children }: PullToR
             <div
               className="h-6 w-6 animate-spin rounded-full border-3 border-border border-t-primary"
               role="status"
-              aria-label="更新中"
+              aria-label={t("common.refreshing")}
             />
           ) : (
             <svg
